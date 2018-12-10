@@ -14,25 +14,20 @@ func Copy(src, dest string) error {
 		return err
 	}
 	if info.IsDir() {
-		return dcopy(src, dest)
+		return dcopy(src, dest, info)
 	}
-	return fcopy(src, dest)
+	return fcopy(src, dest, info)
 }
 
 // fcopy will copy a file with the same mode as the src file
-func fcopy(src, dest string) error {
-	info, err := os.Stat(src)
-	if err != nil {
-		return err
-	}
-
+func fcopy(src, dest string, srcStat os.FileInfo) error {
 	f, err := os.Create(dest)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	if err = os.Chmod(f.Name(), info.Mode()); err != nil {
+	if err = os.Chmod(f.Name(), srcStat.Mode()); err != nil {
 		return err
 	}
 
@@ -47,13 +42,8 @@ func fcopy(src, dest string) error {
 }
 
 // dcopy will recursively copy a directory to dest
-func dcopy(src, dest string) error {
-	info, err := os.Stat(src)
-	if err != nil {
-		return err
-	}
-
-	if err := os.MkdirAll(dest, info.Mode()); err != nil {
+func dcopy(src, dest string, srcStat os.FileInfo) error {
+	if err := os.MkdirAll(dest, srcStat.Mode()); err != nil {
 		return err
 	}
 
