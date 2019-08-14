@@ -50,8 +50,8 @@ func CreateJSONSTringArrayIndex(name, table, field string) (statement string) {
 // the json is not valid.  Scan does no validation.
 type JSONStringArray []string
 
-// Value implements the Value interfance and provides the the database value in
-// a type that the driver can handle, in paritcular as a string.
+// Value implements the Value interface and provides the the database value in
+// a type that the driver can handle, in particular as a string.
 func (a JSONStringArray) Value() (driver.Value, error) {
 	j, err := json.Marshal(a)
 	return j, err
@@ -85,10 +85,11 @@ func (a *JSONStringArray) Scan(src interface{}) error {
 	return nil
 }
 
+// JSONStringMap is a map[string]string that is compatible with the sql driver for JSON and JSONB fields
 type JSONStringMap map[string]string
 
-// Value implements the Value interfance and provides the the database value in
-// a type that the driver can handle, in paritcular as a string.
+// Value implements the Value interface and provides the the database value in
+// a type that the driver can handle, in particular as a string.
 func (a JSONStringMap) Value() (driver.Value, error) {
 	j, err := json.Marshal(a)
 	return j, err

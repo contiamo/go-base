@@ -17,15 +17,34 @@ GO := go
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-.PHONY: clean
-clean: ## Cleanup any build binaries or packages
-	rm -rf bin vendor
+
+.PHONY: env
+env: ## Print debug information about your local environment
+	@echo git: $(shell git version)
+	@echo go: $(shell go version)
+	@echo golint: $(shell which golint)
+	@echo gofmt: $(shell which gofmt)
+	@echo staticcheck: $(shell which staticcheck)
+
+.PHONY: setup-env
+setup-env:
+	$(shell go mod download)
+	$(shell go install golang.org/x/lint/golint)
+
+.PHONY: changelog
+changelog: ## Print git hitstory based changelog
+	@git --no-pager log --no-merges --pretty=format:"%h : %s (by %an)" $(shell git describe --tags --abbrev=0)...HEAD
+	@echo ""
+
+# .PHONY: clean
+# clean: ## Cleanup any build binaries or packages
+# 	rm -rf bin
 
 
 .PHONY: fmt
-fmt: $(shell find ./pkg ./cmd) ## Verifies all files have been `gofmt`ed
+fmt: ## Verifies all files have been `gofmt`ed
 	@echo "+ $@"
-	@gofmt -s -l . | grep -v '.pb.go:' | grep -v vendor | tee /dev/stderr
+	@gofmt -s -l . | tee /dev/stderr
 
 .PHONY: staticcheck
 staticcheck: ## Verifies `staticcheck` passes
@@ -34,16 +53,14 @@ staticcheck: ## Verifies `staticcheck` passes
 
 
 .PHONY: test
-test: $(shell find ./pkg) ## Runs the go tests
+test: ## Runs the go tests
 	@echo "+ $@"
-	@go test -cover -v ./...
+	@go test -cover ./...
 
 .PHONY: lint
 lint: ## Verifies `golint` passes
 	@echo "+ $@"
-	@golint ./... | grep -v '.pb.go:' | grep -v vendor | grep -v internal | tee /dev/stderr
-
-
+	@golint -set_exit_status  ./...
 
 
 

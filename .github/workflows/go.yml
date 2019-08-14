@@ -18,8 +18,7 @@ jobs:
     - name: Format
       run: make fmt
 
-    - name: Lint
-      run: make lint
-
     - name: Test
+      env:
+        GOPROXY: https://proxy.golang.org
       run: make test
