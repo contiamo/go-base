@@ -26,6 +26,11 @@ env: ## Print debug information about your local environment
 	@echo gofmt: $(shell which gofmt)
 	@echo staticcheck: $(shell which staticcheck)
 
+.PHONY: setup-env
+setup-env:
+	$(shell go mod download)
+	$(shell go install golang.org/x/lint/golint)
+
 .PHONY: changelog
 changelog: ## Print git hitstory based changelog
 	@git --no-pager log --no-merges --pretty=format:"%h : %s (by %an)" $(shell git describe --tags --abbrev=0)...HEAD
