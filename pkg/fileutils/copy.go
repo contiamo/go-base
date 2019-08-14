@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-// Copy "recursively copy a file object, info must be non-nil
+// Copy recursively copies a file object, info must be non-nil
 func Copy(src, dest string) error {
 	info, err := os.Stat(src)
 	if err != nil {
