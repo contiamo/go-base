@@ -12,29 +12,35 @@ func Test_getConfig(t *testing.T) {
 	cases := []struct {
 		name           string
 		server         string
-		serverEnv      string
+		varname        string
 		expectedServer string
 	}{
-		{"set server from config", "example.com:6831", "", "example.com:6831"},
-		{"set server from ENV", "", "example.com", "example.com:6831"},
+		{"set local agent server from ENV", "example.com", "JAEGER_AGENT_HOST", "example.com:6831"},
+		{"set remote agent server from ENV", "http://example.com", "JAEGER_ENDPOINT", "http://example.com"},
+		{"use default local agent from env", "", "", defaultJaegerServer},
 	}
 
+	currentEnvEndpoint := os.Getenv("JAEGER_ENDPOINT")
 	currentEnvHost := os.Getenv("JAEGER_AGENT_HOST")
-	currentEnvPort := os.Getenv("JAEGER_AGENT_PORT")
+	defer os.Setenv("JAEGER_ENDPOINT", currentEnvEndpoint)
 	defer os.Setenv("JAEGER_AGENT_HOST", currentEnvHost)
-	defer os.Setenv("JAEGER_AGENT_PORT", currentEnvPort)
 
 	for _, tc := range cases {
-		os.Unsetenv("JAEGER_AGENT_HOST")
-		os.Unsetenv("JAEGER_AGENT_PORT")
-
 		t.Run(tc.name, func(t *testing.T) {
-			os.Setenv("JAEGER_AGENT_HOST", tc.serverEnv)
-			cfg, err := getConfig(tc.server, "test-app")
+			if tc.varname != "" {
+				os.Setenv(tc.varname, tc.server)
+				defer os.Unsetenv(tc.varname)
+			}
+
+			cfg, err := getConfig("test-app")
 			require.NoError(t, err)
 
-			cfg.Reporter.LocalAgentHostPort = tc.expectedServer
-			cfg.ServiceName = "test-app"
+			require.Equal(t, cfg.ServiceName, "test-app")
+			if tc.varname == "JAEGER_ENDPOINT" {
+				require.Equal(t, tc.expectedServer, cfg.Reporter.CollectorEndpoint)
+			} else {
+				require.Equal(t, tc.expectedServer, cfg.Reporter.LocalAgentHostPort)
+			}
 		})
 	}
 }

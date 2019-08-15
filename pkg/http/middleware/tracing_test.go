@@ -18,7 +18,7 @@ func Test_TracingMiddleware(t *testing.T) {
 	opentracing.SetGlobalTracer(tracer)
 
 	t.Run("should be possible to setup tracing", func(t *testing.T) {
-		srv, err := createServer([]server.Option{WithTracing("localhost:test", "test", nil, nil)})
+		srv, err := createServer([]server.Option{WithTracing("test", nil, nil)})
 		require.NoError(t, err)
 
 		ts := httptest.NewServer(srv.Handler)
@@ -34,7 +34,7 @@ func Test_TracingMiddleware(t *testing.T) {
 	t.Run("should be possible to set additional tags", func(t *testing.T) {
 		tagName := "testTag"
 		tagValue := "something to find"
-		srv, err := createServer([]server.Option{WithTracing("localhost:test", "test", map[string]string{tagName: tagValue}, nil)})
+		srv, err := createServer([]server.Option{WithTracing("test", map[string]string{tagName: tagValue}, nil)})
 		require.NoError(t, err)
 
 		ts := httptest.NewServer(srv.Handler)
@@ -51,7 +51,7 @@ func Test_TracingMiddleware(t *testing.T) {
 	})
 
 	t.Run("should replace uuid values with *", func(t *testing.T) {
-		srv, err := createServer([]server.Option{WithTracing("localhost:test", "test", nil, nil)})
+		srv, err := createServer([]server.Option{WithTracing("test", nil, nil)})
 		require.NoError(t, err)
 
 		ts := httptest.NewServer(srv.Handler)
@@ -68,7 +68,7 @@ func Test_TracingMiddleware(t *testing.T) {
 	})
 
 	t.Run("should allow websockets", func(t *testing.T) {
-		srv, err := createServer([]server.Option{WithTracing("localhost:test", "test", nil, nil)})
+		srv, err := createServer([]server.Option{WithTracing("test", nil, nil)})
 		require.NoError(t, err)
 
 		ts := httptest.NewServer(srv.Handler)

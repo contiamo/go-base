@@ -2,35 +2,32 @@ package middleware
 
 import (
 	"net/http"
-	"strconv"
-	"strings"
 
-	uuid "github.com/google/uuid"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 	"github.com/urfave/negroni"
 
-	"github.com/contiamo/go-base/pkg/tracing"
 	server "github.com/contiamo/go-base/pkg/http"
+	"github.com/contiamo/go-base/pkg/tracing"
 )
 
 // mainly from "github.com/opentracing-contrib/go-stdlib/nethttp"
 
 // WithTracing configures tracing for that server; if configuration fails, WithTracing will panic
-func WithTracing(server, app string, tags map[string]string, opNameFunc func(r *http.Request) string) server.Option {
+func WithTracing(app string, tags map[string]string, opNameFunc func(r *http.Request) string) server.Option {
 	if opNameFunc == nil {
 		opNameFunc = MethodAndPathCleanID
 	}
-	if err := tracing.InitJaeger(server, app); err != nil {
+	if err := tracing.InitJaeger(app); err != nil {
 		panic(err)
 	}
-	return &tracingOption{server, app, tags, opNameFunc}
+	return &tracingOption{app, tags, opNameFunc}
 }
 
 type tracingOption struct {
-	server, app string
-	tags        map[string]string
-	opNameFunc  func(r *http.Request) string
+	app        string
+	tags       map[string]string
+	opNameFunc func(r *http.Request) string
 }
 
 func (opt *tracingOption) WrapHandler(handler http.Handler) http.Handler {
@@ -66,23 +63,6 @@ func operationNameFunc(f func(r *http.Request) string) mwOption {
 	return func(options *mwOptions) {
 		options.opNameFunc = f
 	}
-}
-
-// MethodAndPathCleanID replace string values that look like ids (uuids and int)
-// with "*"
-func MethodAndPathCleanID(r *http.Request) string {
-	pathParts := strings.Split(r.URL.Path, "/")
-	for i, part := range pathParts {
-		if _, err := uuid.Parse(part); err == nil {
-			pathParts[i] = "*"
-			continue
-		}
-		if _, err := strconv.Atoi(part); err == nil {
-			pathParts[i] = "*"
-		}
-
-	}
-	return "HTTP " + r.Method + " " + strings.Join(pathParts, "/")
 }
 
 // mwSpanObserver returns a MWOption that observe the span
