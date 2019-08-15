@@ -14,14 +14,14 @@ var defaultJaegerServer = fmt.Sprintf("%s:%d", jaeger.DefaultUDPSpanServerHost, 
 // InitJaeger asserts that the global tracer is initialized.
 //
 // This will read the configuration from the "JAEGER_*"" environment variables.
-// Overriding the empty values with the supplied server and app value.  If a
+// Overriding the empty values with the supplied app value.  If a
 // sampler type is not configured via the environment variables, then InitJaeger
 // will be configured with the constant sampler.
-func InitJaeger(server, app string) error {
+func InitJaeger(app string) error {
 	global := opentracing.GlobalTracer()
 	if _, ok := global.(opentracing.NoopTracer); ok {
 
-		cfg, err := getConfig(server, app)
+		cfg, err := getConfig(app)
 		if err != nil {
 			return err
 		}
@@ -34,7 +34,7 @@ func InitJaeger(server, app string) error {
 	return nil
 }
 
-func getConfig(server, app string) (*config.Configuration, error) {
+func getConfig(app string) (*config.Configuration, error) {
 	cfg, err := config.FromEnv()
 	if err != nil {
 		return nil, err
@@ -50,10 +50,6 @@ func getConfig(server, app string) (*config.Configuration, error) {
 
 	if cfg.Reporter.BufferFlushInterval == 0 {
 		cfg.Reporter.BufferFlushInterval = 1 * time.Second
-	}
-
-	if server != "" && (cfg.Reporter.LocalAgentHostPort == "" || cfg.Reporter.LocalAgentHostPort == defaultJaegerServer) {
-		cfg.Reporter.LocalAgentHostPort = server
 	}
 
 	return cfg, nil

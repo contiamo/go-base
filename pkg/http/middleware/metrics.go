@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	uuid "github.com/google/uuid"
 	"github.com/urfave/negroni"
 
 	server "github.com/contiamo/go-base/pkg/http"
@@ -94,20 +93,4 @@ func (opt *metricsOption) WrapHandler(handler http.Handler) http.Handler {
 	})
 
 	return mw
-}
-
-// PathWithCleanID replace string values that look like ids (uuids and int) with "*"
-func PathWithCleanID(r *http.Request) string {
-	pathParts := strings.Split(r.URL.Path, "/")
-	for i, part := range pathParts {
-		if _, err := uuid.Parse(part); err == nil {
-			pathParts[i] = "*"
-			continue
-		}
-		if _, err := strconv.Atoi(part); err == nil {
-			pathParts[i] = "*"
-		}
-
-	}
-	return strings.Join(pathParts, "/")
 }
