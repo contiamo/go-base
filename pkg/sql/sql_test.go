@@ -7,9 +7,7 @@ import (
 )
 
 var (
-	nullJSON    = []byte(`null`)
-	invalidJSON = []byte(`:)`)
-	intJSON     = []byte(`12345`)
+	nullJSON = []byte(`null`)
 )
 
 func requireEqualOrNilError(t *testing.T, err error, errorMsg string) {

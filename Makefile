@@ -29,6 +29,7 @@ env: ## Print debug information about your local environment
 .PHONY: setup-env
 setup-env:
 	$(shell go mod download)
+	$(shell curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s v1.20.0)
 
 .PHONY: changelog
 changelog: ## Print git hitstory based changelog

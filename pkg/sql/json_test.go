@@ -8,15 +8,12 @@ import (
 )
 
 var (
-	nilJSONStringArray      JSONStringArray
-	emptyJSONStringArray    = JSONStringArray{}
-	emptyArrayJSON          = []byte(`[]`)
-	emptyArrayBytes         = emptyArrayJSON
-	stringArrayValue        = JSONStringArray{"test1", "test2"}
-	stringArrayJSON         = []byte(`["test1","test2"]`)
-	stringArrayBytes        = stringArrayJSON
-	invalidStringArrayJSON  = []byte(`['test1', 'test2']`)
-	invalidStringArrayBytes = invalidStringArrayJSON
+	nilJSONStringArray     JSONStringArray
+	emptyJSONStringArray   = JSONStringArray{}
+	emptyArrayJSON         = []byte(`[]`)
+	stringArrayValue       = JSONStringArray{"test1", "test2"}
+	stringArrayJSON        = []byte(`["test1","test2"]`)
+	invalidStringArrayJSON = []byte(`['test1', 'test2']`)
 
 	jsonStringArrayScanStringHappyPath = []struct {
 		name string

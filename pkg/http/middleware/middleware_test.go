@@ -42,7 +42,7 @@ func createServer(opts []server.Option) (*http.Server, error) {
 			panic("PANIC!!!")
 		}
 		w.WriteHeader(http.StatusOK)
-		io.Copy(w, r.Body)
+		_, _ = io.Copy(w, r.Body)
 	})
 
 	return server.New(&server.Config{
