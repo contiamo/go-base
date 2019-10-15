@@ -56,7 +56,10 @@ func ListenAndServe(ctx context.Context, addr string, srv *http.Server) error {
 		<-ctx.Done()
 		shutdownContext, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
-		srv.Shutdown(shutdownContext)
+		err := srv.Shutdown(shutdownContext)
+		if err != nil {
+			logrus.Fatal(err)
+		}
 	}()
 	logrus.Info("start listening for HTTP requests on " + srv.Addr)
 	return srv.ListenAndServe()
