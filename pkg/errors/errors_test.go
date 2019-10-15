@@ -33,14 +33,14 @@ func TestValidationErrorsToFieldErrorResponse(t *testing.T) {
 				Errors: []models.FieldError{
 					models.FieldError{
 						GeneralError: models.GeneralError{
-							Type:    models.FIELD_ERROR,
+							Type:    models.FieldErrorType,
 							Message: "bad field1",
 						},
 						Key: "field1",
 					},
 					models.FieldError{
 						GeneralError: models.GeneralError{
-							Type:    models.FIELD_ERROR,
+							Type:    models.FieldErrorType,
 							Message: "bad field2",
 						},
 						Key: "field2",
@@ -58,7 +58,7 @@ func TestValidationErrorsToFieldErrorResponse(t *testing.T) {
 				Errors: []models.FieldError{
 					models.FieldError{
 						GeneralError: models.GeneralError{
-							Type:    models.FIELD_ERROR,
+							Type:    models.FieldErrorType,
 							Message: "bad field1",
 						},
 						Key: "field1",

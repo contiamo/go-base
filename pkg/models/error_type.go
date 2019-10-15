@@ -4,6 +4,8 @@ package models
 type ErrorType string
 
 const (
-	GENERAL_ERROR ErrorType = "GeneralError"
-	FIELD_ERROR   ErrorType = "FieldError"
+	// GeneralErrorType is a generic error type
+	GeneralErrorType ErrorType = "GeneralError"
+	// FieldErrorType is a field validation error type
+	FieldErrorType ErrorType = "FieldError"
 )

@@ -1,6 +1,6 @@
 package models
 
-// Error represents a system error exposed to the user
+// GeneralError represents a system error exposed to the user
 type GeneralError struct {
 	// Type of the error
 	Type ErrorType `json:"type"`

@@ -22,14 +22,13 @@ help:
 env: ## Print debug information about your local environment
 	@echo git: $(shell git version)
 	@echo go: $(shell go version)
-	@echo golint: $(shell which golint)
+	@echo golangci-lint: $(shell which golangci-lint)
 	@echo gofmt: $(shell which gofmt)
 	@echo staticcheck: $(shell which staticcheck)
 
 .PHONY: setup-env
 setup-env:
 	$(shell go mod download)
-	$(shell go install golang.org/x/lint/golint)
 
 .PHONY: changelog
 changelog: ## Print git hitstory based changelog
@@ -58,9 +57,9 @@ test: ## Runs the go tests
 	@go test -cover ./...
 
 .PHONY: lint
-lint: ## Verifies `golint` passes
+lint: ## Verifies `golangci-lint` passes
 	@echo "+ $@"
-	@golint -set_exit_status  ./...
+	@golangci-lint run  ./...
 
 
 

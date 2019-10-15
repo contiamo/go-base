@@ -49,7 +49,7 @@ func (h *baseHandler) Error(ctx context.Context, w http.ResponseWriter, err erro
 
 	genErrResp := models.GeneralErrorResponse{
 		Errors: []models.GeneralError{{
-			Type:    models.GENERAL_ERROR,
+			Type:    models.GeneralErrorType,
 			Message: err.Error(),
 		}},
 	}

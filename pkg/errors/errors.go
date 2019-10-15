@@ -40,7 +40,7 @@ func ValidationErrorsToFieldErrorResponse(errs ValidationErrors) (fieldErrResp m
 		}
 		fieldErrResp.Errors = append(fieldErrResp.Errors, models.FieldError{
 			GeneralError: models.GeneralError{
-				Type:    models.FIELD_ERROR,
+				Type:    models.FieldErrorType,
 				Message: fieldErr.Error(),
 			},
 			Key: key,
