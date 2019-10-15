@@ -58,9 +58,9 @@ test: ## Runs the go tests
 	@go test -cover ./...
 
 .PHONY: lint
-lint: ## Verifies `golangci-lint` passes
+lint: setup-env ## Verifies `golangci-lint` passes
 	@echo "+ $@"
-	@golangci-lint run  ./...
+	@./bin/golangci-lint run  ./...
 
 
 
