@@ -13,7 +13,7 @@ jobs:
       - run:
           name: Install go tools
           command: |
-            go get golang.org/x/lint/golint
+            make setup-env
       - run:
           name: Print env
           command: make env
