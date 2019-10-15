@@ -4,6 +4,7 @@ require (
 	github.com/bakins/net-http-recover v0.0.0-20141007104922-6cba69d01459
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
 	github.com/go-chi/chi v4.0.2+incompatible
+	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible
 	github.com/golang/protobuf v1.3.2
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.0
