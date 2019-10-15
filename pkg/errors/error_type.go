@@ -1,4 +1,4 @@
-package models
+package errors
 
 // ErrorType : The type of the error response
 type ErrorType string

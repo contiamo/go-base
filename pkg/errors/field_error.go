@@ -1,4 +1,4 @@
-package models
+package errors
 
 // FieldError represents a validation error
 type FieldError struct {

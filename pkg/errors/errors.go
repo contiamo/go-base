@@ -3,7 +3,6 @@ package errors
 import (
 	"errors"
 
-	"github.com/contiamo/go-base/pkg/models"
 	validation "github.com/go-ozzo/ozzo-validation"
 )
 
@@ -32,15 +31,15 @@ type ValidationErrors = validation.Errors
 
 // ValidationErrorsToFieldErrorResponse converts validation errors to the format that is
 // served by HTTP handlers
-func ValidationErrorsToFieldErrorResponse(errs ValidationErrors) (fieldErrResp models.FieldErrorResponse) {
-	fieldErrResp.Errors = make([]models.FieldError, 0, len(errs))
+func ValidationErrorsToFieldErrorResponse(errs ValidationErrors) (fieldErrResp FieldErrorResponse) {
+	fieldErrResp.Errors = make([]FieldError, 0, len(errs))
 	for key, fieldErr := range errs {
 		if fieldErr == nil {
 			continue
 		}
-		fieldErrResp.Errors = append(fieldErrResp.Errors, models.FieldError{
-			GeneralError: models.GeneralError{
-				Type:    models.FieldErrorType,
+		fieldErrResp.Errors = append(fieldErrResp.Errors, FieldError{
+			GeneralError: GeneralError{
+				Type:    FieldErrorType,
 				Message: fieldErr.Error(),
 			},
 			Key: key,

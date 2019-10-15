@@ -1,4 +1,4 @@
-package models
+package errors
 
 // FieldErrorResponse - Error message that contains detailed information about certain parameters being incorrect
 type FieldErrorResponse struct {

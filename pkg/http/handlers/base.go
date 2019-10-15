@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/contiamo/go-base/pkg/errors"
-	"github.com/contiamo/go-base/pkg/models"
 	"github.com/contiamo/go-base/pkg/tracing"
 )
 
@@ -47,9 +46,9 @@ func (h *baseHandler) Error(ctx context.Context, w http.ResponseWriter, err erro
 	span, _ := h.StartSpan(ctx, "Error")
 	defer h.FinishSpan(span, nil)
 
-	genErrResp := models.GeneralErrorResponse{
-		Errors: []models.GeneralError{{
-			Type:    models.GeneralErrorType,
+	genErrResp := errors.GeneralErrorResponse{
+		Errors: []errors.GeneralError{{
+			Type:    errors.GeneralErrorType,
 			Message: err.Error(),
 		}},
 	}
