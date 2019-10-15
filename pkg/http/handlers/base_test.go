@@ -14,7 +14,7 @@ import (
 
 func TestParse(t *testing.T) {
 	t.Run("Returns error when syntax is wrong", func(t *testing.T) {
-		h := NewBaseHandler("test", false)
+		h := NewBaseHandler("test", Megabyte, false)
 		req := httptest.NewRequest(
 			http.MethodGet,
 			"/",
@@ -23,11 +23,26 @@ func TestParse(t *testing.T) {
 		var s struct{}
 		err := h.Parse(req, &s)
 		require.Error(t, err)
-		require.Equal(t, cerrors.ErrUnmarshalling.Error(), err.Error())
+		require.Equal(t, "Failed to read JSON from the request body: invalid character 'i' looking for beginning of value", err.Error())
+	})
+
+	t.Run("Returns error when the payload is too big", func(t *testing.T) {
+		h := NewBaseHandler("test", 1, false)
+		req := httptest.NewRequest(
+			http.MethodGet,
+			"/",
+			bytes.NewBuffer([]byte(`{"name": "gopher"}`)),
+		)
+		var s struct {
+			Name string `json:"name"`
+		}
+		err := h.Parse(req, &s)
+		require.Error(t, err)
+		require.Equal(t, "Failed to read JSON from the request body: unexpected EOF", err.Error())
 	})
 
 	t.Run("Returns no error and unmarshalls correctly when syntax is right", func(t *testing.T) {
-		h := NewBaseHandler("test", false)
+		h := NewBaseHandler("test", Megabyte, false)
 		req := httptest.NewRequest(
 			http.MethodGet,
 			"/",
@@ -44,7 +59,7 @@ func TestParse(t *testing.T) {
 
 func TestWrite(t *testing.T) {
 	t.Run("Write the response with a given status code for a structure", func(t *testing.T) {
-		h := NewBaseHandler("test", false)
+		h := NewBaseHandler("test", Megabyte, false)
 		resp := httptest.NewRecorder()
 		h.Write(context.Background(), resp, http.StatusCreated, struct{ Name string }{"some"})
 		require.Equal(t, http.StatusCreated, resp.Code)
@@ -122,7 +137,7 @@ func TestError(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			h := NewBaseHandler("test", tc.debug)
+			h := NewBaseHandler("test", Megabyte, tc.debug)
 			resp := httptest.NewRecorder()
 			h.Error(context.Background(), resp, tc.err)
 			require.Equal(t, tc.expStatus, resp.Code)

@@ -7,12 +7,15 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/contiamo/go-base/pkg/errors"
+	cerrors "github.com/contiamo/go-base/pkg/errors"
 	"github.com/contiamo/go-base/pkg/tracing"
+	"github.com/pkg/errors"
 )
 
 const (
-	maxRequestBodySize = 1024 * 1024 // 1MB
+	// Megabyte is a pre-defined maximum payload size that can be used in
+	// NewBaseHandler
+	Megabyte = 1024 * 1024
 )
 
 // BaseHandler contains all the base functions every handler should have
@@ -28,63 +31,67 @@ type BaseHandler interface {
 
 // NewBaseHandler creates a new base HTTP handler that
 // contains shared logic among all the handlers.
+// The handler supports parsing and writing JSON objects
+// `maxBodyBytes` is the maximal request body size
 // `componentName` is used for tracing to identify to which
 // component this handler belongs to.
-func NewBaseHandler(componentName string, debug bool) BaseHandler {
+func NewBaseHandler(componentName string, maxBodyBytes int64, debug bool) BaseHandler {
 	return &baseHandler{
-		Tracer: tracing.NewTracer("handlers", componentName),
-		debug:  debug,
+		Tracer:       tracing.NewTracer("handlers", componentName),
+		maxBodyBytes: maxBodyBytes,
+		debug:        debug,
 	}
 }
 
 type baseHandler struct {
 	tracing.Tracer
-	debug bool
+	maxBodyBytes int64
+	debug        bool
 }
 
 func (h *baseHandler) Error(ctx context.Context, w http.ResponseWriter, err error) {
 	span, _ := h.StartSpan(ctx, "Error")
 	defer h.FinishSpan(span, nil)
 
-	genErrResp := errors.GeneralErrorResponse{
-		Errors: []errors.GeneralError{{
-			Type:    errors.GeneralErrorType,
+	genErrResp := cerrors.GeneralErrorResponse{
+		Errors: []cerrors.GeneralError{{
+			Type:    cerrors.GeneralErrorType,
 			Message: err.Error(),
 		}},
 	}
 
 	// we can extend this error list in the future if needed
 	switch err {
-	case errors.ErrNotImplemented:
+	case cerrors.ErrNotImplemented:
 		h.Write(ctx, w, http.StatusNotImplemented, genErrResp)
 		return
-	case errors.ErrAuthorization:
+	case cerrors.ErrAuthorization:
 		h.Write(ctx, w, http.StatusUnauthorized, genErrResp)
 		return
-	case errors.ErrPermission:
+	case cerrors.ErrPermission:
 		h.Write(ctx, w, http.StatusForbidden, genErrResp)
 		return
-	case errors.ErrUnmarshalling, errors.ErrForm:
+	case cerrors.ErrUnmarshalling, cerrors.ErrForm:
 		h.Write(ctx, w, http.StatusUnprocessableEntity, genErrResp)
 		return
-	case sql.ErrNoRows, errors.ErrNotFound:
+	case sql.ErrNoRows, cerrors.ErrNotFound:
 		h.Write(ctx, w, http.StatusNotFound, genErrResp)
 		return
 	}
 
-	validationErrs, ok := err.(errors.ValidationErrors)
+	validationErrs, ok := err.(cerrors.ValidationErrors)
 	if ok {
 		h.Write(
 			ctx,
 			w,
 			http.StatusUnprocessableEntity,
-			errors.ValidationErrorsToFieldErrorResponse(validationErrs),
+			cerrors.ValidationErrorsToFieldErrorResponse(validationErrs),
 		)
 		return
 	}
 
 	if !h.debug {
-		genErrResp.Errors[0].Message = errors.ErrInternal.Error()
+		genErrResp.Errors[0].Message = cerrors.ErrInternal.Error()
 	}
 
 	h.Write(ctx, w, http.StatusInternalServerError, genErrResp)
@@ -104,11 +111,11 @@ func (h *baseHandler) Write(ctx context.Context, w http.ResponseWriter, status i
 }
 
 func (h *baseHandler) Parse(r *http.Request, out interface{}) error {
-	limitedBody := io.LimitReader(r.Body, maxRequestBodySize)
+	limitedBody := io.LimitReader(r.Body, h.maxBodyBytes)
 	dec := json.NewDecoder(limitedBody)
 	err := dec.Decode(out)
 	if err != nil {
-		return errors.ErrUnmarshalling
+		return errors.Wrap(err, cerrors.ErrUnmarshalling.Error())
 	}
 	return nil
 }
