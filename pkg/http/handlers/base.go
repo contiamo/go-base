@@ -32,10 +32,13 @@ type BaseHandler interface {
 // NewBaseHandler creates a new base HTTP handler that
 // contains shared logic among all the handlers.
 // The handler supports parsing and writing JSON objects
-// `maxBodyBytes` is the maximal request body size
+// `maxBodyBytes` is the maximal request body size, < 0 means the default Megabyte.
 // `componentName` is used for tracing to identify to which
 // component this handler belongs to.
 func NewBaseHandler(componentName string, maxBodyBytes int64, debug bool) BaseHandler {
+	if maxBodyBytes < 0 {
+		maxBodyBytes = Megabyte
+	}
 	return &baseHandler{
 		Tracer:       tracing.NewTracer("handlers", componentName),
 		maxBodyBytes: maxBodyBytes,
