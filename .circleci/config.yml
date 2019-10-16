@@ -3,6 +3,11 @@ jobs:
   build:
     docker:
       - image: circleci/golang:1.12
+      - image: circleci/postgres:alpine
+        environment:
+          POSTGRES_PASSWORD: localdev
+          POSTGRES_USER: contiamo_test
+          POSTGRES_DB: postgres
     environment:
       GO111MODULE: "on"
     steps: # steps that comprise the `build` job
@@ -21,8 +26,18 @@ jobs:
           name: Verify formatting
           command: make fmt lint
       - run:
+          name: Waiting for Postgres to be ready
+          command: |
+            for i in `seq 1 10`;
+            do
+              nc -z localhost 5432 && echo Success && exit 0
+              echo -n .
+              sleep 1
+            done
+            echo Failed waiting for Postgres && exit 1
+      - run:
           name: Run unit tests
-          command: make test
+          command: make .test-ci
       - save_cache: # Store cache in the /go/pkg directory
           key: go-mod-cache
           paths:

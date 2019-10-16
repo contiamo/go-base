@@ -20,6 +20,7 @@ import (
 const (
 	defaultDBName = "postgres" // in postgres the default DB is `postgres`
 	adminUser     = "contiamo_test"
+	adminPassword = "localdev"
 )
 
 // DBInitializer is the function that initializes the data base for testing
@@ -44,20 +45,24 @@ func EqualCount(t *testing.T, db *sql.DB, expected int, table string, filter squ
 
 // GetDatabase gets a test database
 func GetDatabase(t *testing.T, init DBInitializer) (name string, testDB *sql.DB) {
+	var err error
 	defer func() {
 		if testDB == nil {
-			t.Fatal("failed to open connection to the test database")
+			t.Fatalf("failed to open connection to the test database: %s", err.Error())
 		}
 	}()
 
 	name = cdb.GenerateSQLName()
-	testDB, err := connectDB(name)
+	testDB, err = connectDB(name)
 	if err != nil {
 		return "", nil
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	if init == nil {
+		return name, testDB
+	}
 	err = init(ctx, testDB)
 	if err != nil {
 		t.Fatalf("Can't initialize the database `%s`: %v", name, err)
@@ -68,18 +73,17 @@ func GetDatabase(t *testing.T, init DBInitializer) (name string, testDB *sql.DB)
 
 func connectDB(name string) (db *sql.DB, err error) {
 	cfg := config.Database{
-		Host:         "0.0.0.0",
-		Name:         defaultDBName,
-		Username:     adminUser,
-		PasswordPath: "./password",
-		DriverName:   "postgres",
+		Host:       "localhost",
+		Name:       defaultDBName,
+		Username:   adminUser,
+		DriverName: "postgres",
 	}
 	adminConnStr, err := cfg.GetConnectionString()
 	if err != nil {
 		return nil, err
 	}
 
-	adminDB, err := sql.Open(cfg.DriverName, adminConnStr)
+	adminDB, err := sql.Open(cfg.DriverName, adminConnStr+" password="+adminPassword)
 	if err != nil {
 		return nil, err
 	}
@@ -100,5 +104,5 @@ func connectDB(name string) (db *sql.DB, err error) {
 		return nil, err
 	}
 
-	return sql.Open(cfg.DriverName, connStr)
+	return sql.Open(cfg.DriverName, connStr+" password="+adminPassword)
 }
