@@ -31,6 +31,28 @@ setup-env:
 	$(shell go mod download)
 	$(shell curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s v1.20.0)
 
+.PHONY: .run-test-db
+.run-test-db: ## start the test db
+	@echo "+ setup test db"
+	@docker run --rm -d --name go-base-postgres \
+	-p 0.0.0.0:5432:5432 \
+	-e POSTGRES_PASSWORD=$$(cat pkg/db/test/password) \
+	-e POSTGRES_USER=contiamo_test \
+	-e POSTGRES_DB=postgres \
+	postgres:alpine -c fsync=off -c full_page_writes=off -c synchronous_commit=off &>/dev/null
+	@bash -c "export PGPASSWORD=$$(cat pkg/db/test/password); until psql -q -Ucontiamo_test -l -h localhost &>/dev/null; do echo -n .; sleep 1; done"
+	@echo ""
+	@echo "+ test db started"
+
+.PHONY: .stop-test-db
+.stop-test-db:  ## teardown the test db
+	@echo "+ teardown test db"
+	@docker rm -v -f go-base-postgres &>/dev/null
+
+.PHONY: .test-ci
+.test-ci:
+	go test -cover ./...
+
 .PHONY: changelog
 changelog: ## Print git hitstory based changelog
 	@git --no-pager log --no-merges --pretty=format:"%h : %s (by %an)" $(shell git describe --tags --abbrev=0)...HEAD
@@ -54,8 +76,10 @@ staticcheck: ## Verifies `staticcheck` passes
 
 .PHONY: test
 test: ## Runs the go tests
+	@$(MAKE) .run-test-db
 	@echo "+ $@"
-	@go test -cover ./...
+	-@$(MAKE) .test-ci
+	@$(MAKE) .stop-test-db
 
 .PHONY: lint
 lint: setup-env ## Verifies `golangci-lint` passes

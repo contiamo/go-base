@@ -68,7 +68,7 @@ func (cfg *Database) GetConnectionString() (connStr string, err error) {
 	connStr = "sslmode=disable "
 
 	if cfg.Host != "" {
-		connStr += fmt.Sprintf("host=%v ", cfg.Host)
+		connStr += fmt.Sprintf("host=%s ", cfg.Host)
 	}
 
 	if cfg.Port != 0 {
@@ -76,10 +76,10 @@ func (cfg *Database) GetConnectionString() (connStr string, err error) {
 	}
 
 	if cfg.Name != "" {
-		connStr += fmt.Sprintf("dbname=%v ", cfg.Name)
+		connStr += fmt.Sprintf("dbname=%s ", cfg.Name)
 	}
 	if cfg.Username != "" {
-		connStr += fmt.Sprintf("user=%v ", cfg.Username)
+		connStr += fmt.Sprintf("user=%s ", cfg.Username)
 	}
 	if cfg.PasswordPath != "" {
 		pw, err := cfg.GetPassword()
@@ -87,7 +87,7 @@ func (cfg *Database) GetConnectionString() (connStr string, err error) {
 			return "", err
 		}
 		if pw != "" {
-			connStr += fmt.Sprintf("password=%v ", pw)
+			connStr += fmt.Sprintf("password=%s ", pw)
 		}
 	}
 
