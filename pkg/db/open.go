@@ -6,9 +6,6 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/contiamo/go-base/pkg/config"
-
-	// import postgres driver
-	_ "github.com/lib/pq"
 )
 
 // Open opens a postgres database and retries until ctx.Done()
