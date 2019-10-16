@@ -20,7 +20,6 @@ import (
 const (
 	defaultDBName = "postgres" // in postgres the default DB is `postgres`
 	adminUser     = "contiamo_test"
-	adminPassword = "localdev"
 )
 
 // DBInitializer is the function that initializes the data base for testing
