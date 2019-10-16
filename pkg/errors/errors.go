@@ -2,6 +2,7 @@ package errors
 
 import (
 	"errors"
+	"sort"
 
 	validation "github.com/go-ozzo/ozzo-validation"
 )
@@ -45,5 +46,10 @@ func ValidationErrorsToFieldErrorResponse(errs ValidationErrors) (fieldErrResp F
 			Key: key,
 		})
 	}
+
+	// to always have deterministic results
+	sort.Slice(fieldErrResp.Errors, func(i, j int) bool {
+		return fieldErrResp.Errors[i].Message < fieldErrResp.Errors[j].Message
+	})
 	return fieldErrResp
 }
