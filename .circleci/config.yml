@@ -22,7 +22,7 @@ jobs:
           command: make fmt lint
       - setup_remote_docker # allows running docker commands
       # run test database
-      - run: docker run --rm -d --name go-base-postgres -p 0.0.0.0:5432:5432 -e POSTGRES_PASSWORD=localdev -e POSTGRES_USER=contiamo_test	-e POSTGRES_DB=postgres	postgres:alpine
+      - run: docker run --rm -d --name go-base-postgres -p localhost:5432:5432 -e POSTGRES_PASSWORD=localdev -e POSTGRES_USER=contiamo_test	-e POSTGRES_DB=postgres	postgres:alpine
       - run:
           name: Run unit tests
           command: make .test-ci

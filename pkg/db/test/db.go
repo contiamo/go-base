@@ -73,7 +73,7 @@ func GetDatabase(t *testing.T, init DBInitializer) (name string, testDB *sql.DB)
 
 func connectDB(name string) (db *sql.DB, err error) {
 	cfg := config.Database{
-		Host:       "0.0.0.0",
+		Host:       "localhost",
 		Name:       defaultDBName,
 		Username:   adminUser,
 		DriverName: "postgres",
