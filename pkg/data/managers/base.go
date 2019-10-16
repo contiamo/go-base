@@ -6,7 +6,7 @@ import (
 
 	"github.com/Masterminds/squirrel"
 
-	"github.com/contiamo/go-base/pkg/data/db"
+	"github.com/contiamo/go-base/pkg/db"
 	"github.com/contiamo/go-base/pkg/http/parameters"
 	"github.com/contiamo/go-base/pkg/tracing"
 )

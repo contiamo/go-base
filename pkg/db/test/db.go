@@ -9,7 +9,7 @@ import (
 
 	"github.com/Masterminds/squirrel"
 	"github.com/contiamo/go-base/pkg/config"
-	cdb "github.com/contiamo/go-base/pkg/data/db"
+	cdb "github.com/contiamo/go-base/pkg/db"
 
 	// since this test helper is going to be used in tests the CLI would not initialize
 	// the drivers for us, so we need to put it here again

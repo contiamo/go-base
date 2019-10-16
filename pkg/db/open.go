@@ -5,13 +5,17 @@ import (
 	"database/sql"
 
 	"github.com/cenkalti/backoff"
+	"github.com/contiamo/go-base/pkg/config"
 
 	// import postgres driver
 	_ "github.com/lib/pq"
 )
 
 // Open opens a postgres database and retries until ctx.Done()
-func Open(ctx context.Context, connStr string) (db *sql.DB, err error) {
+// The users must import all the necessary drivers before calling this function.
+func Open(ctx context.Context, cfg config.Database) (db *sql.DB, err error) {
+	connStr, err := cfg.GetConnectionString()
+
 	err = backoff.Retry(func() error {
 		select {
 		case <-ctx.Done():
@@ -20,7 +24,7 @@ func Open(ctx context.Context, connStr string) (db *sql.DB, err error) {
 			}
 		default:
 			{
-				db, err = sql.Open("postgres", connStr)
+				db, err = sql.Open(cfg.DriverName, connStr)
 				return err
 			}
 		}
