@@ -7,7 +7,6 @@ jobs:
       GO111MODULE: "on"
     steps: # steps that comprise the `build` job
       - checkout # check out source code to working directory
-      - setup_remote_docker # allows running docker commands
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
             - go-mod-cache
@@ -21,9 +20,14 @@ jobs:
       - run:
           name: Verify formatting
           command: make fmt lint
+      - setup_remote_docker # allows running docker commands
+      # run test database
+      - run: docker run --rm -d --name go-base-postgres -p 0.0.0.0:5432:5432 -e POSTGRES_PASSWORD=localdev -e POSTGRES_USER=contiamo_test	-e POSTGRES_DB=postgres	postgres:alpine
       - run:
           name: Run unit tests
-          command: make test
+          command: make .test-ci
+      # teardown the test database
+      - run: docker rm -v -f go-base-postgres
       - save_cache: # Store cache in the /go/pkg directory
           key: go-mod-cache
           paths:
