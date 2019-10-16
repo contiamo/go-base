@@ -61,8 +61,8 @@ func getJWTAuthzHandlerFunc(t *testing.T, claims Claims) http.HandlerFunc {
 		parsed, ok := GetClaims(r)
 		require.True(t, ok)
 		require.Equal(t, claims, parsed)
-
-		w.Write([]byte("OK!"))
+		_, err := w.Write([]byte("OK!"))
+		require.NoError(t, err)
 	}
 
 	return http.HandlerFunc(fn)
@@ -70,7 +70,7 @@ func getJWTAuthzHandlerFunc(t *testing.T, claims Claims) http.HandlerFunc {
 
 func getEmptyHandlerFunc() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Ok!"))
+		_, _ = w.Write([]byte("Ok!"))
 	}
 
 	return http.HandlerFunc(fn)
@@ -78,36 +78,32 @@ func getEmptyHandlerFunc() http.HandlerFunc {
 
 func Test_middleware(t *testing.T) {
 	var claims Claims
-	claims.FromClaimsMap(jwtClaims)
+	require.NoError(t, claims.FromClaimsMap(jwtClaims))
 	claims.SourceToken = token
 
 	client := http.Client{}
 	authMiddleware := NewMiddleware("X-Auth-Token", publicKey)
 
 	t.Run("JWT parses and the claims contain the original source token", func(t *testing.T) {
-		require := require.New(t)
-
 		ts := httptest.NewServer(authMiddleware.WrapHandler(getJWTAuthzHandlerFunc(t, claims)))
 		defer ts.Close()
 
 		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
-		require.NoError(err)
+		require.NoError(t, err)
 		req.Header.Add("X-Auth-Token", token)
 
 		res, err := client.Do(req)
-		require.NoError(err)
+		require.NoError(t, err)
 		defer res.Body.Close()
 
-		require.Equal(http.StatusOK, res.StatusCode)
+		require.Equal(t, http.StatusOK, res.StatusCode)
 
 		b, err := ioutil.ReadAll(res.Body)
-		require.NoError(err)
-		require.Equal("OK!", string(b))
+		require.NoError(t, err)
+		require.Equal(t, "OK!", string(b))
 	})
 
 	t.Run("Unauthorized if the signature is incorrect", func(t *testing.T) {
-		require := require.New(t)
-
 		_, publicKey := generatekeys() // the token was signed with a different key
 		authMiddleware := NewMiddleware("X-Auth-Token", publicKey)
 
@@ -115,110 +111,102 @@ func Test_middleware(t *testing.T) {
 		defer ts.Close()
 
 		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
-		require.NoError(err)
+		require.NoError(t, err)
 		req.Header.Add("X-Auth-Token", token)
 
 		res, err := client.Do(req)
-		require.NoError(err)
+		require.NoError(t, err)
 		defer res.Body.Close()
 
-		require.Equal(http.StatusUnauthorized, res.StatusCode)
+		require.Equal(t, http.StatusUnauthorized, res.StatusCode)
 
 		b, err := ioutil.ReadAll(res.Body)
-		require.NoError(err)
-		require.Equal("Unauthorized\n", string(b))
+		require.NoError(t, err)
+		require.Equal(t, "Unauthorized\n", string(b))
 	})
 
 	t.Run("Unauthorized if missing token", func(t *testing.T) {
-		require := require.New(t)
-
 		ts := httptest.NewServer(authMiddleware.WrapHandler(getEmptyHandlerFunc()))
 		defer ts.Close()
 
 		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
-		require.NoError(err)
+		require.NoError(t, err)
 
 		res, err := client.Do(req)
-		require.NoError(err)
+		require.NoError(t, err)
 		defer res.Body.Close()
 
-		require.Equal(http.StatusUnauthorized, res.StatusCode)
+		require.Equal(t, http.StatusUnauthorized, res.StatusCode)
 
 		b, err := ioutil.ReadAll(res.Body)
-		require.NoError(err)
-		require.Equal("Unauthorized\n", string(b))
+		require.NoError(t, err)
+		require.Equal(t, "Unauthorized\n", string(b))
 	})
 
 	t.Run("Unauthorized if token is malformed: too short", func(t *testing.T) {
-		require := require.New(t)
-
 		ts := httptest.NewServer(authMiddleware.WrapHandler(getEmptyHandlerFunc()))
 		defer ts.Close()
 
 		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
-		require.NoError(err)
+		require.NoError(t, err)
 		req.Header.Add("X-Auth-Token", "abcs.123")
 
 		res, err := client.Do(req)
-		require.NoError(err)
+		require.NoError(t, err)
 		defer res.Body.Close()
 
-		require.Equal(http.StatusUnauthorized, res.StatusCode)
+		require.Equal(t, http.StatusUnauthorized, res.StatusCode)
 
 		b, err := ioutil.ReadAll(res.Body)
-		require.NoError(err)
-		require.Equal("Unauthorized\n", string(b))
+		require.NoError(t, err)
+		require.Equal(t, "Unauthorized\n", string(b))
 	})
 
 	t.Run("Unauthorized if token is malformed: bad payload", func(t *testing.T) {
-		require := require.New(t)
-
 		ts := httptest.NewServer(authMiddleware.WrapHandler(getEmptyHandlerFunc()))
 		defer ts.Close()
 
 		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
-		require.NoError(err)
+		require.NoError(t, err)
 		req.Header.Add("X-Auth-Token", "abcs.123.efg")
 
 		res, err := client.Do(req)
-		require.NoError(err)
+		require.NoError(t, err)
 		defer res.Body.Close()
 
-		require.Equal(http.StatusUnauthorized, res.StatusCode)
+		require.Equal(t, http.StatusUnauthorized, res.StatusCode)
 
 		b, err := ioutil.ReadAll(res.Body)
-		require.NoError(err)
-		require.Equal("Unauthorized\n", string(b))
+		require.NoError(t, err)
+		require.Equal(t, "Unauthorized\n", string(b))
 	})
 
 	t.Run("Unauthorized if token is malformed: missing info", func(t *testing.T) {
-		require := require.New(t)
-
 		var claims Claims
 		// claims are missing "sub" and "resourceTokenIDs"
 		claimsMap := map[string]interface{}{
 			"name":  "John Doe",
 			"admin": true,
 		}
-		claims.FromClaimsMap(claimsMap)
+		require.NoError(t, claims.FromClaimsMap(claimsMap))
 		claims.SourceToken = getToken(claimsMap)
 
 		ts := httptest.NewServer(authMiddleware.WrapHandler(getEmptyHandlerFunc()))
 		defer ts.Close()
 
 		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
-		require.NoError(err)
+		require.NoError(t, err)
 		req.Header.Add("X-Auth-Token", claims.SourceToken)
 
 		res, err := client.Do(req)
-		require.NoError(err)
+		require.NoError(t, err)
 		defer res.Body.Close()
 
-		require.Equal(http.StatusUnauthorized, res.StatusCode)
+		require.Equal(t, http.StatusUnauthorized, res.StatusCode)
 
 		b, err := ioutil.ReadAll(res.Body)
-		require.NoError(err)
+		require.NoError(t, err)
 
-		require.Equal("Unauthorized\n", string(b))
+		require.Equal(t, "Unauthorized\n", string(b))
 	})
 }

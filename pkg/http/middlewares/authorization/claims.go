@@ -64,7 +64,7 @@ type Claims struct {
 	AllowedIPs       []string  `json:"allowedIPs"`
 	IsTenantAdmin    bool      `json:"isTenantAdmin"`
 	AdminRealmIDs    []string  `json:"adminRealmIDs"`
-	SourceToken      string    `json:-`
+	SourceToken      string    `json:"-"`
 }
 
 // Valid tests if the Claims object contains the minimal required information

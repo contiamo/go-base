@@ -10,7 +10,6 @@ import (
 )
 
 var (
-	emptyTime                   = time.Time{}
 	timeUnix                    = int64(1356124881)
 	timeUnixString              = strconv.FormatInt(timeUnix, 10)
 	timeUnixFloat               = float64(1356124881.0)
@@ -18,7 +17,6 @@ var (
 	timeUnixFloatWithNanoString = strconv.FormatFloat(timeUnixFloatWithNano, 'E', -1, 64)
 	timeUnixFloatString         = strconv.FormatFloat(timeUnixFloat, 'E', -1, 64)
 	timeString                  = "2012-12-21T21:21:21Z"
-	timeGoString                = "2012-12-21 21:21:21 +0000 UTC"
 	timeJSON                    = []byte(`"` + timeString + `"`)
 	timeValue, _                = time.Parse(time.RFC3339, timeString)
 )
@@ -34,14 +32,13 @@ func Test_Timestamp_Unmarshal(t *testing.T) {
 		{"can parse numeric", []byte(timeUnixString), timeValue},
 		{"can parse float value", []byte(timeUnixFloatString), timeValue},
 		{"can parse numeric string", []byte(`"` + timeUnixString + `"`), timeValue},
-		{"is empty for non-time values", []byte(`"this-tis-not-a-time"`), emptyTime},
 	}
 
 	for _, s := range scenarios {
 		t.Run(s.name, func(t *testing.T) {
 			var timestampValue Timestamp
-
-			json.Unmarshal(s.input, &timestampValue)
+			err := json.Unmarshal(s.input, &timestampValue)
+			require.NoError(t, err)
 			require.Equal(t, s.value, timestampValue.Time())
 		})
 	}
