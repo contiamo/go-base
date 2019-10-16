@@ -7,6 +7,7 @@ jobs:
       GO111MODULE: "on"
     steps: # steps that comprise the `build` job
       - checkout # check out source code to working directory
+      - setup_remote_docker # allows running docker commands
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
             - go-mod-cache
