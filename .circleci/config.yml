@@ -24,6 +24,16 @@ jobs:
       # run test database
       - run: docker run --rm -d --name go-base-postgres -p 5432:5432 -e POSTGRES_PASSWORD=localdev -e POSTGRES_USER=contiamo_test	-e POSTGRES_DB=postgres	postgres:alpine
       - run:
+          name: Waiting for Postgres to be ready
+          command: |
+            for i in `seq 1 10`;
+            do
+              nc -z localhost 5432 && echo Success && exit 0
+              echo -n .
+              sleep 1
+            done
+            echo Failed waiting for Postgres && exit 1
+      - run:
           name: Run unit tests
           command: make .test-ci
       # teardown the test database
