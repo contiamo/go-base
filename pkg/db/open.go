@@ -8,7 +8,7 @@ import (
 	"github.com/contiamo/go-base/pkg/config"
 )
 
-// Open opens a postgres database and retries until ctx.Done()
+// Open opens a connection to a database and retries until ctx.Done()
 // The users must import all the necessary drivers before calling this function.
 func Open(ctx context.Context, cfg config.Database) (db *sql.DB, err error) {
 	connStr, err := cfg.GetConnectionString()

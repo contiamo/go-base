@@ -1,18 +1,5 @@
-# Contiamo Go Utils
+# Contiamo Go base
 
-## Fileutils
+This module contains common packages for Contiamo projects written in Go. Once, some of the projects introduce a pattern/approach which is worth re-using it's getting added here.
 
-This contains utilities to make listing and copying files easier
-
-## SQL
-
-This package contains helpers for null time and uuid fields as well as for json maps and arrays
-
-## Proto
-
-This package contains an improved wrapper for the protobuf Timestamp that implements Scanner/Valuer so that it is easier to use with the SQL scan.
-
-## Tracing
-
-This package contains the various standard helpers and utilities for using [OpenTracing](https://opentracing.io/)
-
+This code is well-tested and has a very high test coverage.

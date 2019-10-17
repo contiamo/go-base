@@ -23,6 +23,19 @@ type IDResolver interface {
 	Sqlizer(ctx context.Context, sql squirrel.StatementBuilderType, value string, filter squirrel.Sqlizer) (squirrel.Sqlizer, error)
 }
 
+// NewIDResolver creates a new name->id resolver for a table, for example
+// var (
+// 	CollectionIDResolver = NewIDResolver("collections", "collection_id", "name")
+// 	TableIDResolver = NewIDResolver("tables", "table_id", "name")
+// )
+func NewIDResolver(table, idColumn, secondaryColumn string) IDResolver {
+	return &idResolver{
+		table:           table,
+		idColumn:        idColumn,
+		secondaryColumn: secondaryColumn,
+	}
+}
+
 type idResolver struct {
 	table,
 	idColumn,
@@ -93,17 +106,4 @@ func (r *idResolver) Resolve(ctx context.Context, sql squirrel.StatementBuilderT
 	}
 
 	return id, err
-}
-
-// NewIDResolver creates a new name->id resolver for a table, for example
-// var (
-// 	CollectionIDResolver = NewIDResolver("collections", "collection_id", "name")
-// 	TableIDResolver = NewIDResolver("tables", "table_id", "name")
-// )
-func NewIDResolver(table, idColumn, secondaryColumn string) IDResolver {
-	return &idResolver{
-		table:           table,
-		idColumn:        idColumn,
-		secondaryColumn: secondaryColumn,
-	}
 }

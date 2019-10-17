@@ -15,7 +15,8 @@ import (
 type PageInfo struct {
 	// Total number of items
 	ItemCount uint32 `json:"itemCount"`
-	// Maximum items that can be on the page. They may be different from the requested number of times
+	// Maximum items that can be on the page.
+	// They may be different from the requested number of times
 	ItemsPerPage uint32 `json:"itemsPerPage"`
 	// Item count if filters were not applied
 	UnfilteredItemCount uint32 `json:"unfilteredItemCount"`
@@ -31,6 +32,12 @@ type BaseManager interface {
 	// GetTxQueryBuilder is the same as GetQueryBuilder but also opens a transaction
 	GetTxQueryBuilder(ctx context.Context, opts *sql.TxOptions) (squirrel.StatementBuilderType, *sql.Tx, error)
 	// GetPageInfo returns the page info object for a given page
+	//
+	// `scope` is the SQL where statement that defines the scope
+	// of the query (e.g. organization_id)
+	// `filter` is the SQL where statement that defines how the data is filtered by the user.
+	// The user would not see any counts beyond the scope
+	// but will see the total count beyond the filter
 	GetPageInfo(ctx context.Context, table string, page parameters.Page, scope, filter squirrel.Sqlizer) (pageInfo PageInfo, err error)
 }
 
@@ -61,8 +68,6 @@ func (m *baseManager) GetTxQueryBuilder(ctx context.Context, opts *sql.TxOptions
 }
 
 func (m *baseManager) GetPageInfo(ctx context.Context, table string, page parameters.Page, scope, filter squirrel.Sqlizer) (pageInfo PageInfo, err error) {
-	// TODO write unit tests for this function. It requires a data base server running
-
 	span, ctx := m.StartSpan(ctx, "GetPageInfo")
 	defer func() {
 		m.FinishSpan(span, err)
