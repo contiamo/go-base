@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 
 	cerrors "github.com/contiamo/go-base/pkg/errors"
 	"github.com/contiamo/go-base/pkg/tracing"
@@ -56,6 +57,11 @@ func (h *baseHandler) Error(ctx context.Context, w http.ResponseWriter, err erro
 	span, _ := h.StartSpan(ctx, "Error")
 	defer h.FinishSpan(span, nil)
 
+	if err == nil {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	genErrResp := cerrors.GeneralErrorResponse{
 		Errors: []cerrors.GeneralError{{
 			Type:    cerrors.GeneralErrorType,
@@ -74,11 +80,16 @@ func (h *baseHandler) Error(ctx context.Context, w http.ResponseWriter, err erro
 	case cerrors.ErrPermission:
 		h.Write(ctx, w, http.StatusForbidden, genErrResp)
 		return
-	case cerrors.ErrUnmarshalling, cerrors.ErrForm:
+	case cerrors.ErrForm:
 		h.Write(ctx, w, http.StatusUnprocessableEntity, genErrResp)
 		return
 	case sql.ErrNoRows, cerrors.ErrNotFound:
 		h.Write(ctx, w, http.StatusNotFound, genErrResp)
+		return
+	}
+
+	if strings.HasPrefix(err.Error(), cerrors.ErrUnmarshalling.Error()) {
+		h.Write(ctx, w, http.StatusUnprocessableEntity, genErrResp)
 		return
 	}
 
