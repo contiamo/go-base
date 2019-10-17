@@ -16,9 +16,15 @@ var (
 	ErrCipherTooShort = errors.New("crypto: cipher plainText is too short for AES encryption")
 )
 
-// PassphraseToKey converts a string to a key for encryption
+// PassphraseToKey converts a string to a key for encryption.
+//
+// This function must be used STRICTLY ONLY for generating
+// an encryption key out of a passphrase.
+// Please don't use this function for hashing user-provided values.
+// It uses SHA2 for simplicity but it's slower. User-provided data should use SHA3
+// because of its better performance.
 func PassphraseToKey(passphrase string) (key []byte) {
-	// SHA512/256 will return exactly 32 bytes which is
+	// SHA512/256 will return exactly 32 bytes which is exactly
 	// the length of the key needed for AES256 encryption
 	hash := sha512.Sum512_256([]byte(passphrase))
 	return hash[:]

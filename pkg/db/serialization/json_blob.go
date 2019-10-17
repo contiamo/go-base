@@ -6,7 +6,7 @@ import (
 	"errors"
 )
 
-// JSONBlob returns an Serializable using json serialization
+// JSONBlob returns an Serializable using json to []byte serialization
 func JSONBlob(value interface{}) Serializable {
 	return jsonBlob{data: value}
 }

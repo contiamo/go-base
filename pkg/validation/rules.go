@@ -22,8 +22,7 @@ const (
 	// MaxNameLength is the maximal length of a name
 	MaxNameLength = 255
 	// MaxSQLIdentifierLength is the max length of a sql name
-	// that we can support.  This accounts for the current
-	// prefixes that we use
+	// that we can support
 	MaxSQLIdentifierLength = 64
 	sqlIdentifierErrorMsg  = "SQL names must start with an alphabetic character and may only include alphanumeric characters and underscores '_'"
 )
@@ -50,9 +49,7 @@ func Name(value string) error {
 	)
 }
 
-// SQLIdentifier returns an error if the string value can't be used as a SQL identifier, the max length
-// is set to 57 to account for the postgres max length for identifiers (63) minus the length of the name
-// prefixes that we use (6)
+// SQLIdentifier returns an error if the string value can't be used as a SQL identifier
 func SQLIdentifier(value string) error {
 	return validation.Validate(
 		value,
