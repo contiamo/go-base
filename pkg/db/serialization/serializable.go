@@ -1,4 +1,4 @@
-package db
+package serialization
 
 import (
 	"database/sql"
