@@ -3,10 +3,11 @@ package handlers
 import (
 	"bytes"
 	"context"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/pkg/errors"
 
 	cerrors "github.com/contiamo/go-base/pkg/errors"
 	"github.com/stretchr/testify/require"
@@ -98,10 +99,13 @@ func TestError(t *testing.T) {
 `,
 		},
 		{
-			name:      "Returns 422 when ErrUnmarshalling",
-			err:       cerrors.ErrUnmarshalling,
+			name: "Returns 422 when ErrUnmarshalling",
+			err: errors.Wrap(
+				errors.New("unexpected end of file"),
+				cerrors.ErrUnmarshalling.Error(),
+			),
 			expStatus: http.StatusUnprocessableEntity,
-			expBody: `{"errors":[{"type":"GeneralError","message":"Failed to read JSON from the request body"}]}
+			expBody: `{"errors":[{"type":"GeneralError","message":"Failed to read JSON from the request body: unexpected end of file"}]}
 `,
 		},
 		{
@@ -132,6 +136,11 @@ func TestError(t *testing.T) {
 			expStatus: http.StatusInternalServerError,
 			expBody: `{"errors":[{"type":"GeneralError","message":"terrible"}]}
 `,
+		},
+		{
+			name:      "Returns 200 and empty body when error is nil",
+			debug:     true,
+			expStatus: http.StatusOK,
 		},
 	}
 
