@@ -9,6 +9,8 @@ import (
 	"github.com/robfig/cron"
 )
 
+// JobCronFormat is the default allowed CRON formatting options, allowing granularity down to the
+// minute and the shorthand descriptions like @hourly
 var JobCronFormat = cron.Minute |
 	cron.Hour |
 	cron.Dom |
