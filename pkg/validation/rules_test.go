@@ -32,6 +32,10 @@ func TestSQLIdentifier(t *testing.T) {
 	t.Run("Returns no error if the value is valid", func(t *testing.T) {
 		require.NoError(t, SQLIdentifier("name"))
 	})
+	t.Run("Returns error for names over 63 characters", func(t *testing.T) {
+		tooLong := "a123456789_123456789_123456789_123456789_123456789_123456789_123"
+		require.Error(t, SQLIdentifier(tooLong), len(tooLong))
+	})
 	t.Run("Returns error if the value is invalid", func(t *testing.T) {
 		err := SQLIdentifier("n@me")
 		require.Error(t, err)

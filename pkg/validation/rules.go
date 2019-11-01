@@ -25,7 +25,7 @@ const (
 	MaxNameLength = 255
 	// MaxSQLIdentifierLength is the max length of a sql name
 	// that we can support
-	MaxSQLIdentifierLength = 64
+	MaxSQLIdentifierLength = 63
 	sqlIdentifierErrorMsg  = "SQL names must start with an alphabetic character and may only include alphanumeric characters and underscores '_'"
 )
 
