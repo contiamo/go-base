@@ -30,14 +30,14 @@ func TestValidationErrorsToFieldErrorResponse(t *testing.T) {
 			},
 			expected: FieldErrorResponse{
 				Errors: []FieldError{
-					FieldError{
+					{
 						GeneralError: GeneralError{
 							Type:    FieldErrorType,
 							Message: "bad field1",
 						},
 						Key: "field1",
 					},
-					FieldError{
+					{
 						GeneralError: GeneralError{
 							Type:    FieldErrorType,
 							Message: "bad field2",
@@ -55,7 +55,7 @@ func TestValidationErrorsToFieldErrorResponse(t *testing.T) {
 			},
 			expected: FieldErrorResponse{
 				Errors: []FieldError{
-					FieldError{
+					{
 						GeneralError: GeneralError{
 							Type:    FieldErrorType,
 							Message: "bad field1",

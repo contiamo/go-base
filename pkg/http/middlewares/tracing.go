@@ -85,7 +85,7 @@ func mwComponentName(componentName string) mwOption {
 // Additionally, it adds the span to the request's context.
 //
 // By default, the operation name of the spans is set to "HTTP {method}".
-// This can be overriden with options.
+// This can be overridden with options.
 //
 // Example:
 //	 http.ListenAndServe("localhost:80", nethttp.Middleware(tracer, http.DefaultServeMux))
