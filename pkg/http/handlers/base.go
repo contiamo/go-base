@@ -120,8 +120,10 @@ func (h *baseHandler) Write(ctx context.Context, w http.ResponseWriter, status i
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	enc := json.NewEncoder(w)
-	err = enc.Encode(obj)
+	if obj != nil {
+		enc := json.NewEncoder(w)
+		err = enc.Encode(obj)
+	}
 }
 
 func (h *baseHandler) Parse(r *http.Request, out interface{}) error {
