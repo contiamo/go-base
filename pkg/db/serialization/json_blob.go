@@ -3,7 +3,7 @@ package serialization
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"errors"
+	"fmt"
 )
 
 // JSONBlob returns an Serializable using json to []byte serialization
@@ -21,11 +21,17 @@ func (b jsonBlob) GetData() interface{} {
 }
 
 func (b jsonBlob) Scan(src interface{}) error {
-	bs, ok := src.([]byte)
-	if !ok {
-		return errors.New("source must be a byte slice")
+	switch value := src.(type) {
+	case nil:
+		b.data = nil
+		return nil
+	case []byte:
+		return json.Unmarshal(value, b.data)
+	case string:
+		return json.Unmarshal([]byte(value), b.data)
+	default:
+		return fmt.Errorf("unknown json object type %T", src)
 	}
-	return json.Unmarshal(bs, b.data)
 }
 
 func (b jsonBlob) Value() (driver.Value, error) {

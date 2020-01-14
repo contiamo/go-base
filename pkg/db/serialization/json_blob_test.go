@@ -2,6 +2,7 @@ package serialization
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -15,12 +16,26 @@ func TestJSONBlobScan(t *testing.T) {
 		err      string
 	}{
 		{
-			name: "Populates the underlying struct with values when source is valid",
+			name: "Populates the underlying struct with values when source is byte slice",
 			data: &struct{ Name string }{},
 			src:  []byte(`{"Name":"value"}`),
 			expected: &struct {
 				Name string
 			}{Name: "value"},
+		},
+		{
+			name: "Populates the underlying struct with values when source is string",
+			data: &struct{ Name string }{},
+			src:  `{"Name":"value"}`,
+			expected: &struct {
+				Name string
+			}{Name: "value"},
+		},
+		{
+			name:     "Support scanning nil",
+			data:     &struct{ Name string }{},
+			src:      nil,
+			expected: &struct{ Name string }{},
 		},
 		{
 			name: "Returns error when the source is not a valid JSON",
@@ -34,11 +49,11 @@ func TestJSONBlobScan(t *testing.T) {
 		{
 			name: "Returns error when the source is not a byte slice",
 			data: &struct{ Name string }{},
-			src:  `{"Name":"value"}`,
+			src:  time.Now(),
 			expected: &struct {
 				Name string
 			}{Name: "value"},
-			err: "source must be a byte slice",
+			err: "unknown json object type time.Time",
 		},
 	}
 
