@@ -116,7 +116,13 @@ func (a *Claims) Entities() (entities []string) {
 
 // GetClaims retrieves the Claims object from the request context
 func GetClaims(r *http.Request) (Claims, bool) {
-	claims, ok := r.Context().Value(authClaimsKey).(Claims)
+	claims, ok := GetClaimsFromCtx(r.Context())
+	return claims, ok
+}
+
+// GetClaimsFromCtx retrieves the Claims object from the given context
+func GetClaimsFromCtx(ctx context.Context) (Claims, bool) {
+	claims, ok := ctx.Value(authClaimsKey).(Claims)
 	return claims, ok
 }
 
