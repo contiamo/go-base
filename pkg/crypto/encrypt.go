@@ -118,7 +118,7 @@ func SealToString(plainText, key []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return base64.StdEncoding.EncodeToString(bytes), nil
+	return base64.URLEncoding.EncodeToString(bytes), nil
 }
 
 // Unseal decrypts and authenticates the data encrypted by Seal
@@ -149,7 +149,7 @@ func Unseal(cipherText, key []byte) (plainText []byte, err error) {
 
 // UnsealFromString decodes from Base64 and applies `Unseal`.
 func UnsealFromString(cipherTextStr string, key []byte) ([]byte, error) {
-	cipherText, err := base64.StdEncoding.DecodeString(cipherTextStr)
+	cipherText, err := base64.URLEncoding.DecodeString(cipherTextStr)
 	if err != nil {
 		return nil, err
 	}
