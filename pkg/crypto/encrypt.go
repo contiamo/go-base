@@ -133,7 +133,11 @@ func Unseal(cipherText, key []byte) (plainText []byte, err error) {
 	plainText = messageAndMAC[:splitPoint]
 
 	mac := hmac.New(sha512.New512_256, key)
-	mac.Write(plainText)
+	// the doc says it never returns an error, but we don't trust it
+	_, err = mac.Write(plainText)
+	if err != nil {
+		return nil, err
+	}
 	expectedMAC := mac.Sum(nil)
 
 	if !hmac.Equal(expectedMAC, messageMAC) {
