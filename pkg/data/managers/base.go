@@ -3,6 +3,8 @@ package managers
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strings"
 
 	"github.com/Masterminds/squirrel"
 
@@ -79,35 +81,56 @@ func (m *baseManager) GetPageInfo(ctx context.Context, table string, page parame
 	span.SetTag("pageInfo.curent", pageInfo.Current)
 	span.SetTag("pageInfo.itemsPerPage", pageInfo.ItemsPerPage)
 
-	builder := m.GetQueryBuilder()
-
-	err = builder.
-		Select("COUNT(*)").
-		From(table).
-		Where(scope).
-		QueryRowContext(ctx).
-		Scan(&pageInfo.UnfilteredItemCount)
-	if err != nil {
-		return pageInfo, err
-	}
-
+	filterSQL := "1 = 1"
+	filterArgs := []interface{}{}
 	if filter != nil {
-		err = builder.
-			Select("COUNT(*)").
-			From(table).
-			Where(scope).
-			Where(filter).
-			QueryRowContext(ctx).
-			Scan(&pageInfo.ItemCount)
+		filterSQL, filterArgs, err = filter.ToSql()
 		if err != nil {
 			return pageInfo, err
 		}
-	} else {
-		pageInfo.ItemCount = pageInfo.UnfilteredItemCount
+	}
+
+	scopeSQL := "1 = 1"
+	scopeArgs := []interface{}{}
+	if scope != nil {
+		scopeSQL, scopeArgs, err = scope.ToSql()
+		if err != nil {
+			return pageInfo, err
+		}
+	}
+
+	query := replaceQuestionMarks(fmt.Sprintf(`
+SELECT COUNT(*) AS unfilteredItemCount, SUM(hit) AS itemCount FROM (
+  SELECT
+    *,
+    (CASE WHEN (%s) THEN 1 ELSE 0 END) AS hit
+  FROM %s
+  WHERE %s
+) AS subquery`, filterSQL, table, scopeSQL))
+
+	args := append(filterArgs, scopeArgs...)
+	row := m.db.QueryRowContext(ctx, query, args...)
+	err = row.Scan(&pageInfo.UnfilteredItemCount, &pageInfo.ItemCount)
+	if err != nil {
+		return pageInfo, err
 	}
 
 	span.SetTag("pageInfo.itemCount", pageInfo.ItemCount)
 	span.SetTag("pageInfo.unfilteredItemCount", pageInfo.UnfilteredItemCount)
 
 	return pageInfo, err
+}
+
+func replaceQuestionMarks(query string) string {
+	res := query
+	i := 1
+	for {
+		next := strings.Replace(res, "?", fmt.Sprintf("$%d", i), 1)
+		if next == res {
+			break
+		}
+		i++
+		res = next
+	}
+	return res
 }
