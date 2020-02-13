@@ -125,7 +125,7 @@ func replaceQuestionMarks(query string) string {
 	res := query
 	i := 1
 	for {
-		next := strings.Replace(res, "?", fmt.Sprintf("$%v", i), 1)
+		next := strings.Replace(res, "?", fmt.Sprintf("$%d", i), 1)
 		if next == res {
 			break
 		}
