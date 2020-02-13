@@ -103,9 +103,9 @@ func (m *baseManager) GetPageInfo(ctx context.Context, table string, page parame
 SELECT COUNT(*) AS unfilteredItemCount, SUM(hit) AS itemCount FROM (
   SELECT
     *,
-    (CASE WHEN (%v) THEN 1 ELSE 0 END) AS hit
-  FROM %v
-  WHERE %v
+    (CASE WHEN (%s) THEN 1 ELSE 0 END) AS hit
+  FROM %s
+  WHERE %s
 ) AS subquery`, filterSQL, table, scopeSQL))
 
 	args := append(filterArgs, scopeArgs...)
