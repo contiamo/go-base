@@ -30,9 +30,9 @@ type PageInfo struct {
 type BaseManager interface {
 	tracing.Tracer
 	// GetQueryBuilder creates a new squirrel builder for a SQL query
-	GetQueryBuilder() squirrel.StatementBuilderType
+	GetQueryBuilder() db.SQLBuilder
 	// GetTxQueryBuilder is the same as GetQueryBuilder but also opens a transaction
-	GetTxQueryBuilder(ctx context.Context, opts *sql.TxOptions) (squirrel.StatementBuilderType, *sql.Tx, error)
+	GetTxQueryBuilder(ctx context.Context, opts *sql.TxOptions) (db.SQLBuilder, *sql.Tx, error)
 	// GetPageInfo returns the page info object for a given page
 	//
 	// `scope` is the SQL where statement that defines the scope
@@ -56,13 +56,13 @@ type baseManager struct {
 	tracing.Tracer
 }
 
-func (m *baseManager) GetQueryBuilder() squirrel.StatementBuilderType {
+func (m *baseManager) GetQueryBuilder() db.SQLBuilder {
 	return squirrel.StatementBuilder.
 		PlaceholderFormat(squirrel.Dollar).
 		RunWith(db.WrapWithTracing(m.db))
 }
 
-func (m *baseManager) GetTxQueryBuilder(ctx context.Context, opts *sql.TxOptions) (squirrel.StatementBuilderType, *sql.Tx, error) {
+func (m *baseManager) GetTxQueryBuilder(ctx context.Context, opts *sql.TxOptions) (db.SQLBuilder, *sql.Tx, error) {
 	tx, err := m.db.BeginTx(ctx, opts)
 	return squirrel.StatementBuilder.
 		PlaceholderFormat(squirrel.Dollar).
