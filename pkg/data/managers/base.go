@@ -6,9 +6,9 @@ import (
 
 	"github.com/Masterminds/squirrel"
 
-	"github.com/contiamo/go-base/pkg/db"
-	"github.com/contiamo/go-base/pkg/http/parameters"
-	"github.com/contiamo/go-base/pkg/tracing"
+	"github.com/contiamo/go-base/v2/pkg/db"
+	"github.com/contiamo/go-base/v2/pkg/http/parameters"
+	"github.com/contiamo/go-base/v2/pkg/tracing"
 )
 
 // PageInfo - Contains the pagination metadata for a response

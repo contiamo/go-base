@@ -8,7 +8,7 @@ import (
 
 	"github.com/urfave/negroni"
 
-	server "github.com/contiamo/go-base/pkg/http"
+	server "github.com/contiamo/go-base/v2/pkg/http"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
