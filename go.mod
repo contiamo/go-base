@@ -1,4 +1,4 @@
-module github.com/contiamo/go-base
+module github.com/contiamo/go-base/v2
 
 require (
 	github.com/Masterminds/squirrel v1.1.0
