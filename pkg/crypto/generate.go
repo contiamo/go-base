@@ -35,7 +35,7 @@ func GenerateRandomString(length int) (string, error) {
 	return hex.EncodeToString(bytes)[0:length], nil
 }
 
-// GenerateToken generates a sealed token with a given ID and timestamp for
+// GenerateToken generates a sealed token with a given data
 // future verification.
 func GenerateToken(data, key []byte) (tokenStr string, err error) {
 	t := token{

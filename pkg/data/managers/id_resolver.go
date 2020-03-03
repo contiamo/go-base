@@ -17,7 +17,7 @@ type IDResolver interface {
 	// Resolve returns an ID of the given record identified by the value which can be either
 	// an UUID or a unique string value of the given secondary column.
 	// where is a map of where statements to their list of arguments
-	Resolve(ctx context.Context, sql db.SQLBuilder, value string, filter squirrel.Sqlizer) (string, error)
+	Resolve(ctx context.Context, sql db.SQLBuilder, value string, filter squirrel.Sqlizer) (uuid.UUID, error)
 	// Sqlizer returns a Sqlizer interface that contains where statements for a given
 	// filter and the ID column, so you can immediately use it with
 	// the where of the select builder
@@ -61,16 +61,16 @@ func (r *idResolver) Sqlizer(ctx context.Context, sql db.SQLBuilder, value strin
 	}, nil
 }
 
-func (r *idResolver) Resolve(ctx context.Context, sql db.SQLBuilder, value string, filter squirrel.Sqlizer) (string, error) {
+func (r *idResolver) Resolve(ctx context.Context, sql db.SQLBuilder, value string, filter squirrel.Sqlizer) (uuid.UUID, error) {
 	if value == "" {
-		return value, dserrors.ValidationErrors{
+		return uuid.Nil, dserrors.ValidationErrors{
 			"id": errors.New("the id parameter can't be empty"),
 		}.Filter()
 	}
 
 	uuidVal, err := uuid.FromString(strings.TrimSpace(value))
 	if err == nil {
-		return uuidVal.String(), nil
+		return uuidVal, nil
 	}
 
 	rows, err := sql.
@@ -82,23 +82,23 @@ func (r *idResolver) Resolve(ctx context.Context, sql db.SQLBuilder, value strin
 		QueryContext(ctx)
 
 	if err != nil {
-		return "", err
+		return uuid.Nil, err
 	}
 
 	defer rows.Close()
 
 	// no results at all
 	if !rows.Next() {
-		return "", dserrors.ErrNotFound
+		return uuid.Nil, dserrors.ErrNotFound
 	}
-	var id string
+	var id uuid.UUID
 	err = rows.Scan(&id)
 	if err != nil {
 		return id, err
 	}
 	// non-unique result
 	if rows.Next() {
-		return "", fmt.Errorf(
+		return uuid.Nil, fmt.Errorf(
 			"id for `%s = %s` can't be resolved in `%s` due to non-unique results",
 			r.secondaryColumn,
 			value,

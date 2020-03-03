@@ -73,27 +73,27 @@ func Test_Resolve(t *testing.T) {
 
 	cases := []struct {
 		name,
-		value,
-		expectedID string
-		where  squirrel.Sqlizer
-		expErr bool
+		value string
+		where      squirrel.Sqlizer
+		expectedID uuid.UUID
+		expErr     bool
 	}{
 		{
 			name:       "Resolves UUID into ID",
 			value:      ids[0].String(),
-			expectedID: ids[0].String(),
+			expectedID: ids[0],
 			where:      nil,
 		},
 		{
 			name:       "Resolves a unique name into ID",
 			value:      "unique",
-			expectedID: ids[0].String(),
+			expectedID: ids[0],
 			where:      nil,
 		},
 		{
 			name:       "Resolves a non-unique name into ID for different parent IDs",
 			value:      "regular",
-			expectedID: ids[1].String(),
+			expectedID: ids[1],
 			where: squirrel.Eq{
 				"parent_id": secIDs[0],
 			},
@@ -101,7 +101,7 @@ func Test_Resolve(t *testing.T) {
 		{
 			name:       "Resolves a second non-unique name into ID",
 			value:      "regular",
-			expectedID: ids[2].String(),
+			expectedID: ids[2],
 			where: squirrel.Eq{
 				"parent_id": secIDs[1],
 			},
@@ -109,7 +109,7 @@ func Test_Resolve(t *testing.T) {
 		{
 			name:       "Triggers error when resolve a non-existent name",
 			value:      "wrong",
-			expectedID: "",
+			expectedID: uuid.Nil,
 			where: squirrel.Eq{
 				"parent_id": secIDs[0],
 			},
@@ -118,7 +118,7 @@ func Test_Resolve(t *testing.T) {
 		{
 			name:       "Triggers error when there are more than one result",
 			value:      "regular",
-			expectedID: "",
+			expectedID: uuid.Nil,
 			expErr:     true,
 		},
 		{
