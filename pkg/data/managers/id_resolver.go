@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	squirrel "github.com/Masterminds/squirrel"
-	"github.com/contiamo/go-base/v2/pkg/db"
-	dserrors "github.com/contiamo/go-base/v2/pkg/errors"
+	"github.com/contiamo/go-base/pkg/db"
+	dserrors "github.com/contiamo/go-base/pkg/errors"
 	uuid "github.com/satori/go.uuid"
 )
 

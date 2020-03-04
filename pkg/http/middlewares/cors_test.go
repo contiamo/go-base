@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	server "github.com/contiamo/go-base/v2/pkg/http"
+	server "github.com/contiamo/go-base/pkg/http"
 	"github.com/stretchr/testify/require"
 )
 

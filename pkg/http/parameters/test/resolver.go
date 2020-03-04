@@ -3,7 +3,7 @@ package test
 import (
 	"net/http"
 
-	"github.com/contiamo/go-base/v2/pkg/http/parameters"
+	"github.com/contiamo/go-base/pkg/http/parameters"
 )
 
 // NewMockResolver creates a new mock resolver with the predefined value

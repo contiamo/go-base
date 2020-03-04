@@ -7,7 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/negroni"
 
-	server "github.com/contiamo/go-base/v2/pkg/http"
+	server "github.com/contiamo/go-base/pkg/http"
 )
 
 // WithLogging configures a logrus middleware for that server
