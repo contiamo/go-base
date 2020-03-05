@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/contiamo/jwt"
-	"github.com/google/uuid"
+	uuid "github.com/satori/go.uuid"
 )
 
 // authContextKey is an unexported type for keys defined in middleware.
