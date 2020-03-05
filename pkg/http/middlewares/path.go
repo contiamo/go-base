@@ -6,14 +6,14 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi"
-	uuid "github.com/satori/go.uuid"
+	"github.com/google/uuid"
 )
 
 // PathWithCleanID replace string values that look like ids (uuids and int) with "*"
 func PathWithCleanID(r *http.Request) string {
 	pathParts := strings.Split(r.URL.Path, "/")
 	for i, part := range pathParts {
-		if _, err := uuid.FromString(part); err == nil {
+		if _, err := uuid.Parse(part); err == nil {
 			pathParts[i] = "*"
 			continue
 		}
@@ -30,7 +30,7 @@ func PathWithCleanID(r *http.Request) string {
 func MethodAndPathCleanID(r *http.Request) string {
 	pathParts := strings.Split(r.URL.Path, "/")
 	for i, part := range pathParts {
-		if _, err := uuid.FromString(part); err == nil {
+		if _, err := uuid.Parse(part); err == nil {
 			pathParts[i] = "*"
 			continue
 		}

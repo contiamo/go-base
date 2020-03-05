@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/contiamo/jwt"
-	uuid "github.com/satori/go.uuid"
+	"github.com/google/uuid"
 )
 
 // authContextKey is an unexported type for keys defined in middleware.
@@ -23,7 +23,7 @@ var (
 	authClaimsKey = authContextKey("DatastoreClaims")
 	// DataStoreClaims used for setting the service itself as an author of a record
 	DataStoreClaims = Claims{
-		UserID:   uuid.Nil,
+		UserID:   uuid.Nil.String(),
 		UserName: "datastore",
 	}
 )
@@ -49,31 +49,28 @@ var (
 // 	AdminRealmIDs    []string `protobuf:"bytes,15,rep,name=AdminRealmIDs,json=adminRealmIDs,proto3" json:"AdminRealmIDs,omitempty"`
 // }
 type Claims struct {
-	ID               uuid.UUID   `json:"id"`
-	UserID           uuid.UUID   `json:"sub"`
-	TenantID         uuid.UUID   `json:"tenantID"`
-	RealmIDs         []uuid.UUID `json:"realmIDs"`
-	GroupIDs         []uuid.UUID `json:"groupIDs"`
-	ResourceTokenIDs []uuid.UUID `json:"resourceTokenIDs"`
-	AdminRealmIDs    []uuid.UUID `json:"adminRealmIDs"`
-
-	IssuedAt      Timestamp `json:"iat"`
-	NotBefore     Timestamp `json:"nbf"`
-	Expires       Timestamp `json:"exp"`
-	Issuer        string    `json:"iss"`
-	UserName      string    `json:"name"`
-	Email         string    `json:"email"`
-	AllowedIPs    []string  `json:"allowedIPs"`
-	IsTenantAdmin bool      `json:"isTenantAdmin"`
-
-	SourceToken string `json:"-"`
+	ID               string    `json:"id"`
+	IssuedAt         Timestamp `json:"iat"`
+	NotBefore        Timestamp `json:"nbf"`
+	Expires          Timestamp `json:"exp"`
+	Issuer           string    `json:"iss"`
+	UserID           string    `json:"sub"`
+	UserName         string    `json:"name"`
+	TenantID         string    `json:"tenantID"`
+	Email            string    `json:"email"`
+	RealmIDs         []string  `json:"realmIDs"`
+	GroupIDs         []string  `json:"groupIDs"`
+	ResourceTokenIDs []string  `json:"resourceTokenIDs"`
+	AllowedIPs       []string  `json:"allowedIPs"`
+	IsTenantAdmin    bool      `json:"isTenantAdmin"`
+	AdminRealmIDs    []string  `json:"adminRealmIDs"`
+	SourceToken      string    `json:"-"`
 }
 
 // Valid tests if the Claims object contains the minimal required information
 // to be used for authorization checks.
 func (a *Claims) Valid() bool {
-
-	return a.UserID != uuid.Nil || len(a.ResourceTokenIDs) > 0
+	return a.UserID != "" || len(a.ResourceTokenIDs) > 0
 }
 
 // FromClaimsMap loads the claim information from a jwt.Claims object, this is a simple
@@ -110,7 +107,7 @@ func (a *Claims) ToJWT(privateKey interface{}) (string, error) {
 
 // Entities returns a slice of the entity ids that the auth claims contains.  These are ids
 // that permissions may be assigned to. Currently, this is the UserID, GroupIDs, and ResourceTokenIDs
-func (a *Claims) Entities() (entities []uuid.UUID) {
+func (a *Claims) Entities() (entities []string) {
 	entities = append(entities, a.UserID)
 	entities = append(entities, a.GroupIDs...)
 	entities = append(entities, a.ResourceTokenIDs...)

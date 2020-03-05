@@ -1,18 +1,11 @@
 package authorization
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/require"
-)
-
-var (
-	userID = uuid.NewV4()
-	testID = uuid.NewV4()
 )
 
 func Test_Valid(t *testing.T) {
@@ -29,22 +22,22 @@ func Test_Valid(t *testing.T) {
 		{
 			name: "If the user ID is set it's valid",
 			claims: Claims{
-				UserID: userID,
+				UserID: "this is a test id",
 			},
 			valid: true,
 		},
 		{
 			name: "If the resource token ID is set it's valid",
 			claims: Claims{
-				ResourceTokenIDs: []uuid.UUID{testID},
+				ResourceTokenIDs: []string{"abc123"},
 			},
 			valid: true,
 		},
 		{
 			name: "If the user ID and resource token ID are set it's valid",
 			claims: Claims{
-				UserID:           userID,
-				ResourceTokenIDs: []uuid.UUID{testID},
+				UserID:           "this is a test id",
+				ResourceTokenIDs: []string{"abc123"},
 			},
 			valid: true,
 		},
@@ -59,8 +52,8 @@ func Test_Valid(t *testing.T) {
 func Test_SetGetClaims(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	claims := Claims{
-		UserID:           userID,
-		ResourceTokenIDs: []uuid.UUID{uuid.NewV4(), uuid.NewV4(), uuid.NewV4(), uuid.NewV4()},
+		UserID:           "my user ID",
+		ResourceTokenIDs: []string{"some", "other", "resource", "token"},
 	}
 	r = SetClaims(r, claims)
 	extractedClaims, ok := GetClaims(r)
@@ -70,20 +63,20 @@ func Test_SetGetClaims(t *testing.T) {
 
 func Test_Entities(t *testing.T) {
 	claims := Claims{
-		UserID:           userID,
-		GroupIDs:         []uuid.UUID{uuid.NewV4(), uuid.NewV4(), uuid.NewV4()},
-		ResourceTokenIDs: []uuid.UUID{uuid.NewV4(), uuid.NewV4()},
+		UserID:           "user-id",
+		GroupIDs:         []string{"group-first", "group-second", "group-third"},
+		ResourceTokenIDs: []string{"res-first", "res-second"},
 	}
 
 	require.Equal(
 		t,
-		[]uuid.UUID{
-			userID,
-			claims.GroupIDs[0],
-			claims.GroupIDs[1],
-			claims.GroupIDs[2],
-			claims.ResourceTokenIDs[0],
-			claims.ResourceTokenIDs[1],
+		[]string{
+			"user-id",
+			"group-first",
+			"group-second",
+			"group-third",
+			"res-first",
+			"res-second",
 		},
 		claims.Entities(),
 	)
@@ -91,68 +84,38 @@ func Test_Entities(t *testing.T) {
 
 func Test_FromToClaims(t *testing.T) {
 	claims := Claims{
-		UserID:           userID,
-		GroupIDs:         []uuid.UUID{uuid.NewV4(), uuid.NewV4(), uuid.NewV4()},
-		ResourceTokenIDs: []uuid.UUID{uuid.NewV4(), uuid.NewV4()},
+		UserID:           "user-id",
+		GroupIDs:         []string{"group-first", "group-second", "group-third"},
+		ResourceTokenIDs: []string{"res-first", "res-second"},
 	}
 	jwtClaims, err := claims.ToClaims()
 	require.NoError(t, err)
-	require.Equal(t, claims.UserID.String(), jwtClaims["sub"])
+	require.Equal(t, claims.UserID, jwtClaims["sub"])
 	require.Equal(t,
-		[]interface{}{
-			claims.GroupIDs[0].String(),
-			claims.GroupIDs[1].String(),
-			claims.GroupIDs[2].String(),
-		},
+		[]interface{}{"group-first", "group-second", "group-third"},
 		jwtClaims["groupIDs"],
 	)
 	require.Equal(t,
-		[]interface{}{
-			claims.ResourceTokenIDs[0].String(),
-			claims.ResourceTokenIDs[1].String(),
-		},
+		[]interface{}{"res-first", "res-second"},
 		jwtClaims["resourceTokenIDs"],
 	)
 
-	newUserID := uuid.NewV4()
-	groupID1 := uuid.NewV4()
-	groupID2 := uuid.NewV4()
-	resourceTokenID1 := uuid.NewV4()
-	resourceTokenID2 := uuid.NewV4()
-
 	// edit the exported map and try to import its values
-	jwtClaims["sub"] = newUserID
-	jwtClaims["groupIDs"] = []interface{}{groupID1.String(), groupID2.String()}
-	jwtClaims["resourceTokenIDs"] = []interface{}{resourceTokenID1.String(), resourceTokenID2.String()}
+	jwtClaims["sub"] = "new-user-id"
+	jwtClaims["groupIDs"] = []interface{}{"new-group-first", "new-group-second"}
+	jwtClaims["resourceTokenIDs"] = []interface{}{"new-res-first", "new-res-second"}
 
 	err = claims.FromClaimsMap(jwtClaims)
 	require.NoError(t, err)
-	require.Equal(t, newUserID, claims.UserID)
+	require.Equal(t, jwtClaims["sub"], claims.UserID)
 	require.Equal(
 		t,
-		[]uuid.UUID{groupID1, groupID2},
+		[]string{"new-group-first", "new-group-second"},
 		claims.GroupIDs,
 	)
 	require.Equal(
 		t,
-		[]uuid.UUID{resourceTokenID1, resourceTokenID2},
+		[]string{"new-res-first", "new-res-second"},
 		claims.ResourceTokenIDs,
 	)
-}
-
-func Test_ClaimsMarshal(t *testing.T) {
-	claims := Claims{
-		UserID:           userID,
-		GroupIDs:         []uuid.UUID{uuid.NewV4(), uuid.NewV4(), uuid.NewV4()},
-		ResourceTokenIDs: []uuid.UUID{uuid.NewV4(), uuid.NewV4()},
-	}
-
-	bytes, err := json.Marshal(claims)
-	require.NoError(t, err)
-
-	var newClaims Claims
-	err = json.Unmarshal(bytes, &newClaims)
-	require.NoError(t, err)
-
-	require.Equal(t, claims, newClaims)
 }

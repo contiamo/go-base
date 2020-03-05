@@ -8,7 +8,7 @@ import (
 	"time"
 
 	squirrel "github.com/Masterminds/squirrel"
-	dbtest "github.com/contiamo/go-base/v2/pkg/db/test"
+	dbtest "github.com/contiamo/go-base/pkg/db/test"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
@@ -73,27 +73,27 @@ func Test_Resolve(t *testing.T) {
 
 	cases := []struct {
 		name,
-		value string
-		where      squirrel.Sqlizer
-		expectedID uuid.UUID
-		expErr     bool
+		value,
+		expectedID string
+		where  squirrel.Sqlizer
+		expErr bool
 	}{
 		{
 			name:       "Resolves UUID into ID",
 			value:      ids[0].String(),
-			expectedID: ids[0],
+			expectedID: ids[0].String(),
 			where:      nil,
 		},
 		{
 			name:       "Resolves a unique name into ID",
 			value:      "unique",
-			expectedID: ids[0],
+			expectedID: ids[0].String(),
 			where:      nil,
 		},
 		{
 			name:       "Resolves a non-unique name into ID for different parent IDs",
 			value:      "regular",
-			expectedID: ids[1],
+			expectedID: ids[1].String(),
 			where: squirrel.Eq{
 				"parent_id": secIDs[0],
 			},
@@ -101,7 +101,7 @@ func Test_Resolve(t *testing.T) {
 		{
 			name:       "Resolves a second non-unique name into ID",
 			value:      "regular",
-			expectedID: ids[2],
+			expectedID: ids[2].String(),
 			where: squirrel.Eq{
 				"parent_id": secIDs[1],
 			},
@@ -109,7 +109,7 @@ func Test_Resolve(t *testing.T) {
 		{
 			name:       "Triggers error when resolve a non-existent name",
 			value:      "wrong",
-			expectedID: uuid.Nil,
+			expectedID: "",
 			where: squirrel.Eq{
 				"parent_id": secIDs[0],
 			},
@@ -118,7 +118,7 @@ func Test_Resolve(t *testing.T) {
 		{
 			name:       "Triggers error when there are more than one result",
 			value:      "regular",
-			expectedID: uuid.Nil,
+			expectedID: "",
 			expErr:     true,
 		},
 		{

@@ -7,8 +7,8 @@ import (
 	"github.com/opentracing/opentracing-go/ext"
 	"github.com/urfave/negroni"
 
-	server "github.com/contiamo/go-base/v2/pkg/http"
-	"github.com/contiamo/go-base/v2/pkg/tracing"
+	server "github.com/contiamo/go-base/pkg/http"
+	"github.com/contiamo/go-base/pkg/tracing"
 )
 
 // mainly from "github.com/opentracing-contrib/go-stdlib/nethttp"
