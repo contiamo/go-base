@@ -39,7 +39,7 @@ func (nt Time) String() string {
 	if !nt.Valid {
 		return "null"
 	}
-	return nt.Time.String()
+	return nt.Time.Format("2006-01-02 15:04:05 -0700 MST")
 }
 
 // MarshalJSON marshalls Time to the primitive value `null` or the RFC3339
