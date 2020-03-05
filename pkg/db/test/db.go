@@ -44,7 +44,7 @@ func EqualCount(t *testing.T, db *sql.DB, expected int, table string, filter squ
 }
 
 // GetDatabase gets a test database
-func GetDatabase(t *testing.T, init DBInitializer) (name string, testDB *sql.DB) {
+func GetDatabase(t *testing.T, inits ...DBInitializer) (name string, testDB *sql.DB) {
 	var err error
 	defer func() {
 		if testDB == nil {
@@ -60,13 +60,19 @@ func GetDatabase(t *testing.T, init DBInitializer) (name string, testDB *sql.DB)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	if init == nil {
+	if inits == nil {
 		return name, testDB
 	}
-	err = init(ctx, testDB)
-	if err != nil {
-		t.Fatalf("Can't initialize the database `%s`: %v", name, err)
-		return "", nil
+	for _, init := range inits {
+		// for backwards compatibility
+		if init == nil {
+			continue
+		}
+		err = init(ctx, testDB)
+		if err != nil {
+			t.Fatalf("Can't initialize the database `%s`: %v", name, err)
+			return "", nil
+		}
 	}
 	return name, testDB
 }

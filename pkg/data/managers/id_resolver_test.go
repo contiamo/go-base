@@ -21,7 +21,7 @@ func init() {
 func Test_Sqlizer(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	_, db := dbtest.GetDatabase(t, nil)
+	_, db := dbtest.GetDatabase(t)
 	defer db.Close()
 
 	r := NewIDResolver("test", "id", "name")
