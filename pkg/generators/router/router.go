@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -98,13 +99,23 @@ type spec struct {
 	Paths map[string]path `yaml:"paths"`
 }
 
+func getSortedKeys(pathObj map[string]path) (keys []string) {
+	keys = make([]string, 0, len(pathObj))
+	for key := range pathObj {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
 func createTemplateCtx(spec spec, opts Options) (out templateCtx, err error) {
 	out.PackageName = opts.PackageName
 	out.Spec = spec
 	out.Groups = make(map[string]*handlerGroup)
 	out.PathsByGroups = make(map[string]*pathsInGroup)
 
-	for path, definition := range spec.Paths {
+	for _, path := range getSortedKeys(spec.Paths) {
+		definition := spec.Paths[path]
 		err = setEndpoint(&out, opts, http.MethodGet, path, definition.GET)
 		if err != nil {
 			return out, err

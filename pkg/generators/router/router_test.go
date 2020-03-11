@@ -162,7 +162,14 @@ func TestCreateTemplateCtx(t *testing.T) {
 					Group:       "Group",
 				},
 			},
-			"/another/path": path{},
+			"/another/path": path{
+				GET: &endpoint{
+					Summary:     "GET Summary",
+					Description: "GET Description",
+					OperationID: "AnotherGETOperationID",
+					Group:       "Group",
+				},
+			},
 		},
 	}
 
@@ -174,6 +181,7 @@ func TestCreateTemplateCtx(t *testing.T) {
 		Groups: map[string]*handlerGroup{
 			"Group": &handlerGroup{
 				Endpoints: []endpoint{
+					*spec.Paths["/another/path"].GET,
 					*spec.Paths["/some/path"].GET,
 					*spec.Paths["/some/path"].POST,
 					*spec.Paths["/some/path"].PUT,
@@ -192,6 +200,11 @@ func TestCreateTemplateCtx(t *testing.T) {
 							"PUT":    "PUTOperationID",
 							"PATCH":  "PATCHOperationID",
 							"DELETE": "DELETEOperationID",
+						},
+					},
+					"/another/path": &methodsInPath{
+						OperationsByMethods: map[string]string{
+							"GET": "AnotherGETOperationID",
 						},
 					},
 				},
