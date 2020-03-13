@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -56,15 +57,18 @@ func Generate(specFile io.Reader, router io.Writer, opts Options) (err error) {
 type templateCtx struct {
 	PackageName   string
 	Spec          spec
+	GroupsSorted  []string
 	Groups        map[string]*handlerGroup
 	PathsByGroups map[string]*pathsInGroup
 }
 
 type pathsInGroup struct {
+	PathsSorted           []string
 	AllowedMethodsByPaths map[string]*methodsInPath
 }
 
 type methodsInPath struct {
+	MethodsSorted       []string
 	OperationsByMethods map[string]string
 }
 
@@ -130,7 +134,50 @@ func createTemplateCtx(spec spec, opts Options) (out templateCtx, err error) {
 			return out, err
 		}
 	}
+
+	// sorting the whole template context to have deterministic results
+	sortContext(&out)
+
 	return out, nil
+}
+
+func sortContext(out *templateCtx) {
+	out.GroupsSorted = make([]string, 0, len(out.Groups))
+
+	for g := range out.Groups {
+		out.GroupsSorted = append(out.GroupsSorted, g)
+		group := out.Groups[g]
+
+		// sort the list of endpoints by their operation IDs
+		sort.SliceStable(group.Endpoints, func(i, j int) bool {
+			return group.Endpoints[i].OperationID < group.Endpoints[j].OperationID
+		})
+
+		paths := out.PathsByGroups[g]
+		// get sorted paths in a group
+		paths.PathsSorted = make(
+			[]string,
+			0,
+			len(paths.AllowedMethodsByPaths),
+		)
+		for path := range paths.AllowedMethodsByPaths {
+			paths.PathsSorted = append(paths.PathsSorted, path)
+
+			// get sorted methods in a path
+			paths.AllowedMethodsByPaths[path].MethodsSorted = make(
+				[]string, 0,
+				len(paths.AllowedMethodsByPaths[path].OperationsByMethods),
+			)
+			for method := range paths.AllowedMethodsByPaths[path].OperationsByMethods {
+				paths.AllowedMethodsByPaths[path].MethodsSorted = append(paths.AllowedMethodsByPaths[path].MethodsSorted, method)
+			}
+			sort.Strings(paths.AllowedMethodsByPaths[path].MethodsSorted)
+
+		}
+		sort.Strings(out.PathsByGroups[g].PathsSorted)
+	}
+
+	sort.Strings(out.GroupsSorted)
 }
 
 func setEndpoint(out *templateCtx, opts Options, method, path string, e *endpoint) error {
@@ -210,10 +257,12 @@ import (
 	"github.com/go-chi/chi"
 )
 
-{{range $name, $group := .Groups }}
-// {{ $name }}Handler handles the operations of the '{{ $name }}' handler group.
-type {{ $name }}Handler interface {
-{{- range $idx, $e := $group.Endpoints }}
+{{ $groups:=.Groups -}}
+{{range $groupName := .GroupsSorted }}
+{{- $group:=(index $groups $groupName) }}
+// {{ $groupName }}Handler handles the operations of the '{{ $groupName }}' handler group.
+type {{ $groupName }}Handler interface {
+{{- range $e := $group.Endpoints }}
 	{{ (printf "%s %s" $e.OperationID $e.Description) | commentBlock }}
 	{{ $e.OperationID }}(w http.ResponseWriter, r *http.Request)
 {{- end}}
@@ -227,24 +276,30 @@ type {{ $name }}Handler interface {
 // {{ .Spec.Info.Version }}
 //
 func NewRouter(
-{{- range $group, $def := .PathsByGroups }}
-	{{ $group | firstLower}}Handler {{ $group | firstUpper }}Handler,
+{{- $paths := .PathsByGroups -}}
+{{- range $groupName := .GroupsSorted }}
+{{- $def := (index $paths $groupName) }}
+	{{ $groupName | firstLower}}Handler {{ $groupName | firstUpper }}Handler,
 {{- end}}
 ) http.Handler {
 
 	r := chi.NewRouter()
-{{range $group, $pathsInGroup := .PathsByGroups }}
-// '{{ $group }}' group
-{{ range $path, $methodsInPath := $pathsInGroup.AllowedMethodsByPaths }}
+{{range $groupName := .GroupsSorted }}
+{{- $def := (index $paths $groupName) }}
+// '{{ $groupName }}' group
+{{ range $path := $def.PathsSorted }}
+{{- $methodsInPath := (index $def.AllowedMethodsByPaths $path) }}
 // '{{ $path }}'
 r.Options("{{ $path }}", optionsHandlerFunc(
-{{- range $method, $operation := $methodsInPath.OperationsByMethods }}
+{{- range $method := $methodsInPath.MethodsSorted }}
+{{- $operation := (index $methodsInPath.OperationsByMethods $method) }}
 	http.Method{{ $method | httpMethod }},
 {{- end}}
 ))
 
-{{- range $method, $operation := $methodsInPath.OperationsByMethods }}
-r.{{ $method | httpMethod }}("{{ $path }}", {{ $group | firstLower }}Handler.{{ $operation }})
+{{- range $method := $methodsInPath.MethodsSorted }}
+{{- $operation := (index $methodsInPath.OperationsByMethods $method) }}
+r.{{ $method | httpMethod }}("{{ $path }}", {{ $groupName | firstLower }}Handler.{{ $operation }})
 {{- end}}
 {{end}}
 {{- end}}
