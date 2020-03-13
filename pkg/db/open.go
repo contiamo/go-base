@@ -5,7 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/cenkalti/backoff"
-	"github.com/contiamo/go-base/v2/pkg/config"
+	"github.com/contiamo/go-base/pkg/config"
 )
 
 // Open opens a connection to a database and retries until ctx.Done()
