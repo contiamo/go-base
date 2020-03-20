@@ -29,5 +29,7 @@ func Open(ctx context.Context, cfg config.Database) (db *sql.DB, err error) {
 	if err != nil {
 		return nil, err
 	}
+
+	db.SetMaxOpenConns(cfg.PoolSize)
 	return db, nil
 }
