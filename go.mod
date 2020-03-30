@@ -4,7 +4,7 @@ require (
 	github.com/Masterminds/squirrel v1.1.0
 	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a // indirect
 	github.com/bakins/net-http-recover v0.0.0-20141007104922-6cba69d01459
-	github.com/cenkalti/backoff v2.2.1+incompatible
+	github.com/cenkalti/backoff/v4 v4.0.0
 	github.com/contiamo/goserver v0.5.0
 	github.com/contiamo/jwt v0.2.2
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
