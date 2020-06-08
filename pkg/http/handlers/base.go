@@ -47,6 +47,19 @@ func NewBaseHandler(componentName string, maxBodyBytes int64, debug bool) BaseHa
 	}
 }
 
+// NewBasehandlerWithTracer create a new base HTTP handler, like NewBaseHandler, but allows
+// the caller to configure the Tracer implementation independently.
+func NewBaseHandlerWithTracer(tracer tracing.Tracer, maxBodyBytes int64, debug bool) BaseHandler {
+	if maxBodyBytes < 0 {
+		maxBodyBytes = Megabyte
+	}
+	return &baseHandler{
+		Tracer:       tracer,
+		maxBodyBytes: maxBodyBytes,
+		debug:        debug,
+	}
+}
+
 type baseHandler struct {
 	tracing.Tracer
 	maxBodyBytes int64
