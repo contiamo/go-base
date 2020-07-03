@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -20,11 +19,11 @@ import (
 func GenerateEnums(specFile io.Reader, dst string, packageName string) error {
 	data, err := ioutil.ReadAll(specFile)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("can not read spec file: %w", err)
 	}
 	swagger, err := openapi3.NewSwaggerLoader().LoadSwaggerFromData(data)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("can not parse the OpenAPI spec: %w", err)
 	}
 
 	enums := enumCtxs{}
@@ -78,12 +77,12 @@ func GenerateEnums(specFile io.Reader, dst string, packageName string) error {
 
 		err = enumTemplate.Execute(f, tctx)
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("failed to generate enum code: %w", err)
 		}
 
 		err = f.Close()
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("failed to close output file: %w", err)
 		}
 	}
 	return nil
