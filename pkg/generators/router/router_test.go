@@ -16,23 +16,6 @@ func TestHttpMethod(t *testing.T) {
 	require.Equal(t, "Get", httpMethod("gEt"))
 }
 
-func TestFirstLower(t *testing.T) {
-	require.Equal(t, "string", firstLower("string"))
-	require.Equal(t, "sTRING", firstLower("STRING"))
-	require.Equal(t, "string", firstLower("String"))
-}
-
-func TestFirstUpper(t *testing.T) {
-	require.Equal(t, "String", firstUpper("string"))
-	require.Equal(t, "STRING", firstUpper("STRING"))
-	require.Equal(t, "String", firstUpper("String"))
-}
-
-func TestCommentBlock(t *testing.T) {
-	require.Equal(t, "// some\n// multiline\n// comment", commentBlock("some\nmultiline\ncomment\n"))
-	require.Equal(t, "// single line comment", commentBlock("single line comment"))
-}
-
 func TestSetEndpoint(t *testing.T) {
 	valid := endpoint{
 		OperationID: "TestOperation",
