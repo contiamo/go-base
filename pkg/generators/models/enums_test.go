@@ -38,8 +38,10 @@ func TestGenerate(t *testing.T) {
 
 	defer os.RemoveAll(dname)
 
+	opts := Options{PackageName: "testpkg"}
+
 	specReader := strings.NewReader(spec)
-	err = GenerateEnums(specReader, dname, "testpkg")
+	err = GenerateEnums(specReader, dname, opts)
 	require.NoError(t, err)
 
 	content, err := ioutil.ReadFile(filepath.Join(dname, "model_filter_type.go"))

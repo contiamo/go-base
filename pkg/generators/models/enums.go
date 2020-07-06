@@ -16,8 +16,21 @@ import (
 	tpl "github.com/contiamo/go-base/pkg/generators/templates"
 )
 
+// DefaultPackageName used in the models source code
+const DefaultPackageName = "openapi"
+
+// Options represent all the possible options of the generator
+type Options struct {
+	// PackageName of the generated models source code (`DefaultPackageName` by default)
+	PackageName string
+}
+
 // GenerateEnums outputs the Go enum models with validators
-func GenerateEnums(specFile io.Reader, dst string, packageName string) error {
+func GenerateEnums(specFile io.Reader, dst string, opts Options) error {
+	if opts.PackageName == "" {
+		opts.PackageName = DefaultPackageName
+	}
+
 	data, err := ioutil.ReadAll(specFile)
 	if err != nil {
 		return fmt.Errorf("can not read spec file: %w", err)
@@ -38,7 +51,7 @@ func GenerateEnums(specFile io.Reader, dst string, packageName string) error {
 		tctx := templateCtx{
 			SpecTitle:   swagger.Info.Title,
 			SpecVersion: swagger.Info.Version,
-			PackageName: packageName,
+			PackageName: opts.PackageName,
 			Name:        name,
 			VarName:     tpl.ToPascalCase(name),
 			Description: s.Value.Description,
