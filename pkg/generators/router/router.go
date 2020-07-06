@@ -8,6 +8,7 @@ import (
 	"strings"
 	"text/template"
 
+	tpl "github.com/contiamo/go-base/pkg/generators/templates"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -226,25 +227,16 @@ func setEndpoint(out *templateCtx, opts Options, method, path string, e *endpoin
 }
 
 func httpMethod(str string) string {
-	return firstUpper(strings.ToLower(str))
-}
-func firstLower(str string) string {
-	return strings.ToLower(str[0:1]) + str[1:]
-}
-func firstUpper(str string) string {
-	return strings.ToUpper(str[0:1]) + str[1:]
-}
-func commentBlock(str string) string {
-	return "// " + strings.Replace(strings.TrimSpace(str), "\n", "\n// ", -1)
+	return tpl.FirstUpper(strings.ToLower(str))
 }
 
 // template definitions
 var (
 	fmap = template.FuncMap{
-		"firstLower":   firstLower,
-		"firstUpper":   firstUpper,
+		"firstLower":   tpl.FirstLower,
+		"firstUpper":   tpl.FirstUpper,
 		"httpMethod":   httpMethod,
-		"commentBlock": commentBlock,
+		"commentBlock": tpl.CommentBlock,
 	}
 	routerTemplateSource = `package {{ .PackageName }}
 
