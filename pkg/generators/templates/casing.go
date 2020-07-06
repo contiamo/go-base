@@ -35,7 +35,7 @@ func ToPascalCase(value string) string {
 			toUpper = true
 		}
 		// Always upper the character after non-letter/non-digit skipping the character
-		if !unicode.IsLetter(rune) && !unicode.IsDigit(rune) && i < len(value) {
+		if !unicode.IsLetter(rune) && !unicode.IsDigit(rune) {
 			toUpper = true
 			continue
 		}

@@ -85,6 +85,16 @@ func TestToPascalCase(t *testing.T) {
 			output: "SomeName",
 		},
 		{
+			name:   "Trims single bad character at the end",
+			input:  "Some{",
+			output: "Some",
+		},
+		{
+			name:   "Trims multiple bad characters at the end",
+			input:  "Some{{{",
+			output: "Some",
+		},
+		{
 			name: "Handles empty string",
 		},
 	}
