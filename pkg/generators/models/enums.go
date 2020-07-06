@@ -11,6 +11,7 @@ import (
 	"text/template"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/sirupsen/logrus"
 
 	tpl "github.com/contiamo/go-base/pkg/generators/templates"
 )
@@ -69,7 +70,7 @@ func GenerateEnums(specFile io.Reader, dst string, packageName string) error {
 	for _, tctx := range enums {
 		modelName := strings.ToLower(strings.ReplaceAll(fmt.Sprintf("model_%s.go", tpl.ToSnakeCase(tctx.Name)), " ", "_"))
 		filename := filepath.Join(dst, modelName)
-		fmt.Printf("writing %s\n", filename)
+		logrus.Debugf("writing %s\n", filename)
 		f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 		if err != nil {
 			return err
