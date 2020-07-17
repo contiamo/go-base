@@ -36,25 +36,24 @@ func Setup(ctx context.Context, metricsNamespace string, db db.SQLDB, references
 }
 
 var dbSetupTemplate = template.Must(template.New("queue-db-setup").Parse(`
+-- eventually add missing CITEXT extension
 CREATE EXTENSION IF NOT EXISTS citext;
 
+-- create 'schedules' and 'tasks' table
 CREATE TABLE IF NOT EXISTS schedules (
-      schedule_id uuid PRIMARY KEY,
+    schedule_id uuid PRIMARY KEY,
     task_queue citext NOT NULL,
     task_type citext NOT NULL,
     task_spec jsonb NOT NULL,
     cron_schedule citext NOT NULL DEFAULT '',
     next_execution_time timestamptz,
     created_at timestamptz NOT NULL DEFAULT NOW(),
-    updated_at timestamptz NOT NULL DEFAULT NOW()--,
-    -- Additional columns for tasks used for clean up
+    updated_at timestamptz NOT NULL DEFAULT NOW()
+    -- Additional columns which reference to something, used for clean up
     {{ range . }}
     ,{{ .ColumnName }} {{ .ColumnType }} REFERENCES {{ .ReferencedTable }} ({{ .ReferencedColumn}}) ON DELETE CASCADE
     {{ end }}
 );
-CREATE INDEX IF NOT EXISTS schedule_next_execution_time_idx ON schedules (next_execution_time);
-CREATE INDEX IF NOT EXISTS schedule_task_type_idx ON schedules (task_type);
-
 CREATE TABLE IF NOT EXISTS tasks (
     task_id uuid PRIMARY KEY,
     queue citext NOT NULL,
@@ -69,11 +68,15 @@ CREATE TABLE IF NOT EXISTS tasks (
     last_heartbeat_at timestamptz,
     -- Additional columns for tasks used for clean up
     schedule_id uuid REFERENCES schedules ON DELETE CASCADE
+    -- Additional columns which reference to something, used for clean up
     {{ range . }}
     ,{{ .ColumnName }} {{ .ColumnType }} REFERENCES {{ .ReferencedTable }} ({{ .ReferencedColumn}}) ON DELETE CASCADE
     {{ end }}
 );
 
+-- create indexes
+CREATE INDEX IF NOT EXISTS schedule_next_execution_time_idx ON schedules (next_execution_time);
+CREATE INDEX IF NOT EXISTS schedule_task_type_idx ON schedules (task_type);
 CREATE INDEX IF NOT EXISTS tasks_queue_idx ON tasks (queue);
 CREATE INDEX IF NOT EXISTS tasks_type_idx ON tasks USING hash (type);
 CREATE INDEX IF NOT EXISTS tasks_created_heartbeat_at_idx ON tasks (created_at, last_heartbeat_at);
@@ -99,9 +102,7 @@ BEGIN
 END;
 $$
 LANGUAGE plpgsql;
-
 DROP TRIGGER IF EXISTS notify_task_update_trigger ON tasks;
-
 CREATE TRIGGER notify_task_update_trigger
     AFTER INSERT ON tasks
     FOR EACH ROW
