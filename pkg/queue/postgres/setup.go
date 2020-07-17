@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS schedules (
 CREATE TABLE IF NOT EXISTS tasks (
     task_id uuid PRIMARY KEY,
     queue citext NOT NULL,
-    TYPE citext NOT NULL,
+    type citext NOT NULL,
     spec jsonb NOT NULL,
     status citext NOT NULL,
     progress jsonb NOT NULL,
