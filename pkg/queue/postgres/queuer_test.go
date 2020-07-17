@@ -23,7 +23,7 @@ func TestEnqueue(t *testing.T) {
 
 	_, db := dbtest.GetDatabase(t)
 	defer db.Close()
-	require.NoError(t, Setup(ctx, db, nil))
+	require.NoError(t, Setup(ctx, "test", db, nil))
 	_, err := db.ExecContext(ctx, `ALTER TABLE tasks ADD column test_id uuid;`)
 	require.NoError(t, err)
 
