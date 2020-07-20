@@ -89,7 +89,11 @@ func GenerateEnums(specFile io.Reader, dst string, opts Options) error {
 			return err
 		}
 
-		err = enumTemplate.Execute(f, tctx)
+		if len(tctx.Values) == 1 {
+			err = constTemplate.Execute(f, tctx)
+		} else {
+			err = enumTemplate.Execute(f, tctx)
+		}
 		if err != nil {
 			return fmt.Errorf("failed to generate enum code: %w", err)
 		}
@@ -136,6 +140,12 @@ var enumTemplate = template.Must(
 	template.New("enum").
 		Funcs(fmap).
 		Parse(enumTemplateSource),
+)
+
+var constTemplate = template.Must(
+	template.New("const").
+		Funcs(fmap).
+		Parse(constTemplateSource),
 )
 
 var fmap = template.FuncMap{
@@ -189,4 +199,16 @@ var (
 		{{- end}}
 	)
 )
+`
+
+var constTemplateSource = `
+// This file is auto-generated, DO NOT EDIT.
+//
+// Source:
+//     Title: {{.SpecTitle}}
+//     Version: {{.SpecVersion}}
+package {{ .PackageName }}
+
+{{ (printf "%s is an enum. %s" .Name .Description) | commentBlock }}
+const {{.VarName}} = {{ (index .Values 0).Value}}
 `
