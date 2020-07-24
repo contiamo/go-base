@@ -2,6 +2,7 @@ package workers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -120,8 +121,11 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 	defer TaskQueueMetrics.WorkerWorkingGauge.With(l).Dec()
 
 	heartbeats := make(chan queue.Progress)
+	done := make(chan struct{})
+
 	var workErr error
 	go func() {
+		defer close(done)
 		// handler.Process is responsible for closing the heartbeats channel
 		// if `Process` returns an error it means the task failed
 		workErr = w.handler.Process(ctx, task, heartbeats)
@@ -131,12 +135,15 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 	}()
 
 	// assumes that the handler will close the heartbeats channel when if finishes/errors
-	var progress queue.Progress
+	progress := queue.Progress("{}") // empty progress by default
 	for progress = range heartbeats {
 		hrtErr := w.dequeuer.Heartbeat(ctx, task.ID, progress)
 		if hrtErr != nil {
 			switch hrtErr {
-			case queue.ErrTaskCancelled, queue.ErrTaskFinished, queue.ErrTaskNotFound, queue.ErrTaskNotRunning:
+			case queue.ErrTaskCancelled,
+				queue.ErrTaskFinished,
+				queue.ErrTaskNotFound,
+				queue.ErrTaskNotRunning:
 				log.Error(hrtErr)
 				// finished/cancelled errors are not considered event errors, stop and return nil
 				return nil
@@ -146,11 +153,36 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 		}
 	}
 
+	<-done
+
 	if workErr != nil {
+		// we must try to put the error message in the latest version of progress
+		// empty progress (no heartbeats) is also fine
+		progress = w.setError(progress, workErr)
 		return w.dequeuer.Fail(ctx, task.ID, progress)
 	}
 
 	return w.dequeuer.Finish(ctx, task.ID, progress)
+}
+
+func (w *taskWorker) setError(progress queue.Progress, err error) queue.Progress {
+	p := map[string]interface{}{}
+	e := json.Unmarshal(progress, &p)
+	if e != nil {
+		logrus.
+			WithError(e).
+			Error("failed to put error message into the task progress")
+		return progress
+	}
+	p["error"] = err.Error()
+	bytes, e := json.Marshal(p)
+	if e != nil {
+		logrus.
+			WithError(e).
+			Error("failed to marshal updated task progress")
+		return progress
+	}
+	return queue.Progress(bytes)
 }
 
 func (w *taskWorker) Work(ctx context.Context) (err error) {
