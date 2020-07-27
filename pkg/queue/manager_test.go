@@ -15,8 +15,6 @@ func TestQueueMetrics(t *testing.T) {
 	defer goleak.VerifyNone(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	SetupTaskQueueMetrics("test")
-	SetupSchedulerMetrics("test")
 
 	numOfTasks := 2
 	qCh := make(chan *Task, numOfTasks)

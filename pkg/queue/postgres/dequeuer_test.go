@@ -28,7 +28,7 @@ func TestFinish(t *testing.T) {
 
 	name, db := dbtest.GetDatabase(t)
 	defer db.Close()
-	require.NoError(t, Setup(ctx, "test", db, nil))
+	require.NoError(t, SetupTables(ctx, db, nil))
 
 	taskID := uuid.NewV4().String()
 	connStr := "user=contiamo_test password=localdev sslmode=disable dbname=" + name
@@ -95,7 +95,7 @@ func TestFail(t *testing.T) {
 
 	name, db := dbtest.GetDatabase(t)
 	defer db.Close()
-	require.NoError(t, Setup(ctx, "test", db, nil))
+	require.NoError(t, SetupTables(ctx, db, nil))
 
 	taskID := uuid.NewV4().String()
 
@@ -211,7 +211,7 @@ func TestHeartbeat(t *testing.T) {
 
 	name, db := dbtest.GetDatabase(t)
 	defer db.Close()
-	require.NoError(t, Setup(ctx, "test", db, nil))
+	require.NoError(t, SetupTables(ctx, db, nil))
 
 	connStr := "user=contiamo_test password=localdev sslmode=disable dbname=" + name
 	dbListener := pq.NewListener(
@@ -352,7 +352,7 @@ func TestDequeueTicker(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			name, db := dbtest.GetDatabase(t)
 			defer db.Close()
-			require.NoError(t, Setup(ctx, "test", db, nil))
+			require.NoError(t, SetupTables(ctx, db, nil))
 
 			connStr := "user=contiamo_test password=localdev sslmode=disable dbname=" + name
 			dbListener := pq.NewListener(
@@ -477,7 +477,7 @@ func TestDequeue(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			name, db := dbtest.GetDatabase(t)
 			defer db.Close()
-			require.NoError(t, Setup(ctx, "test", db, nil))
+			require.NoError(t, SetupTables(ctx, db, nil))
 
 			connStr := "user=contiamo_test password=localdev sslmode=disable dbname=" + name
 			dbListener := pq.NewListener(
@@ -630,7 +630,7 @@ func TestQueueList(t *testing.T) {
 
 			name, db := dbtest.GetDatabase(t)
 			defer db.Close()
-			require.NoError(t, Setup(ctx, "test", db, nil))
+			require.NoError(t, SetupTables(ctx, db, nil))
 			connStr := "user=contiamo_test password=localdev sslmode=disable dbname=" + name
 			dbListener := pq.NewListener(
 				connStr,

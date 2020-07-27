@@ -6,7 +6,6 @@ import (
 	"text/template"
 
 	"github.com/contiamo/go-base/pkg/db"
-	"github.com/contiamo/go-base/pkg/queue"
 )
 
 type ForeignReference struct {
@@ -16,11 +15,7 @@ type ForeignReference struct {
 	ReferencedColumn string
 }
 
-func Setup(ctx context.Context, metricsNamespace string, db db.SQLDB, references []ForeignReference) error {
-	// setup metrics
-	queue.SetupTaskQueueMetrics(metricsNamespace)
-	queue.SetupSchedulerMetrics(metricsNamespace)
-
+func SetupTables(ctx context.Context, db db.SQLDB, references []ForeignReference) error {
 	// setup database
 	buf := &bytes.Buffer{}
 	err := dbSetupTemplate.Execute(buf, references)
