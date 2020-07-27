@@ -3,11 +3,10 @@ package queue
 import (
 	"os"
 	"path/filepath"
-	"strings"
-	"unicode"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/sirupsen/logrus"
 )
 
 // TaskQueueMetricsType provides access to the prometheus metric objects for the task queue
@@ -24,37 +23,51 @@ type SchedulerMetricsType struct {
 	ErrorCounter    *prometheus.CounterVec
 }
 
+const (
+	instanceKey = "instance"
+	serviceKey  = "service"
+)
+
 var (
 	// largest bucket is 5 seconds
-	durationMsBuckets  = []float64{10, 50, 100, 200, 300, 500, 1000, 2000, 3000, 5000}
-	queueMetricLabels  = []string{"queue"}
-	taskMetricLabels   = []string{"queue", "type"}
-	processName        = escapeNamespace(filepath.Base(os.Args[0]))
+	durationMsBuckets = []float64{10, 50, 100, 200, 300, 500, 1000, 2000, 3000, 5000}
+	processName       = filepath.Base(os.Args[0])
+	constLabels       = prometheus.Labels{
+		serviceKey:  processName,
+		instanceKey: getHostname(),
+	}
+	queueMetricLabels = []string{"queue"}
+	taskMetricLabels  = []string{"queue", "type"}
+
 	defTaskCounterOpts = prometheus.CounterOpts{
-		Namespace: processName,
-		Subsystem: "queue",
-		Name:      "task",
-		Help:      "count of tasks that have been enqueued",
+		Namespace:   "queue",
+		Subsystem:   "task",
+		Name:        "total_count",
+		Help:        "count of tasks that have been enqueued",
+		ConstLabels: constLabels,
 	}
 	defEnqueueDurationOpts = prometheus.HistogramOpts{
-		Namespace: processName,
-		Subsystem: "queue",
-		Name:      "enqueue_duration_ms",
-		Help:      "duration the enqueue action in ms",
-		Buckets:   durationMsBuckets,
+		Namespace:   "queue",
+		Subsystem:   "task",
+		Name:        "enqueue_duration_ms",
+		Help:        "duration the enqueue action in ms",
+		Buckets:     durationMsBuckets,
+		ConstLabels: constLabels,
 	}
 	defScheduleCounterOpts = prometheus.CounterOpts{
-		Namespace: processName,
-		Subsystem: "scheduler",
-		Name:      "task",
-		Help:      "count of tasks that have been scheduled",
+		Namespace:   "queue",
+		Subsystem:   "scheduler",
+		Name:        "total_scheduled",
+		Help:        "count of tasks that have been scheduled",
+		ConstLabels: constLabels,
 	}
 
 	defSchedulerErrorCounterOpts = prometheus.CounterOpts{
-		Namespace: processName,
-		Subsystem: "scheduler",
-		Name:      "error",
-		Help:      "count of errors while scheduling",
+		Namespace:   "queue",
+		Subsystem:   "scheduler",
+		Name:        "total_errors",
+		Help:        "count of errors while scheduling",
+		ConstLabels: constLabels,
 	}
 
 	// TaskQueueMetrics is the global metrics instance for the task queue of this instance
@@ -85,18 +98,22 @@ var (
 )
 
 // SwitchMetricsNamespace changes the namespace used in the metrics, so it can be customized
-func SwitchMetricsNamespace(namespace string) {
+func SwitchServiceName(serviceName string) {
+	newConstLabels := prometheus.Labels{
+		instanceKey: constLabels[instanceKey],
+		serviceKey:  serviceName,
+	}
 	newTaskCounterOpts := defTaskCounterOpts
-	newTaskCounterOpts.Namespace = namespace
+	newTaskCounterOpts.ConstLabels = newConstLabels
 
 	newEnqueueDurationOpts := defEnqueueDurationOpts
-	newEnqueueDurationOpts.Namespace = namespace
+	newEnqueueDurationOpts.ConstLabels = newConstLabels
 
 	newScheduleCounterOpts := defScheduleCounterOpts
-	newScheduleCounterOpts.Namespace = namespace
+	newScheduleCounterOpts.ConstLabels = newConstLabels
 
 	newSchedulerErrorCounterOpts := defSchedulerErrorCounterOpts
-	newSchedulerErrorCounterOpts.Namespace = namespace
+	newSchedulerErrorCounterOpts.ConstLabels = newConstLabels
 
 	TaskQueueMetrics = TaskQueueMetricsType{
 		Labels: queueMetricLabels,
@@ -124,20 +141,12 @@ func SwitchMetricsNamespace(namespace string) {
 	}
 }
 
-func escapeNamespace(str string) string {
-	str = strings.ToLower(str)
-	result := strings.Builder{}
-	for _, rune := range str {
-		if !unicode.IsLetter(rune) && !unicode.IsDigit(rune) {
-			result.WriteRune('_')
-		} else {
-			result.WriteRune(rune)
-		}
+func getHostname() string {
+	hostname, err := os.Hostname()
+	if err != nil {
+		logrus.Errorf("unable to retrieve hostname - setting to unknown")
+		hostname = "unknown"
 	}
 
-	if result.Len() == 0 {
-		return "default"
-	}
-
-	return result.String()
+	return hostname
 }
