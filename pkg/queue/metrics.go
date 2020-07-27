@@ -3,6 +3,7 @@ package queue
 import (
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -31,6 +32,7 @@ const (
 var (
 	// largest bucket is 5 seconds
 	durationMsBuckets = []float64{10, 50, 100, 200, 300, 500, 1000, 2000, 3000, 5000}
+	mutex             = &sync.Mutex{}
 	processName       = filepath.Base(os.Args[0])
 	constLabels       = prometheus.Labels{
 		serviceKey:  processName,
@@ -115,6 +117,14 @@ func SwitchMetricsServiceName(serviceName string) {
 
 	newSchedulerErrorCounterOpts := defSchedulerErrorCounterOpts
 	newSchedulerErrorCounterOpts.ConstLabels = newConstLabels
+
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	prometheus.Unregister(TaskQueueMetrics.TaskCounter)
+	prometheus.Unregister(TaskQueueMetrics.EnqueueDuration)
+	prometheus.Unregister(SchedulerMetrics.ScheduleCounter)
+	prometheus.Unregister(SchedulerMetrics.ErrorCounter)
 
 	TaskQueueMetrics = TaskQueueMetricsType{
 		Labels: queueMetricLabels,
