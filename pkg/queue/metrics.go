@@ -97,8 +97,9 @@ var (
 	}
 )
 
-// SwitchMetricsNamespace changes the namespace used in the metrics, so it can be customized
-func SwitchServiceName(serviceName string) {
+// SwitchMetricsServiceName changes the service label used in the metrics,
+// so it can be customized
+func SwitchMetricsServiceName(serviceName string) {
 	newConstLabels := prometheus.Labels{
 		instanceKey: constLabels[instanceKey],
 		serviceKey:  serviceName,
