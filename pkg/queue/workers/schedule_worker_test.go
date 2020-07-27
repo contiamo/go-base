@@ -24,7 +24,7 @@ func TestScheduleTask(t *testing.T) {
 	t.Run("Takes a schedule from the queue and enqueues tasks", func(t *testing.T) {
 		_, db := dbtest.GetDatabase(t)
 		defer db.Close()
-		require.NoError(t, postgres.Setup(ctx, "test", db, nil))
+		require.NoError(t, postgres.SetupTables(ctx, db, nil))
 
 		scheduleID1 := uuid.NewV4().String()
 		scheduleID2 := uuid.NewV4().String()
@@ -114,7 +114,7 @@ func TestScheduleTask(t *testing.T) {
 	t.Run("Returns ErrScheduleQueueIsEmpty if there is no task to schedule", func(t *testing.T) {
 		_, db := dbtest.GetDatabase(t)
 		defer db.Close()
-		require.NoError(t, postgres.Setup(ctx, "test", db, nil))
+		require.NoError(t, postgres.SetupTables(ctx, db, nil))
 
 		qm := &queueMock{}
 		w := newScheduleWorker(db, qm, time.Second)
@@ -136,7 +136,7 @@ func TestMetrics(t *testing.T) {
 
 	_, db := dbtest.GetDatabase(t)
 	defer db.Close()
-	require.NoError(t, postgres.Setup(context.TODO(), "test", db, nil))
+	require.NoError(t, postgres.SetupTables(context.TODO(), db, nil))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()

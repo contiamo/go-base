@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSetupWithoutReferences(t *testing.T) {
+func TestSetupTablesWithoutReferences(t *testing.T) {
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
@@ -22,7 +22,7 @@ func TestSetupWithoutReferences(t *testing.T) {
 
 	_, db := dbtest.GetDatabase(t)
 	defer db.Close()
-	require.NoError(t, Setup(ctx, "test", db, nil))
+	require.NoError(t, SetupTables(ctx, db, nil))
 }
 
 func TestStupWithReferences(t *testing.T) {
@@ -41,7 +41,7 @@ func TestStupWithReferences(t *testing.T) {
 	require.NoError(t, err)
 
 	// setup with foreign reference
-	err = Setup(ctx, "test", db, []ForeignReference{
+	err = SetupTables(ctx, db, []ForeignReference{
 		{
 			ColumnName:       "entity_id",
 			ColumnType:       "UUID",
