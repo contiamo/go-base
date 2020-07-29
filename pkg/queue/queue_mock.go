@@ -12,11 +12,13 @@ type QueueMock struct {
 	DequeueErr   error
 	HeartbeatErr error
 	FinishErr    error
+	FailErr      error
 
 	EnqueueCount   int
 	DequeueCount   int
 	HeartbeatCount int
 	FinishCount    int
+	FailCount      int
 }
 
 // Enqueue implements queue Manager for testing
@@ -50,4 +52,9 @@ func (q *QueueMock) Heartbeat(ctx context.Context, taskID string, progress Progr
 func (q *QueueMock) Finish(ctx context.Context, taskID string, progress Progress) error {
 	q.FinishCount = q.FinishCount + 1
 	return q.FinishErr
+}
+
+func (q *QueueMock) Fail(ctx context.Context, taskID string, progress Progress) error {
+	q.FailCount = q.FailCount + 1
+	return q.FailErr
 }
