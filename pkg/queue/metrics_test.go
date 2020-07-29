@@ -39,7 +39,7 @@ func TestQueueMetrics(t *testing.T) {
 	defer cancel()
 
 	numOfTasks := 2
-	qCh := make(chan *Task, numOfTasks)
+	qCh := make(chan Task, numOfTasks)
 	rawQ := QueueMock{Queue: qCh}
 	q := QueuerWithMetrics(&rawQ)
 
