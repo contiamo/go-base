@@ -44,16 +44,19 @@ func (q *QueueMock) Dequeue(ctx context.Context, queue ...string) (*Task, error)
 
 }
 
+// Heartbeat implements queue Manager for testing
 func (q *QueueMock) Heartbeat(ctx context.Context, taskID string, progress Progress) error {
 	q.HeartbeatCount = q.HeartbeatCount + 1
 	return q.HeartbeatErr
 }
 
+// Finish implements queue Manager for testing
 func (q *QueueMock) Finish(ctx context.Context, taskID string, progress Progress) error {
 	q.FinishCount = q.FinishCount + 1
 	return q.FinishErr
 }
 
+// Fail implements queue Manager for testing
 func (q *QueueMock) Fail(ctx context.Context, taskID string, progress Progress) error {
 	q.FailCount = q.FailCount + 1
 	return q.FailErr
