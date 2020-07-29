@@ -3,13 +3,15 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/Masterminds/squirrel"
+	"github.com/contiamo/go-base/pkg/db"
 	cdb "github.com/contiamo/go-base/pkg/db"
+	"github.com/contiamo/go-base/pkg/queue"
 	"github.com/contiamo/go-base/pkg/tracing"
 	cvalidation "github.com/contiamo/go-base/pkg/validation"
-	"github.com/contiamo/go-base/pkg/queue"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -17,6 +19,7 @@ import (
 func NewScheduler(db *sql.DB) queue.Scheduler {
 	return &scheduler{
 		Tracer: tracing.NewTracer("queue", "PostgresScheduler"),
+		db:     db,
 	}
 }
 
@@ -28,6 +31,7 @@ func NewSchedulerWithMetrics(db *sql.DB) queue.Scheduler {
 // scheduler is a postgres backed implementation of the task scheduler
 type scheduler struct {
 	tracing.Tracer
+	db *sql.DB
 }
 
 func (q *scheduler) Schedule(ctx context.Context, builder cdb.SQLBuilder, task queue.TaskScheduleRequest) (err error) {
@@ -141,4 +145,52 @@ func (q *scheduler) EnsureSchedule(ctx context.Context, builder cdb.SQLBuilder, 
 
 	// either value was 0 or err == sql.ErrorNoRows
 	return queue.ErrNotScheduled
+}
+
+func (q *scheduler) AssertSchedule(ctx context.Context, schedule queue.TaskScheduleRequest) (err error) {
+	span, ctx := q.StartSpan(ctx, "AssertSchedule")
+	defer func() {
+		q.FinishSpan(span, err)
+	}()
+
+	span.SetTag("queue", schedule.Queue)
+	span.SetTag("type", schedule.Type)
+	span.SetTag("cron", schedule.CronSchedule)
+
+	tx, err := q.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+			return
+		}
+		err = tx.Commit()
+	}()
+
+	builder := squirrel.StatementBuilder.
+		PlaceholderFormat(squirrel.Dollar).
+		RunWith(db.WrapWithTracing(tx))
+
+	_, err = tx.ExecContext(ctx, `LOCK TABLE schedules IN ACCESS EXCLUSIVE MODE;`)
+	if err != nil {
+		return fmt.Errorf("failed to lock `schedules`: %w", err)
+	}
+
+	err = q.EnsureSchedule(ctx, builder, schedule)
+	if err == nil {
+		span.SetTag("existed", true)
+		return nil
+	}
+	if err == queue.ErrNotScheduled {
+		span.SetTag("existed", false)
+		err = q.Schedule(ctx, builder, schedule)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

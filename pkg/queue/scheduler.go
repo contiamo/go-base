@@ -23,6 +23,9 @@ type Scheduler interface {
 	// currently exists. An error ErrNotScheduled is returned if a current task cannot be found.
 	// implementation and validation errors may also be returned and should be checked for.
 	EnsureSchedule(ctx context.Context, builder cdb.SQLBuilder, task TaskScheduleRequest) (err error)
+	// AssertSchedule makes sure a schedule with the given parameters exists, if it does not
+	// this function will create one.
+	AssertSchedule(ctx context.Context, task TaskScheduleRequest) (err error)
 }
 
 type schedulerWithMetrics struct {
@@ -47,4 +50,7 @@ func (s *schedulerWithMetrics) Schedule(ctx context.Context, builder cdb.SQLBuil
 
 func (s *schedulerWithMetrics) EnsureSchedule(ctx context.Context, builder cdb.SQLBuilder, task TaskScheduleRequest) error {
 	return s.s.EnsureSchedule(ctx, builder, task)
+}
+func (s *schedulerWithMetrics) AssertSchedule(ctx context.Context, task TaskScheduleRequest) error {
+	return s.s.AssertSchedule(ctx, task)
 }

@@ -60,6 +60,9 @@ type SchedulerMock struct {
 
 	EnsureError error
 	EnsureCount int
+
+	AssertError error
+	AssertCount int
 }
 
 func (s *SchedulerMock) Schedule(ctx context.Context, builder cdb.SQLBuilder, task TaskScheduleRequest) (err error) {
@@ -70,4 +73,9 @@ func (s *SchedulerMock) Schedule(ctx context.Context, builder cdb.SQLBuilder, ta
 func (s *SchedulerMock) EnsureSchedule(ctx context.Context, builder cdb.SQLBuilder, task TaskScheduleRequest) error {
 	s.EnsureCount = s.EnsureCount + 1
 	return s.EnsureError
+}
+
+func (s *SchedulerMock) AssertSchedule(ctx context.Context, task TaskScheduleRequest) error {
+	s.AssertCount = s.AssertCount + 1
+	return s.AssertError
 }

@@ -271,3 +271,55 @@ func TestEnsure(t *testing.T) {
 		})
 	}
 }
+
+func TestAssertSchedule(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	logrus.SetOutput(ioutil.Discard)
+	defer logrus.SetOutput(os.Stdout)
+
+	schedule := queue.TaskScheduleRequest{
+		TaskBase: queue.TaskBase{
+			Queue: "test",
+			Type:  "type",
+			Spec:  queue.Spec(`{"some":"value"}`),
+		},
+		CronSchedule: "* * * * *", // every minute
+	}
+
+	t.Run("asserts and schedules a non existent schedule", func(t *testing.T) {
+		_, db := dbtest.GetDatabase(t)
+		defer db.Close()
+		require.NoError(t, SetupTables(ctx, db, nil))
+
+		q := NewScheduler(db)
+		err := q.AssertSchedule(ctx, schedule)
+		require.NoError(t, err)
+		dbtest.EqualCount(t, db, 1, "schedules", squirrel.Eq{
+			"task_queue":    schedule.Queue,
+			"task_type":     schedule.Type,
+			"cron_schedule": schedule.CronSchedule,
+			"task_spec":     []byte(schedule.Spec),
+		})
+	})
+
+	t.Run("asserts and does not create a schedule if exists", func(t *testing.T) {
+		_, db := dbtest.GetDatabase(t)
+		defer db.Close()
+		require.NoError(t, SetupTables(ctx, db, nil))
+
+		q := NewScheduler(db)
+		err := q.AssertSchedule(ctx, schedule)
+		require.NoError(t, err)
+		err = q.AssertSchedule(ctx, schedule)
+		require.NoError(t, err)
+		dbtest.EqualCount(t, db, 1, "schedules", squirrel.Eq{
+			"task_queue":    schedule.Queue,
+			"task_type":     schedule.Type,
+			"cron_schedule": schedule.CronSchedule,
+			"task_spec":     []byte(schedule.Spec),
+		})
+	})
+
+}
