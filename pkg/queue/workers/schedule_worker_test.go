@@ -66,7 +66,7 @@ func TestScheduleTask(t *testing.T) {
 				taskQueue2,
 				taskType,
 				taskSpec2,
-				"",
+				"",                      // empty value is a one-time job
 				now.Add(-1*time.Minute), // this must be executed after the first
 				now.Add(-1*time.Minute),
 				now.Add(-1*time.Minute),
