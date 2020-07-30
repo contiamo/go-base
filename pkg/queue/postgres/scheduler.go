@@ -52,9 +52,12 @@ func (q *scheduler) Schedule(ctx context.Context, builder cdb.SQLBuilder, task q
 		task.Spec = emptyJSON
 	}
 
-	err = cvalidation.CronTab(task.CronSchedule)
-	if err != nil {
-		return err
+	// empty schedule means a one-time job
+	if task.CronSchedule != "" {
+		err = cvalidation.CronTab(task.CronSchedule)
+		if err != nil {
+			return err
+		}
 	}
 
 	scheduleID := uuid.NewV4().String()

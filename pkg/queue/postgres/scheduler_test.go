@@ -83,6 +83,18 @@ func TestSchedule(t *testing.T) {
 			},
 		},
 		{
+			name: "Returns no error when a schedule is empty",
+			task: queue.TaskScheduleRequest{
+				TaskBase: queue.TaskBase{
+					Queue: "queue2",
+					Type:  "test",
+					Spec:  spec,
+				},
+				CronSchedule: "",
+			},
+		},
+
+		{
 			name: "Returns error when a cron schedule is not valid",
 			task: queue.TaskScheduleRequest{
 				TaskBase: queue.TaskBase{
