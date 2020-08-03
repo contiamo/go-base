@@ -3,15 +3,26 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/contiamo/go-base/pkg/config"
+	"github.com/contiamo/go-base/pkg/tracing"
 	"github.com/sirupsen/logrus"
 )
 
 // Open opens a connection to a database and retries until ctx.Done()
 // The users must import all the necessary drivers before calling this function.
 func Open(ctx context.Context, cfg config.Database) (db *sql.DB, err error) {
+	tracer := tracing.NewTracer("db", "Connection")
+	span, ctx := tracer.StartSpan(ctx, "Open")
+	defer tracer.FinishSpan(span, err)
+
+	span.SetTag("host", cfg.Host)
+	span.SetTag("port", cfg.Port)
+	span.SetTag("name", cfg.Name)
+	span.SetTag("username", cfg.Username)
+
 	connStr, err := cfg.GetConnectionString()
 	if err != nil {
 		return nil, err
@@ -27,13 +38,17 @@ func Open(ctx context.Context, cfg config.Database) (db *sql.DB, err error) {
 			{
 				db, err = sql.Open(cfg.DriverName, connStr)
 				if err != nil {
-					logrus.Errorf("failed to open db connection: %s", err)
+					errMsg := fmt.Sprintf("failed to open db connection: %s", err)
+					span.LogEvent(errMsg)
+					logrus.Errorf(errMsg)
 					return err
 				}
 
 				err = db.Ping()
 				if err != nil {
-					logrus.Errorf("failed to ping target db: %s", err)
+					errMsg := fmt.Sprintf("failed to ping target db: %s", err)
+					span.LogEvent(errMsg)
+					logrus.Errorf(errMsg)
 					return err
 				}
 
