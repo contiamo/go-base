@@ -16,7 +16,9 @@ import (
 func Open(ctx context.Context, cfg config.Database) (db *sql.DB, err error) {
 	tracer := tracing.NewTracer("db", "Connection")
 	span, ctx := tracer.StartSpan(ctx, "Open")
-	defer tracer.FinishSpan(span, err)
+	defer func() {
+		tracer.FinishSpan(span, err)
+	}()
 
 	span.SetTag("host", cfg.Host)
 	span.SetTag("port", cfg.Port)
