@@ -6,6 +6,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/contiamo/go-base/pkg/config"
+	"github.com/sirupsen/logrus"
 )
 
 // Open opens a connection to a database and retries until ctx.Done()
@@ -26,10 +27,17 @@ func Open(ctx context.Context, cfg config.Database) (db *sql.DB, err error) {
 			{
 				db, err = sql.Open(cfg.DriverName, connStr)
 				if err != nil {
+					logrus.Errorf("failed to open db connection: %s", err)
 					return err
 				}
 
-				return db.Ping()
+				err = db.Ping()
+				if err != nil {
+					logrus.Errorf("failed to ping target db: %s", err)
+					return err
+				}
+
+				return nil
 			}
 		}
 	}, backoff.NewExponentialBackOff())
