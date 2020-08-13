@@ -1,91 +1,30 @@
 package postgres
 
 import (
-	"bytes"
 	"context"
-	"text/template"
+	"fmt"
+	"strings"
 
 	"github.com/contiamo/go-base/pkg/db"
+	cstrings "github.com/contiamo/go-base/pkg/strings"
+	"github.com/sirupsen/logrus"
 )
 
-type ForeignReference struct {
-	ColumnName       string
-	ColumnType       string
-	ReferencedTable  string
-	ReferencedColumn string
-}
-
-func SetupTables(ctx context.Context, db db.SQLDB, references []ForeignReference) error {
-	// setup database
-	buf := &bytes.Buffer{}
-	err := dbSetupTemplate.Execute(buf, references)
-	if err != nil {
-		return err
-	}
-	_, err = db.ExecContext(ctx, buf.String())
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-var dbSetupTemplate = template.Must(template.New("queue-db-setup").Parse(`
--- eventually add missing CITEXT extension
+const (
+	createTableTmpl = `
 CREATE EXTENSION IF NOT EXISTS citext;
 
--- create 'schedules' and 'tasks' table
-CREATE TABLE IF NOT EXISTS schedules (
-    schedule_id uuid PRIMARY KEY,
-    task_queue citext NOT NULL,
-    task_type citext NOT NULL,
-    task_spec jsonb NOT NULL,
-    cron_schedule citext NOT NULL DEFAULT '',
-    next_execution_time timestamptz,
-    created_at timestamptz NOT NULL DEFAULT NOW(),
-    updated_at timestamptz NOT NULL DEFAULT NOW()
-    -- Additional columns which reference to something, used for clean up
-    {{ range . }}
-    ,{{ .ColumnName }} {{ .ColumnType }} REFERENCES {{ .ReferencedTable }} ({{ .ReferencedColumn}}) ON DELETE CASCADE
-    {{ end }}
+CREATE TABLE IF NOT EXISTS %s (
+%s
 );
-CREATE TABLE IF NOT EXISTS tasks (
-    task_id uuid PRIMARY KEY,
-    queue citext NOT NULL,
-    type citext NOT NULL,
-    spec jsonb NOT NULL,
-    status citext NOT NULL,
-    progress jsonb NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT NOW(),
-    updated_at timestamptz NOT NULL DEFAULT NOW(),
-    started_at timestamptz,
-    finished_at timestamptz,
-    last_heartbeat_at timestamptz,
-    -- Additional columns for tasks used for clean up
-    schedule_id uuid REFERENCES schedules ON DELETE CASCADE
-    -- Additional columns which reference to something, used for clean up
-    {{ range . }}
-    ,{{ .ColumnName }} {{ .ColumnType }} REFERENCES {{ .ReferencedTable }} ({{ .ReferencedColumn}}) ON DELETE CASCADE
-    {{ end }}
-);
+`
+	alterTableTmpl = `
+CREATE EXTENSION IF NOT EXISTS citext;
 
--- create indexes
-CREATE INDEX IF NOT EXISTS schedule_next_execution_time_idx ON schedules (next_execution_time);
-CREATE INDEX IF NOT EXISTS schedule_task_type_idx ON schedules (task_type);
-CREATE INDEX IF NOT EXISTS tasks_queue_idx ON tasks (queue);
-CREATE INDEX IF NOT EXISTS tasks_type_idx ON tasks USING hash (type);
-CREATE INDEX IF NOT EXISTS tasks_created_heartbeat_at_idx ON tasks (created_at, last_heartbeat_at);
-CREATE INDEX IF NOT EXISTS tasks_created_desc_heartbeat_at_desc_idx ON tasks (created_at DESC, last_heartbeat_at DESC);
-CREATE INDEX IF NOT EXISTS tasks_created_desc_idx ON tasks (created_at DESC);
-CREATE INDEX IF NOT EXISTS tasks_last_heartbeat_at_desc_idx ON tasks (last_heartbeat_at DESC);
-CREATE INDEX IF NOT EXISTS tasks_created_updated_desc_idx ON tasks (created_at DESC, updated_at DESC);
-CREATE INDEX IF NOT EXISTS tasks_started_at_idx ON tasks (started_at)
-WHERE
-  started_at IS NULL;
-CREATE INDEX IF NOT EXISTS tasks_completed_at_idx ON tasks (finished_at)
-  WHERE
-  finished_at IS NULL;
-
+ALTER TABLE %s
+%s;
+`
+	notifySetup = `
 -- notify on channel 'task_update' on changes on the tasks table
 CREATE OR REPLACE FUNCTION notify_task_update ()
     RETURNS TRIGGER
@@ -102,4 +41,339 @@ CREATE TRIGGER notify_task_update_trigger
     AFTER INSERT ON tasks
     FOR EACH ROW
     EXECUTE PROCEDURE notify_task_update ();
-`))
+`
+)
+
+var (
+	none = nothing{}
+
+	// list of system columns required for the queue to function
+
+	scheduleColumns = tableColumnSet{
+		"schedule_id":         "uuid PRIMARY KEY",
+		"task_queue":          "citext NOT NULL",
+		"task_type":           "citext NOT NULL",
+		"task_spec":           "jsonb NOT NULL",
+		"cron_schedule":       "citext NOT NULL DEFAULT ''",
+		"next_execution_time": "timestamptz",
+		"created_at":          "timestamptz NOT NULL DEFAULT NOW()",
+		"updated_at":          "timestamptz NOT NULL DEFAULT NOW()",
+	}
+
+	taskColumns = tableColumnSet{
+		"task_id":           "uuid PRIMARY KEY",
+		"queue":             "citext NOT NULL",
+		"type":              "citext NOT NULL",
+		"spec":              "jsonb NOT NULL",
+		"status":            "citext NOT NULL",
+		"progress":          "jsonb NOT NULL",
+		"created_at":        "timestamptz NOT NULL DEFAULT NOW()",
+		"updated_at":        "timestamptz NOT NULL DEFAULT NOW()",
+		"started_at":        "timestamptz",
+		"finished_at":       "timestamptz",
+		"last_heartbeat_at": "timestamptz",
+		"schedule_id":       "uuid REFERENCES schedules ON DELETE CASCADE",
+	}
+
+	// list of indexes on the system columns defined above
+	indexes = indexList{
+
+		// schedules
+		{
+			Table:   "schedules",
+			Columns: []string{"next_execution_time DESC"},
+		},
+		{
+			Table:   "schedules",
+			Columns: []string{"task_queue"},
+			Type:    "hash",
+		},
+		{
+			Table:   "schedules",
+			Columns: []string{"task_type"},
+			Type:    "hash",
+		},
+		{
+			Table:   "schedules",
+			Columns: []string{"created_at DESC", "updated_at DESC"},
+		},
+
+		// tasks
+		{
+			Table:   "tasks",
+			Columns: []string{"queue"},
+			Type:    "hash",
+		},
+		{
+			Table:   "tasks",
+			Columns: []string{"type"},
+			Type:    "hash",
+		},
+		{
+			Table:   "tasks",
+			Columns: []string{"status"},
+			Type:    "hash",
+		},
+		{
+			Table:   "tasks",
+			Columns: []string{"schedule_id"},
+			Type:    "hash",
+		},
+		{
+			Table:   "tasks",
+			Columns: []string{"created_at", "last_heartbeat_at"},
+		},
+		{
+			Table:   "tasks",
+			Columns: []string{"created_at DESC", "last_heartbeat_at DESC"},
+		},
+		{
+			Table:   "tasks",
+			Columns: []string{"created_at DESC"},
+		},
+		{
+			Table:   "tasks",
+			Columns: []string{"last_heartbeat_at DESC"},
+		},
+		{
+			Table:   "tasks",
+			Columns: []string{"created_at DESC", "updated_at DESC"},
+		},
+		{
+			Table:   "tasks",
+			Columns: []string{"started_at DESC"},
+		},
+		{
+			Table:   "tasks",
+			Columns: []string{"finished_at DESC"},
+		},
+	}
+)
+
+// ForeignReference describes a foreign key reference in the queue system
+type ForeignReference struct {
+	// ColumnName is a name of the colum in the `tasks` and `schedules` tables
+	ColumnName string
+	// ColumnType is a type of the colum in the `tasks` and `schedules` tables
+	ColumnType string
+	// ReferencedTable is a table name this column should be referencing
+	ReferencedTable string
+	// ReferencedColumn is a column name this column should be referencing
+	ReferencedColumn string
+}
+
+// SetupTables sets up all the necessary tables, foreign keys and indexes.
+//
+// This supports both: initial bootstrapping and changing of the reference list.
+// However, it does not apply changes to an existing reference, this will do nothing.
+func SetupTables(ctx context.Context, db db.SQLDB, references []ForeignReference) (err error) {
+	logrus.Debug("checking queue-related tables...")
+
+	logrus.Debug("checking `schedules` table...")
+	err = syncTable(ctx, db, "schedules", scheduleColumns, references)
+	if err != nil {
+		return err
+	}
+	logrus.Debug("`schedules` table is up to date")
+
+	logrus.Debug("checking `tasks` table...")
+	err = syncTable(ctx, db, "tasks", taskColumns, references)
+	if err != nil {
+		return err
+	}
+	logrus.Debug("`tasks` table is up to date")
+
+	logrus.Debug("assert the notification trigger...")
+	logrus.Debug(notifySetup)
+	_, err = db.ExecContext(ctx, notifySetup)
+	if err != nil {
+		return err
+	}
+	logrus.Debug("the notification trigger is up to date")
+
+	applyIndexes := make(indexList, 0, len(references)+len(indexes))
+	for _, ref := range references {
+		applyIndexes = append(applyIndexes, index{
+			Table:   "schedules",
+			Columns: []string{ref.ColumnName},
+			Type:    "hash",
+		})
+		applyIndexes = append(applyIndexes, index{
+			Table:   "tasks",
+			Columns: []string{ref.ColumnName},
+			Type:    "hash",
+		})
+	}
+	applyIndexes = append(indexes, applyIndexes...)
+	logrus.
+		WithField("count", len(applyIndexes)).
+		Debug("assert indexes...")
+	query := strings.Join(applyIndexes.generateStatements(), "\n")
+	logrus.Debug(query)
+	_, err = db.ExecContext(ctx, query)
+	if err != nil {
+		return err
+	}
+	logrus.Debug("indexes are up to date")
+	return err
+}
+
+func syncTable(ctx context.Context, db db.SQLDB, tableName string, initColumns tableColumnSet, references []ForeignReference) (err error) {
+	expectedColumns := make(tableColumnSet, len(initColumns)+len(references))
+	for columnName := range initColumns {
+		expectedColumns[columnName] = initColumns[columnName]
+	}
+	for _, ref := range references {
+		_, ok := expectedColumns[ref.ColumnName]
+		if ok {
+			return fmt.Errorf(
+				"failed to replace a system column %q with a reference",
+				ref.ColumnName,
+			)
+		}
+
+		expectedColumns[ref.ColumnName] = fmt.Sprintf(
+			"%s REFERENCES %s (%s) ON DELETE CASCADE",
+			ref.ColumnType,
+			ref.ReferencedTable,
+			ref.ReferencedColumn,
+		)
+
+	}
+
+	logrus.Debug("getting the current list of columns...")
+	currentColumns, err := listColumns(ctx, db, tableName)
+	if err != nil {
+		return err
+	}
+	logrus.Debug("current list of columns received")
+
+	// the table does not exist yet
+	if len(currentColumns) == 0 {
+		logrus.Debugf("table %q does not exist yet, bootstrapping...", tableName)
+		columnStmts := expectedColumns.generateStatements()
+		query := fmt.Sprintf(createTableTmpl, tableName, strings.Join(columnStmts, ",\n"))
+		logrus.Debug(query)
+		_, err = db.ExecContext(ctx, query)
+		return err
+	}
+
+	dropColumns := make([]string, 0, len(currentColumns))
+
+	// drop redundant columns
+	for curColName := range currentColumns {
+		_, ok := expectedColumns[curColName]
+		if ok {
+			continue
+		}
+
+		// if the current column is not on the expected list it should be dropped
+		dropColumns = append(dropColumns, fmt.Sprintf("DROP COLUMN %s CASCADE", curColName))
+	}
+
+	addColumns := make([]string, 0, len(expectedColumns))
+
+	// add missing columns
+	for expectedColName := range expectedColumns {
+		_, ok := currentColumns[expectedColName]
+		if ok {
+			continue
+		}
+
+		// if the expected column is not on the current list it should be added
+		addColumns = append(addColumns, fmt.Sprintf(
+			"ADD COLUMN %s %s",
+			expectedColName,
+			expectedColumns[expectedColName],
+		),
+		)
+	}
+
+	columnStmts := append(addColumns, dropColumns...)
+	if len(columnStmts) == 0 {
+		return nil
+	}
+
+	logrus.
+		WithField("adding", len(addColumns)).
+		WithField("dropping", len(dropColumns)).
+		Debug("applying changes...")
+	query := fmt.Sprintf(alterTableTmpl, tableName, strings.Join(columnStmts, ",\n"))
+	logrus.Debug(query)
+	_, err = db.ExecContext(ctx, query)
+	return err
+}
+
+func listColumns(ctx context.Context, db db.SQLDB, tableName string) (columns map[string]nothing, err error) {
+	rows, err := db.QueryContext(ctx, `
+SELECT column_name FROM information_schema.columns WHERE table_name = $1;
+`, tableName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	columns = make(map[string]nothing)
+
+	for rows.Next() {
+		var columnName string
+		err = rows.Scan(&columnName)
+		if err != nil {
+			return nil, err
+		}
+		columns[columnName] = none
+	}
+
+	return columns, nil
+}
+
+type nothing struct{}
+
+type tableColumnSet map[string]string
+
+// generateStatements generates a list of statements that can be put
+// inside a CREATE TABLE <tableName> (result[0], result[1]...) statement.
+func (s tableColumnSet) generateStatements() []string {
+	columnDefinitions := make([]string, 0, len(s))
+	for name := range s {
+		columnDefinitions = append(columnDefinitions, name+" "+s[name])
+	}
+
+	return columnDefinitions
+}
+
+// index describes all important properties of an index
+type index struct {
+	Table   string
+	Columns []string
+	Type    string
+}
+type indexList []index
+
+// generateStatements generates a list of statements that can be executed
+// and they will make sure that contained indexes exist
+func (l indexList) generateStatements() []string {
+	indexDefinitions := make([]string, 0, len(l))
+	for _, index := range l {
+		stmt := strings.Builder{}
+		stmt.WriteString("CREATE INDEX IF NOT EXISTS ")
+
+		columnList := strings.Join(index.Columns, ",")
+
+		stmt.WriteString(fmt.Sprintf(
+			"%s_%s_idx ON %s",
+			index.Table,
+			cstrings.ToUnderscoreCase(columnList),
+			index.Table,
+		))
+
+		if index.Type != "" {
+			stmt.WriteString(fmt.Sprintf(" USING %s ", index.Type))
+		}
+
+		stmt.WriteString("(" + columnList + ");")
+		indexDefinitions = append(indexDefinitions, stmt.String())
+	}
+
+	return indexDefinitions
+}
