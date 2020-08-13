@@ -37,21 +37,25 @@ func (t *Timestamp) UnmarshalJSON(data []byte) error {
 	var err error
 	var numeric json.Number
 
-	err = json.Unmarshal(data, &numeric)
-	if err != nil {
-		return err
-	}
-
-	timestampStr := numeric.String()
+	timestampStr := string(data)
 	switch {
 	case strings.Contains(timestampStr, "T"):
+		timestampStr = strings.Trim(timestampStr, "\"")
 		t.time, err = time.Parse(time.RFC3339, timestampStr)
 	case strings.Contains(timestampStr, "."):
 		var v float64
+		err = json.Unmarshal(data, &numeric)
+		if err != nil {
+			return err
+		}
 		v, err = numeric.Float64()
 		t.time = timeFromFloat64(v)
 	default:
 		var v int64
+		err = json.Unmarshal(data, &numeric)
+		if err != nil {
+			return err
+		}
 		v, err = numeric.Int64()
 		if err == nil {
 			t.time = time.Unix(v, 0).UTC()
