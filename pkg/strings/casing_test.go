@@ -68,6 +68,16 @@ func TestToUnderscoreCase(t *testing.T) {
 			output: "some_table_name_some_name",
 		},
 		{
+			name:   "Does not double underscores",
+			input:  "some Table Name",
+			output: "some_table_name",
+		},
+		{
+			name:   "Respects several capital letters in a row",
+			input:  "some TABLE NAME",
+			output: "some_table_name",
+		},
+		{
 			name:   "Does not change the value if it's underscore casing",
 			input:  "some_name",
 			output: "some_name",
@@ -82,7 +92,16 @@ func TestToUnderscoreCase(t *testing.T) {
 			input:  "Some{{{",
 			output: "some",
 		},
-
+		{
+			name:   "Makes a separate upper case word a part of underscored identifier",
+			input:  "created_at DESC",
+			output: "created_at_desc",
+		},
+		{
+			name:   "Makes a separate upper case word a part of underscored identifier",
+			input:  "word$^%^%another _some   *&^%$A%$#%WORD",
+			output: "word_another_some_a_word",
+		},
 		{
 			name: "Handles empty string",
 		},

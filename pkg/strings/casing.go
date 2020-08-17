@@ -37,19 +37,33 @@ func ToPascalCase(value string) string {
 func ToUnderscoreCase(value string) string {
 	b := strings.Builder{}
 
+	var previousUnderscore, previousUppercase bool
+
 	for _, rune := range value {
-		// Always upper the character after non-letter/non-digit skipping the character
+
+		// if it's not allowed character we replace it with underscore without
+		// duplication of underscores
 		if !unicode.IsLetter(rune) && !unicode.IsDigit(rune) {
-			b.WriteByte('_')
+			if !previousUnderscore {
+				b.WriteByte('_')
+				previousUnderscore = true
+			}
+			previousUppercase = false
 			continue
 		}
 
-		// convert pascal or camel case into underscore case
 		if unicode.IsUpper(rune) {
-			b.WriteByte('_')
+			if !previousUnderscore && !previousUppercase {
+				b.WriteByte('_')
+			}
+			b.WriteRune(unicode.ToLower(rune))
+			previousUppercase = true
+		} else {
+			b.WriteRune(rune)
+			previousUppercase = false
 		}
 
-		b.WriteRune(unicode.ToLower(rune))
+		previousUnderscore = false
 	}
 
 	return strings.Trim(b.String(), "_")
