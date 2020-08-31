@@ -119,10 +119,10 @@ func TestRetentionHandler(t *testing.T) {
 
 	heartbeats := make(chan queue.Progress, 10)
 
-	seenBeats := []retentionProgress{}
+	seenBeats := []SQLTaskProgress{}
 	go func() {
 		for hb := range heartbeats {
-			progress := retentionProgress{}
+			progress := SQLTaskProgress{}
 			err = json.Unmarshal(hb, &progress)
 			require.NoError(t, err, "can't parse progress")
 			seenBeats = append(seenBeats, progress)
@@ -153,7 +153,7 @@ func TestRetentionHandler(t *testing.T) {
 	time.Sleep(time.Second)
 	close(heartbeats)
 
-	require.Equal(t, retentionProgress{}, seenBeats[0])
+	require.Equal(t, SQLTaskProgress{}, seenBeats[0])
 
 	lastBeat := seenBeats[len(seenBeats)-1]
 
@@ -284,14 +284,10 @@ func TestAssertRetentionSchedule(t *testing.T) {
 			require.Equal(t, MaintenanceTaskQueue, mock.schedule.Queue)
 			require.Equal(t, RetentionTask, mock.schedule.Type)
 
-			spec := retentionSpec{}
+			spec := SQLExecTaskSpec{}
 			err = json.Unmarshal(mock.schedule.Spec, &spec)
 			require.NoError(t, err, "can not parse the task spec")
 
-			require.Equal(t, tc.queueName, spec.QueueName)
-			require.Equal(t, tc.taskType, spec.TaskType)
-			require.Equal(t, tc.status, spec.Status)
-			require.Equal(t, tc.age, spec.Age)
 			require.Equal(t, tc.expectedSQL, spec.SQL)
 			require.Regexp(t, regexp.MustCompile(`\d{1,2} * * * *`), mock.schedule.CronSchedule)
 		})
