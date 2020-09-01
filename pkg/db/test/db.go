@@ -140,7 +140,7 @@ func cleanupDB() {
 func EnsureDBReady(ctx context.Context) (error, func()) {
 	check := exec.CommandContext(ctx, "docker", "container", "inspect", "go-base-postgres", "-f", "{{.ID}}").Run()
 	if check == nil {
-		// container is already running, non
+		// container is already running
 		return nil, func() {}
 	}
 
