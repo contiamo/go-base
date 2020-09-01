@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"hash"
 	"io"
 	"strings"
@@ -60,6 +61,8 @@ func (h basicHasher) Hash(args ...interface{}) ([]byte, error) {
 			reader = bytes.NewReader(d)
 		case string:
 			reader = strings.NewReader(d)
+		case fmt.Stringer:
+			reader = strings.NewReader(d.String())
 		default:
 			r, w := io.Pipe()
 			encoder := json.NewEncoder(w)
