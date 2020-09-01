@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"golang.org/x/crypto/sha3"
-	"golang.org/x/sync/errgroup"
 )
 
 var (
@@ -50,8 +49,8 @@ func (h basicHasher) Hash(args ...interface{}) ([]byte, error) {
 
 	for _, data := range args {
 		var (
-			reader io.Reader
-			wg     = &errgroup.Group{}
+			reader       io.Reader
+			encoderError error
 		)
 
 		// setup reader for the data
@@ -67,10 +66,10 @@ func (h basicHasher) Hash(args ...interface{}) ([]byte, error) {
 		default:
 			r, w := io.Pipe()
 			encoder := json.NewEncoder(w)
-			wg.Go(func() error {
+			go func() {
 				defer w.Close()
-				return encoder.Encode(data)
-			})
+				encoderError = encoder.Encode(data)
+			}()
 			reader = r
 		}
 
@@ -80,10 +79,11 @@ func (h basicHasher) Hash(args ...interface{}) ([]byte, error) {
 			return nil, err
 		}
 
-		// wait for the encoder
-		if err := wg.Wait(); err != nil {
+		// check encoder error
+		if encoderError != nil {
 			return nil, err
 		}
+
 	}
 
 	return h.hash.Sum(nil), nil

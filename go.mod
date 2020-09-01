@@ -31,7 +31,6 @@ require (
 	github.com/urfave/negroni v1.0.0
 	go.uber.org/goleak v1.0.0
 	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
-	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	google.golang.org/genproto v0.0.0-20190716160619-c506a9f90610 // indirect
 	google.golang.org/grpc v1.22.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0
