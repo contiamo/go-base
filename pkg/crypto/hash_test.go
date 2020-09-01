@@ -1,6 +1,8 @@
 package crypto
 
 import (
+	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -53,6 +55,18 @@ func TestHash(t *testing.T) {
 			name:           "hash multiple different things",
 			input:          []interface{}{"f", strings.NewReader("oo"), []byte("bar")},
 			expectedOutput: "09234807e4af85f17c66b48ee3bca89dffd1f1233659f9f940a2b17b0b8c6bc5",
+		},
+		{
+			name: "marshal error is forwarded",
+			input: []interface{}{map[float64]string{
+				1.: "lol",
+			}},
+			expectedOutput: "",
+			expectedError: &json.UnsupportedTypeError{
+				Type: reflect.MapOf(
+					reflect.TypeOf(1.),
+					reflect.TypeOf("lol"),
+				)},
 		},
 	}
 

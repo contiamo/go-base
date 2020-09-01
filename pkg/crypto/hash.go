@@ -81,7 +81,7 @@ func (h basicHasher) Hash(args ...interface{}) ([]byte, error) {
 
 		// check encoder error
 		if encoderError != nil {
-			return nil, err
+			return nil, encoderError
 		}
 
 	}
