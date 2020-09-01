@@ -14,6 +14,9 @@ import (
 
 var (
 	// DefaultHasher is the default implementation for hashing things
+	// It outputs 32 Bytes and uses a SHA3-256 hash in the current configuration.
+	// Its generic security strength is 256 bits against preimage attacks,
+	// and 128 bits against collision attacks.
 	defaultHasher = basicHasher{sha3.New256()}
 )
 
