@@ -11,6 +11,11 @@ import (
 )
 
 const (
+	// TasksTable is the name of the Postgres table that is used for tasks
+	TasksTable = "tasks"
+	// SchedulesTable is the name of the Postgres table used for schedules
+	SchedulesTable = "schedules"
+
 	createTableTmpl = `
 CREATE EXTENSION IF NOT EXISTS citext;
 
@@ -80,71 +85,71 @@ var (
 
 		// schedules
 		{
-			Table:   "schedules",
+			Table:   SchedulesTable,
 			Columns: []string{"next_execution_time DESC"},
 		},
 		{
-			Table:   "schedules",
+			Table:   SchedulesTable,
 			Columns: []string{"task_queue"},
 			Type:    "hash",
 		},
 		{
-			Table:   "schedules",
+			Table:   SchedulesTable,
 			Columns: []string{"task_type"},
 			Type:    "hash",
 		},
 		{
-			Table:   "schedules",
+			Table:   SchedulesTable,
 			Columns: []string{"created_at DESC", "updated_at DESC"},
 		},
 
 		// tasks
 		{
-			Table:   "tasks",
+			Table:   TasksTable,
 			Columns: []string{"queue"},
 			Type:    "hash",
 		},
 		{
-			Table:   "tasks",
+			Table:   TasksTable,
 			Columns: []string{"type"},
 			Type:    "hash",
 		},
 		{
-			Table:   "tasks",
+			Table:   TasksTable,
 			Columns: []string{"status"},
 			Type:    "hash",
 		},
 		{
-			Table:   "tasks",
+			Table:   TasksTable,
 			Columns: []string{"schedule_id"},
 			Type:    "hash",
 		},
 		{
-			Table:   "tasks",
+			Table:   TasksTable,
 			Columns: []string{"created_at", "last_heartbeat_at"},
 		},
 		{
-			Table:   "tasks",
+			Table:   TasksTable,
 			Columns: []string{"created_at DESC", "last_heartbeat_at DESC"},
 		},
 		{
-			Table:   "tasks",
+			Table:   TasksTable,
 			Columns: []string{"created_at DESC"},
 		},
 		{
-			Table:   "tasks",
+			Table:   TasksTable,
 			Columns: []string{"last_heartbeat_at DESC"},
 		},
 		{
-			Table:   "tasks",
+			Table:   TasksTable,
 			Columns: []string{"created_at DESC", "updated_at DESC"},
 		},
 		{
-			Table:   "tasks",
+			Table:   TasksTable,
 			Columns: []string{"started_at DESC"},
 		},
 		{
-			Table:   "tasks",
+			Table:   TasksTable,
 			Columns: []string{"finished_at DESC"},
 		},
 	}
@@ -170,14 +175,14 @@ func SetupTables(ctx context.Context, db db.SQLDB, references []ForeignReference
 	logrus.Debug("checking queue-related tables...")
 
 	logrus.Debug("checking `schedules` table...")
-	err = syncTable(ctx, db, "schedules", scheduleColumns, references)
+	err = syncTable(ctx, db, SchedulesTable, scheduleColumns, references)
 	if err != nil {
 		return err
 	}
 	logrus.Debug("`schedules` table is up to date")
 
 	logrus.Debug("checking `tasks` table...")
-	err = syncTable(ctx, db, "tasks", taskColumns, references)
+	err = syncTable(ctx, db, TasksTable, taskColumns, references)
 	if err != nil {
 		return err
 	}
@@ -194,12 +199,12 @@ func SetupTables(ctx context.Context, db db.SQLDB, references []ForeignReference
 	applyIndexes := make(indexList, 0, len(references)+len(indexes))
 	for _, ref := range references {
 		applyIndexes = append(applyIndexes, index{
-			Table:   "schedules",
+			Table:   SchedulesTable,
 			Columns: []string{ref.ColumnName},
 			Type:    "hash",
 		})
 		applyIndexes = append(applyIndexes, index{
-			Table:   "tasks",
+			Table:   TasksTable,
 			Columns: []string{ref.ColumnName},
 			Type:    "hash",
 		})
