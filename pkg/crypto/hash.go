@@ -25,7 +25,7 @@ func Hash(data ...interface{}) ([]byte, error) {
 	return defaultHasher.Hash(data...)
 }
 
-// HashToString is a convenient function calling the default hasher and encoding the result as hex string
+// HashToString is a convenience function calling the default hasher and encoding the result as hex string
 func HashToString(data ...interface{}) (string, error) {
 	hash, err := defaultHasher.Hash(data...)
 	if err != nil {
