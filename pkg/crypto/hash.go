@@ -17,7 +17,7 @@ var (
 	defaultHasher = basicHasher{sha3.New256()}
 )
 
-// Hash is a convenient function calling the default hasher
+// Hash is a convenience function calling the default hasher
 func Hash(data ...interface{}) ([]byte, error) {
 	return defaultHasher.Hash(data...)
 }
