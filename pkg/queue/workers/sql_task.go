@@ -51,6 +51,7 @@ func (h *sqlTaskHandler) Process(ctx context.Context, task queue.Task, heartbeat
 	span, ctx := h.StartSpan(ctx, "Process")
 	defer func() {
 		h.FinishSpan(span, err)
+		close(heartbeats)
 	}()
 	span.SetTag("task.id", task.ID)
 	span.SetTag("task.queue", task.Queue)

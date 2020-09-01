@@ -12,6 +12,7 @@ import (
 	"time"
 
 	cdb "github.com/contiamo/go-base/pkg/db"
+	"go.uber.org/goleak"
 
 	"github.com/Masterminds/squirrel"
 	dbtest "github.com/contiamo/go-base/pkg/db/test"
@@ -25,6 +26,8 @@ import (
 var emptyJSON = []byte("{}")
 
 func TestRetentionHandler(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
@@ -151,7 +154,6 @@ func TestRetentionHandler(t *testing.T) {
 	// wait a moment for the final heartbeat and then close the channel to avoid
 	// goroutine leak errors
 	time.Sleep(time.Second)
-	close(heartbeats)
 
 	require.Equal(t, SQLTaskProgress{}, seenBeats[0])
 
