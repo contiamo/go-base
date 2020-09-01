@@ -71,12 +71,12 @@ func (h basicHasher) Hash(args ...interface{}) ([]byte, error) {
 		}
 
 		// hash all the data
-		wg.Go(func() error {
-			_, err := io.Copy(h.hash, reader)
-			return err
-		})
+		_, err := io.Copy(h.hash, reader)
+		if err != nil {
+			return nil, err
+		}
 
-		// wait for it
+		// wait for the encoder
 		if err := wg.Wait(); err != nil {
 			return nil, err
 		}
