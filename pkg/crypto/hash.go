@@ -22,6 +22,7 @@ var (
 )
 
 // Hash is a convenience function calling the default hasher
+// WARNING: only pass in data that is json-marshalable. If not, the worst case scenario is that you passed in data with circular references and this will just blow up your CPU
 func Hash(data ...interface{}) ([]byte, error) {
 	return defaultHasher.Hash(data...)
 }
