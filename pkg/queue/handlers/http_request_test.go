@@ -408,6 +408,56 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 
 	})
 
+	t.Run("returns no error if response content type is JSON but response is empty", func(t *testing.T) {
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("content-type", "application/json")
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer s.Close()
+
+		hrh := NewHTTPRequestHandler(
+			"auth",
+			&tokens.CreatorMock{},
+			http.DefaultClient,
+		)
+
+		// collect heartbeats with the status
+		var progress []HTTPRequestProgress
+		beats := make(chan queue.Progress)
+		ready := make(chan bool)
+
+		go func() {
+			for b := range beats {
+				var p HTTPRequestProgress
+				err := json.Unmarshal(b, &p)
+				require.NoError(t, err)
+
+				// this field is not deterministic, so we remove the value
+				p.Duration = nil
+				progress = append(progress, p)
+			}
+			ready <- true
+		}()
+
+		spec := HTTPRequestTaskSpec{
+			Method:         http.MethodPost,
+			URL:            s.URL,
+			ExpectedStatus: http.StatusOK,
+		}
+
+		task := queue.Task{
+			TaskBase: queue.TaskBase{
+				Spec: test.ToJSONBytes(t, spec),
+			},
+		}
+
+		err := hrh.Process(ctx, task, beats)
+		require.NoError(t, err)
+
+		<-ready
+
+	})
+
 	t.Run("supports partial results as multiple JSON objects and sends progres for them", func(t *testing.T) {
 		responses := []string{
 			`{"one":"value1"}`,
