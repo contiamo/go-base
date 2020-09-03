@@ -43,13 +43,19 @@ func TestDispatcherProcess(t *testing.T) {
 		require.Equal(t, "invalid", err.Error())
 	})
 
-	t.Run("returns ErrNoHandlerFound when there is no handler", func(t *testing.T) {
+	t.Run("returns ErrNoHandlerFound when there is no handler and closes heartbeats", func(t *testing.T) {
 		task := queue.Task{TaskBase: queue.TaskBase{Type: "test"}}
 
 		h := NewDispatchHandler(map[queue.TaskType]workers.TaskHandler{})
 
-		err := h.Process(ctx, task, nil)
+		heartbeats := make(chan queue.Progress)
+		err := h.Process(ctx, task, heartbeats)
+		<-heartbeats
+		require.PanicsWithError(t, "send on closed channel", func() {
+			heartbeats <- queue.Progress{}
+		})
 		require.Error(t, err)
 		require.Equal(t, ErrNoHandlerFound.Error(), err.Error())
+
 	})
 }

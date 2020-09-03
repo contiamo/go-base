@@ -44,6 +44,7 @@ func (h *dispatchHandler) Process(ctx context.Context, task queue.Task, heartbea
 	handler, ok := h.handlers[task.Type]
 	if !ok {
 		logrus.Error("there is no handler for this task type")
+		close(heartbeats)
 		return ErrNoHandlerFound
 	}
 	return handler.Process(ctx, task, heartbeats)
