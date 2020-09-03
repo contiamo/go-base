@@ -99,7 +99,7 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 				"Accept-Encoding: [gzip]",
 				"Auth: [token value]",
 				"Content-Length: [12]",
-				"User-Agent: [Contiamo Hub HTTP Request Task]",
+				"User-Agent: [Contiamo HTTP Request Task]",
 				"X-Another: [X-Some]",
 				"X-Some: [X-Value]",
 			},
@@ -126,7 +126,7 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 			expHeaders: []string{
 				"Accept-Encoding: [gzip]",
 				"Content-Length: [12]",
-				"User-Agent: [Contiamo Hub HTTP Request Task]",
+				"User-Agent: [Contiamo HTTP Request Task]",
 				"X-Another: [X-Some]",
 				"X-Some: [X-Value]",
 			},
@@ -147,7 +147,7 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 			expHeaders: []string{
 				"Accept-Encoding: [gzip]",
 				"Content-Length: [12]",
-				"User-Agent: [Contiamo Hub HTTP Request Task]",
+				"User-Agent: [Contiamo HTTP Request Task]",
 			},
 			expProgress: HTTPRequestProgress{
 				Stage:          RequestResponse,
@@ -165,7 +165,7 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 			expHeaders: []string{
 				"Accept-Encoding: [gzip]",
 				"Content-Length: [0]",
-				"User-Agent: [Contiamo Hub HTTP Request Task]",
+				"User-Agent: [Contiamo HTTP Request Task]",
 			},
 			expProgress: HTTPRequestProgress{
 				Stage:          RequestResponse,
@@ -182,7 +182,7 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 			},
 			expHeaders: []string{
 				"Accept-Encoding: [gzip]",
-				"User-Agent: [Contiamo Hub HTTP Request Task]",
+				"User-Agent: [Contiamo HTTP Request Task]",
 			},
 			expProgress: HTTPRequestProgress{
 				Stage:          RequestResponse,

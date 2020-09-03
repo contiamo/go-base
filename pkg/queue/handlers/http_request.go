@@ -59,7 +59,7 @@ type HTTPRequestProgress struct {
 	// Stage is the current stage of the HTTP request task
 	Stage HTTPRequestStage `json:"stage,omitempty"`
 	// Duration of the HTTP request in milliseconds
-	Duration *int64 `json:"duration,omitempty"`
+	Duration *time.Duration `json:"duration,omitempty"`
 	// ReturnedStatus is a status returned from the target endpoint
 	ReturnedStatus *int `json:"returnedStatus,omitempty"`
 	// ReturnedBody is a body returned from the target endpoint
@@ -136,7 +136,7 @@ func (h *httpRequestHandler) Process(ctx context.Context, task queue.Task, heart
 		return err
 	}
 
-	req.Header.Add("User-Agent", "Contiamo Hub HTTP Request Task")
+	req.Header.Add("User-Agent", "Contiamo HTTP Request Task")
 
 	for name, value := range spec.RequestHeaders {
 		req.Header.Add(name, value)
@@ -170,7 +170,7 @@ func (h *httpRequestHandler) Process(ctx context.Context, task queue.Task, heart
 
 	now := time.Now()
 	defer func() {
-		duration := time.Since(now).Milliseconds()
+		duration := time.Since(now)
 		progress.Duration = &duration
 		err := sendHTTPRequestProgress(progress, heartbeats)
 		if err != nil {
