@@ -1,4 +1,4 @@
-package workers
+package handlers
 
 import (
 	"context"
@@ -123,7 +123,9 @@ func TestRetentionHandler(t *testing.T) {
 	heartbeats := make(chan queue.Progress, 10)
 
 	seenBeats := []SQLTaskProgress{}
+	done := make(chan struct{})
 	go func() {
+		defer close(done)
 		for hb := range heartbeats {
 			progress := SQLTaskProgress{}
 			err = json.Unmarshal(hb, &progress)
@@ -151,9 +153,7 @@ func TestRetentionHandler(t *testing.T) {
 
 	dbtest.EqualCount(t, db, 3, postgres.TasksTable, nil, "incorrect task count")
 
-	// wait a moment for the final heartbeat and then close the channel to avoid
-	// goroutine leak errors
-	time.Sleep(time.Second)
+	<-done
 
 	require.Equal(t, SQLTaskProgress{}, seenBeats[0])
 
