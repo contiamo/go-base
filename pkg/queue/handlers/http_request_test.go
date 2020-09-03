@@ -350,7 +350,7 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 
 		err := hrh.Process(ctx, task, beats)
 		require.Error(t, err)
-		require.Equal(t, "unexpected response content type, expected `application/json`, got `text/plain; charset=utf-8`", err.Error())
+		require.Equal(t, "unexpected response content type, expected JSON, got `text/plain; charset=utf-8`", err.Error())
 
 		<-ready
 

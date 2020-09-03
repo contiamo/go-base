@@ -185,9 +185,9 @@ func (h *httpRequestHandler) Process(ctx context.Context, task queue.Task, heart
 	defer resp.Body.Close()
 
 	contentType := resp.Header.Get("content-type")
-	if !strings.Contains(contentType, "application/json") {
+	if !strings.Contains(contentType, "json") {
 		return fmt.Errorf(
-			"unexpected response content type, expected `application/json`, got `%s`",
+			"unexpected response content type, expected JSON, got `%s`",
 			contentType,
 		)
 	}
