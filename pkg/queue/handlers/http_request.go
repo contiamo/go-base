@@ -19,13 +19,13 @@ import (
 )
 
 var (
-	// HTTPRequestTask marks a task as an HTTP request task
-	HTTPRequestTask queue.TaskType = "http-request"
+	// APIRequestTask marks a task as an API request task
+	APIRequestTask queue.TaskType = "api-request"
 )
 
-// HTTPRequestTaskSpec describes the specification of the HTTP request task
-type HTTPRequestTaskSpec struct {
-	// Method to use for the HTTP request
+// APIRequestTaskSpec describes the specification of the API request task
+type APIRequestTaskSpec struct {
+	// Method to use for the API request
 	Method string `json:"method"`
 	// URL is the target URL for the request.
 	// Must be an absolute URL that contains the scheme and the host components.
@@ -42,23 +42,23 @@ type HTTPRequestTaskSpec struct {
 	ExpectedStatus int `json:"expectedStatus"`
 }
 
-type HTTPRequestStage string
+type APIRequestStage string
 
 var (
 	// RequestPreparing means the task is preparing the request parameters and the body
-	RequestPreparing HTTPRequestStage = "preparing"
+	RequestPreparing APIRequestStage = "preparing"
 	// RequestPending means the request was sent, awaiting the response
-	RequestPending HTTPRequestStage = "pending"
+	RequestPending APIRequestStage = "pending"
 	// RequestResponse means the response was received
-	RequestResponse HTTPRequestStage = "response"
+	RequestResponse APIRequestStage = "response"
 )
 
-// HTTPRequestProgress describes the progress of the HTTP request task stored during
+// APIRequestProgress describes the progress of the API request task stored during
 // the heartbeat handling
-type HTTPRequestProgress struct {
-	// Stage is the current stage of the HTTP request task
-	Stage HTTPRequestStage `json:"stage,omitempty"`
-	// Duration of the HTTP request in milliseconds
+type APIRequestProgress struct {
+	// Stage is the current stage of the API request task
+	Stage APIRequestStage `json:"stage,omitempty"`
+	// Duration of the HTTP request
 	Duration *time.Duration `json:"duration,omitempty"`
 	// ReturnedStatus is a status returned from the target endpoint
 	ReturnedStatus *int `json:"returnedStatus,omitempty"`
@@ -68,26 +68,26 @@ type HTTPRequestProgress struct {
 	ErrorMessage *string `json:"errorMessage,omitempty"`
 }
 
-// NewHTTPRequestHandler creates a task handler that makes an HTTP request.
+// NewAPIRequestHandler creates a task handler that makes an HTTP request to a target API.
 // The response from the request must be valid JSON or a stream of new line-separated
 // JSON objects, otherwise the task will fail.
-func NewHTTPRequestHandler(tokenHeaderName string, tokenCreator tokens.Creator, client *http.Client) workers.TaskHandler {
-	return &httpRequestHandler{
-		Tracer:          tracing.NewTracer("handlers", "HTTPRequestHandler"),
+func NewAPIRequestHandler(tokenHeaderName string, tokenCreator tokens.Creator, client *http.Client) workers.TaskHandler {
+	return &apiRequestHandler{
+		Tracer:          tracing.NewTracer("handlers", "APIRequestHandler"),
 		tokenHeaderName: tokenHeaderName,
 		tokenCreator:    tokenCreator,
 		client:          client,
 	}
 }
 
-type httpRequestHandler struct {
+type apiRequestHandler struct {
 	tracing.Tracer
 	tokenHeaderName string
 	tokenCreator    tokens.Creator
 	client          *http.Client
 }
 
-func (h *httpRequestHandler) Process(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) (err error) {
+func (h *apiRequestHandler) Process(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) (err error) {
 	span, ctx := h.StartSpan(ctx, "Process")
 	defer func() {
 		close(heartbeats)
@@ -100,9 +100,9 @@ func (h *httpRequestHandler) Process(ctx context.Context, task queue.Task, heart
 
 	logrus := logrus.WithField("type", task.Type).WithField("id", task.ID)
 
-	logrus.Debug("starting the HTTP request task...")
+	logrus.Debug("starting the API request task...")
 
-	var progress HTTPRequestProgress
+	var progress APIRequestProgress
 	defer func() {
 		// we check for errSerializingHearbeat so we don't cause
 		// a recursion call
@@ -111,17 +111,17 @@ func (h *httpRequestHandler) Process(ctx context.Context, task queue.Task, heart
 		}
 		message := err.Error()
 		progress.ErrorMessage = &message
-		_ = sendHTTPRequestProgress(progress, heartbeats)
+		_ = sendAPIRequestProgress(progress, heartbeats)
 	}()
 
-	var spec HTTPRequestTaskSpec
+	var spec APIRequestTaskSpec
 	err = json.Unmarshal(task.Spec, &spec)
 	if err != nil {
 		return err
 	}
 
 	progress.Stage = RequestPreparing
-	err = sendHTTPRequestProgress(progress, heartbeats)
+	err = sendAPIRequestProgress(progress, heartbeats)
 	if err != nil {
 		return err
 	}
@@ -136,14 +136,14 @@ func (h *httpRequestHandler) Process(ctx context.Context, task queue.Task, heart
 		return err
 	}
 
-	req.Header.Add("User-Agent", "Contiamo HTTP Request Task")
+	req.Header.Add("User-Agent", "Contiamo API Request Task")
 
 	for name, value := range spec.RequestHeaders {
 		req.Header.Add(name, value)
 	}
 
 	if spec.Authorized {
-		token, err := h.tokenCreator.Create("httpRequestTask")
+		token, err := h.tokenCreator.Create("apiRequestTask")
 		if err != nil {
 			return err
 		}
@@ -163,7 +163,7 @@ func (h *httpRequestHandler) Process(ctx context.Context, task queue.Task, heart
 	}
 
 	progress.Stage = RequestPending
-	err = sendHTTPRequestProgress(progress, heartbeats)
+	err = sendAPIRequestProgress(progress, heartbeats)
 	if err != nil {
 		return err
 	}
@@ -172,7 +172,7 @@ func (h *httpRequestHandler) Process(ctx context.Context, task queue.Task, heart
 	defer func() {
 		duration := time.Since(now)
 		progress.Duration = &duration
-		err := sendHTTPRequestProgress(progress, heartbeats)
+		err := sendAPIRequestProgress(progress, heartbeats)
 		if err != nil {
 			logrus.Error(err)
 		}
@@ -194,7 +194,7 @@ func (h *httpRequestHandler) Process(ctx context.Context, task queue.Task, heart
 
 	progress.Stage = RequestResponse
 	progress.ReturnedStatus = &resp.StatusCode
-	err = sendHTTPRequestProgress(progress, heartbeats)
+	err = sendAPIRequestProgress(progress, heartbeats)
 	if err != nil {
 		return err
 	}
@@ -206,7 +206,7 @@ func (h *httpRequestHandler) Process(ctx context.Context, task queue.Task, heart
 		for {
 			select {
 			case <-ticker.C:
-				err := sendHTTPRequestProgress(progress, heartbeats)
+				err := sendAPIRequestProgress(progress, heartbeats)
 				if err != nil {
 					logrus.Error(err)
 				}
@@ -229,7 +229,7 @@ func (h *httpRequestHandler) Process(ctx context.Context, task queue.Task, heart
 		}
 		respString := string(m)
 		progress.ReturnedBody = &respString
-		err = sendHTTPRequestProgress(progress, heartbeats)
+		err = sendAPIRequestProgress(progress, heartbeats)
 		if err != nil {
 			return err
 		}
@@ -242,9 +242,9 @@ func (h *httpRequestHandler) Process(ctx context.Context, task queue.Task, heart
 	return nil
 }
 
-func sendHTTPRequestProgress(progress HTTPRequestProgress, heartbeats chan<- queue.Progress) (err error) {
+func sendAPIRequestProgress(progress APIRequestProgress, heartbeats chan<- queue.Progress) (err error) {
 	logrus.
-		WithField("method", "sendHTTPRequestProgress").
+		WithField("method", "sendAPIRequestProgress").
 		Debugf("%+v", progress)
 
 	bytes, err := json.Marshal(progress)

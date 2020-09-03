@@ -23,13 +23,13 @@ import (
 
 // we can't compare `Duration`
 type httpRequestProgressToCompare struct {
-	Stage          HTTPRequestStage `json:"stage,omitempty"`
-	ReturnedStatus *int             `json:"returnedStatus,omitempty"`
-	ReturnedBody   *string          `json:"returnedBody,omitempty"`
-	ErrorMessage   *string          `json:"errorMessage,omitempty"`
+	Stage          APIRequestStage `json:"stage,omitempty"`
+	ReturnedStatus *int            `json:"returnedStatus,omitempty"`
+	ReturnedBody   *string         `json:"returnedBody,omitempty"`
+	ErrorMessage   *string         `json:"errorMessage,omitempty"`
 }
 
-func toComparableHTTPRequestProgress(val HTTPRequestProgress) httpRequestProgressToCompare {
+func toComparableAPIRequestProgress(val APIRequestProgress) httpRequestProgressToCompare {
 	return httpRequestProgressToCompare{
 		Stage:          val.Stage,
 		ReturnedStatus: val.ReturnedStatus,
@@ -38,7 +38,7 @@ func toComparableHTTPRequestProgress(val HTTPRequestProgress) httpRequestProgres
 	}
 }
 
-func TestHTTPRequestHandlerProcess(t *testing.T) {
+func TestAPIRequestHandlerProcess(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -74,16 +74,16 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 
 	cases := []struct {
 		name        string
-		spec        HTTPRequestTaskSpec
+		spec        APIRequestTaskSpec
 		token       string
 		tokenError  error
 		expError    string
 		expHeaders  []string
-		expProgress HTTPRequestProgress
+		expProgress APIRequestProgress
 	}{
 		{
 			name: "does the authorized request to a valid endpoint with valid parameters",
-			spec: HTTPRequestTaskSpec{
+			spec: APIRequestTaskSpec{
 				Method:      http.MethodPost,
 				URL:         s.URL,
 				RequestBody: "task request",
@@ -99,11 +99,11 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 				"Accept-Encoding: [gzip]",
 				"Auth: [token value]",
 				"Content-Length: [12]",
-				"User-Agent: [Contiamo HTTP Request Task]",
+				"User-Agent: [Contiamo API Request Task]",
 				"X-Another: [X-Some]",
 				"X-Some: [X-Value]",
 			},
-			expProgress: HTTPRequestProgress{
+			expProgress: APIRequestProgress{
 				Stage:          RequestResponse,
 				ReturnedStatus: intP(http.StatusCreated),
 				ReturnedBody:   strP(`{"incoming":"task request","outcoming":"message"}`),
@@ -111,7 +111,7 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 		},
 		{
 			name: "does the unauthorized request to a valid endpoint with valid parameters",
-			spec: HTTPRequestTaskSpec{
+			spec: APIRequestTaskSpec{
 				Method:      http.MethodPost,
 				URL:         s.URL,
 				RequestBody: "task request",
@@ -126,11 +126,11 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 			expHeaders: []string{
 				"Accept-Encoding: [gzip]",
 				"Content-Length: [12]",
-				"User-Agent: [Contiamo HTTP Request Task]",
+				"User-Agent: [Contiamo API Request Task]",
 				"X-Another: [X-Some]",
 				"X-Some: [X-Value]",
 			},
-			expProgress: HTTPRequestProgress{
+			expProgress: APIRequestProgress{
 				Stage:          RequestResponse,
 				ReturnedStatus: intP(http.StatusCreated),
 				ReturnedBody:   strP(`{"incoming":"task request","outcoming":"message"}`),
@@ -138,7 +138,7 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 		},
 		{
 			name: "does the unauthorized request without headers to a valid endpoint with valid parameters",
-			spec: HTTPRequestTaskSpec{
+			spec: APIRequestTaskSpec{
 				Method:         http.MethodPost,
 				URL:            s.URL,
 				RequestBody:    "task request",
@@ -147,9 +147,9 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 			expHeaders: []string{
 				"Accept-Encoding: [gzip]",
 				"Content-Length: [12]",
-				"User-Agent: [Contiamo HTTP Request Task]",
+				"User-Agent: [Contiamo API Request Task]",
 			},
-			expProgress: HTTPRequestProgress{
+			expProgress: APIRequestProgress{
 				Stage:          RequestResponse,
 				ReturnedStatus: intP(http.StatusCreated),
 				ReturnedBody:   strP(`{"incoming":"task request","outcoming":"message"}`),
@@ -157,7 +157,7 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 		},
 		{
 			name: "does the unauthorized request without headers or body to a valid endpoint with valid parameters",
-			spec: HTTPRequestTaskSpec{
+			spec: APIRequestTaskSpec{
 				Method:         http.MethodPost,
 				URL:            s.URL,
 				ExpectedStatus: http.StatusCreated,
@@ -165,9 +165,9 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 			expHeaders: []string{
 				"Accept-Encoding: [gzip]",
 				"Content-Length: [0]",
-				"User-Agent: [Contiamo HTTP Request Task]",
+				"User-Agent: [Contiamo API Request Task]",
 			},
-			expProgress: HTTPRequestProgress{
+			expProgress: APIRequestProgress{
 				Stage:          RequestResponse,
 				ReturnedStatus: intP(http.StatusCreated),
 				ReturnedBody:   strP(`{"incoming":"","outcoming":"message"}`),
@@ -175,16 +175,16 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 		},
 		{
 			name: "fails when the response status does not match",
-			spec: HTTPRequestTaskSpec{
+			spec: APIRequestTaskSpec{
 				Method:         http.MethodGet,
 				URL:            s.URL,
 				ExpectedStatus: http.StatusOK,
 			},
 			expHeaders: []string{
 				"Accept-Encoding: [gzip]",
-				"User-Agent: [Contiamo HTTP Request Task]",
+				"User-Agent: [Contiamo API Request Task]",
 			},
-			expProgress: HTTPRequestProgress{
+			expProgress: APIRequestProgress{
 				Stage:          RequestResponse,
 				ReturnedStatus: intP(http.StatusCreated),
 				ReturnedBody:   strP(`{"incoming":"","outcoming":"message"}`),
@@ -194,12 +194,12 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 		},
 		{
 			name: "fails when the target URL is invalid",
-			spec: HTTPRequestTaskSpec{
+			spec: APIRequestTaskSpec{
 				Method:         http.MethodPost,
 				URL:            string([]byte{0x7f}),
 				ExpectedStatus: http.StatusCreated,
 			},
-			expProgress: HTTPRequestProgress{
+			expProgress: APIRequestProgress{
 				Stage:        RequestPreparing,
 				ErrorMessage: strP("parse \"\\u007f\": net/url: invalid control character in URL"),
 			},
@@ -207,12 +207,12 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 		},
 		{
 			name: "fails when the target URL points nowhere",
-			spec: HTTPRequestTaskSpec{
+			spec: APIRequestTaskSpec{
 				Method:         http.MethodPost,
 				URL:            "javascript://wrong",
 				ExpectedStatus: http.StatusCreated,
 			},
-			expProgress: HTTPRequestProgress{
+			expProgress: APIRequestProgress{
 				Stage:        RequestPending,
 				ErrorMessage: strP("Post \"javascript://wrong\": unsupported protocol scheme \"javascript\""),
 			},
@@ -220,12 +220,12 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 		},
 		{
 			name: "fails when the method is invalid",
-			spec: HTTPRequestTaskSpec{
+			spec: APIRequestTaskSpec{
 				Method:         "WR ONG",
 				URL:            s.URL,
 				ExpectedStatus: http.StatusCreated,
 			},
-			expProgress: HTTPRequestProgress{
+			expProgress: APIRequestProgress{
 				Stage:        RequestPreparing,
 				ErrorMessage: strP("net/http: invalid method \"WR ONG\""),
 			},
@@ -233,14 +233,14 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 		},
 		{
 			name: "fails when the token creator fails",
-			spec: HTTPRequestTaskSpec{
+			spec: APIRequestTaskSpec{
 				Method:         http.MethodGet,
 				URL:            s.URL,
 				ExpectedStatus: http.StatusCreated,
 				Authorized:     true,
 			},
 			tokenError: errors.New("oops"),
-			expProgress: HTTPRequestProgress{
+			expProgress: APIRequestProgress{
 				Stage:        RequestPreparing,
 				ErrorMessage: strP("oops"),
 			},
@@ -250,7 +250,7 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			hrh := NewHTTPRequestHandler(
+			hrh := NewAPIRequestHandler(
 				"auth",
 				&tokens.CreatorMock{
 					Err:   tc.tokenError,
@@ -281,13 +281,13 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 
 			<-ready
 
-			var progressStruct HTTPRequestProgress
+			var progressStruct APIRequestProgress
 			progressErr := json.Unmarshal(progress, &progressStruct)
 			require.NoError(t, progressErr)
 
 			require.EqualValues(t,
-				toComparableHTTPRequestProgress(tc.expProgress),
-				toComparableHTTPRequestProgress(progressStruct),
+				toComparableAPIRequestProgress(tc.expProgress),
+				toComparableAPIRequestProgress(progressStruct),
 			)
 
 			if tc.expProgress.Stage != RequestPreparing {
@@ -312,20 +312,20 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 		}))
 		defer s.Close()
 
-		hrh := NewHTTPRequestHandler(
+		hrh := NewAPIRequestHandler(
 			"auth",
 			&tokens.CreatorMock{},
 			http.DefaultClient,
 		)
 
 		// collect heartbeats with the status
-		var progress []HTTPRequestProgress
+		var progress []APIRequestProgress
 		beats := make(chan queue.Progress)
 		ready := make(chan bool)
 
 		go func() {
 			for b := range beats {
-				var p HTTPRequestProgress
+				var p APIRequestProgress
 				err := json.Unmarshal(b, &p)
 				require.NoError(t, err)
 
@@ -336,7 +336,7 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 			ready <- true
 		}()
 
-		spec := HTTPRequestTaskSpec{
+		spec := APIRequestTaskSpec{
 			Method:         http.MethodPost,
 			URL:            s.URL,
 			ExpectedStatus: http.StatusOK,
@@ -364,20 +364,20 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 		}))
 		defer s.Close()
 
-		hrh := NewHTTPRequestHandler(
+		hrh := NewAPIRequestHandler(
 			"auth",
 			&tokens.CreatorMock{},
 			http.DefaultClient,
 		)
 
 		// collect heartbeats with the status
-		var progress []HTTPRequestProgress
+		var progress []APIRequestProgress
 		beats := make(chan queue.Progress)
 		ready := make(chan bool)
 
 		go func() {
 			for b := range beats {
-				var p HTTPRequestProgress
+				var p APIRequestProgress
 				err := json.Unmarshal(b, &p)
 				require.NoError(t, err)
 
@@ -388,7 +388,7 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 			ready <- true
 		}()
 
-		spec := HTTPRequestTaskSpec{
+		spec := APIRequestTaskSpec{
 			Method:         http.MethodPost,
 			URL:            s.URL,
 			ExpectedStatus: http.StatusOK,
@@ -415,20 +415,20 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 		}))
 		defer s.Close()
 
-		hrh := NewHTTPRequestHandler(
+		hrh := NewAPIRequestHandler(
 			"auth",
 			&tokens.CreatorMock{},
 			http.DefaultClient,
 		)
 
 		// collect heartbeats with the status
-		var progress []HTTPRequestProgress
+		var progress []APIRequestProgress
 		beats := make(chan queue.Progress)
 		ready := make(chan bool)
 
 		go func() {
 			for b := range beats {
-				var p HTTPRequestProgress
+				var p APIRequestProgress
 				err := json.Unmarshal(b, &p)
 				require.NoError(t, err)
 
@@ -439,7 +439,7 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 			ready <- true
 		}()
 
-		spec := HTTPRequestTaskSpec{
+		spec := APIRequestTaskSpec{
 			Method:         http.MethodPost,
 			URL:            s.URL,
 			ExpectedStatus: http.StatusOK,
@@ -476,20 +476,20 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 		}))
 		defer s.Close()
 
-		hrh := NewHTTPRequestHandler(
+		hrh := NewAPIRequestHandler(
 			"auth",
 			&tokens.CreatorMock{},
 			http.DefaultClient,
 		)
 
 		// collect heartbeats with the status
-		var progress []HTTPRequestProgress
+		var progress []APIRequestProgress
 		beats := make(chan queue.Progress)
 		ready := make(chan bool)
 
 		go func() {
 			for b := range beats {
-				var p HTTPRequestProgress
+				var p APIRequestProgress
 				err := json.Unmarshal(b, &p)
 				require.NoError(t, err)
 
@@ -500,7 +500,7 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 			ready <- true
 		}()
 
-		spec := HTTPRequestTaskSpec{
+		spec := APIRequestTaskSpec{
 			Method:         http.MethodPost,
 			URL:            s.URL,
 			ExpectedStatus: http.StatusOK,
@@ -519,7 +519,7 @@ func TestHTTPRequestHandlerProcess(t *testing.T) {
 
 		require.Equal(
 			t,
-			[]HTTPRequestProgress{
+			[]APIRequestProgress{
 				{
 					Stage: RequestPreparing,
 				},
