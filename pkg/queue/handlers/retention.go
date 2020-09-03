@@ -1,4 +1,4 @@
-package workers
+package handlers
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	"github.com/Masterminds/squirrel"
 	"github.com/contiamo/go-base/pkg/queue"
 	"github.com/contiamo/go-base/pkg/queue/postgres"
+	"github.com/contiamo/go-base/pkg/queue/workers"
 )
 
 const (
@@ -23,7 +24,7 @@ const (
 )
 
 // NewRetentionHandler creates a task handler that will clean up old finished tasks
-func NewRetentionHandler(db *sql.DB) TaskHandler {
+func NewRetentionHandler(db *sql.DB) workers.TaskHandler {
 	return NewSQLTaskHandler("RetentionHandler", db)
 }
 

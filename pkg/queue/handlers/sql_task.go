@@ -1,4 +1,4 @@
-package workers
+package handlers
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/contiamo/go-base/pkg/queue"
+	"github.com/contiamo/go-base/pkg/queue/workers"
 	"github.com/contiamo/go-base/pkg/tracing"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -40,7 +41,7 @@ type sqlTaskHandler struct {
 }
 
 // NewSQLTaskHandler creates a sqlTaskHandler handler instance with the given tracing name
-func NewSQLTaskHandler(name string, db *sql.DB) TaskHandler {
+func NewSQLTaskHandler(name string, db *sql.DB) workers.TaskHandler {
 	return &sqlTaskHandler{
 		Tracer: tracing.NewTracer("handlers", name),
 		db:     db,
