@@ -35,7 +35,7 @@ type queueEvent struct {
 }
 
 // NewTaskWorker creates a new Task Worker instance
-func NewTaskWorker(dequeuer queue.Dequeuer, handler TaskHandler) Worker {
+func NewTaskWorker(dequeuer queue.Dequeuer, handler TaskHandler) queue.Worker {
 	return &taskWorker{
 		Tracer:   tracing.NewTracer("workers", "TaskWorker"),
 		dequeuer: dequeuer,
@@ -51,7 +51,7 @@ type taskWorker struct {
 	dequeuer queue.Dequeuer
 	maxWait  time.Duration
 
-	Worker
+	queue.Worker
 }
 
 func (w *taskWorker) iteration(ctx context.Context, tracer opentracing.Tracer, ticker *time.Ticker) (err error) {
