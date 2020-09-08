@@ -14,28 +14,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// TaskHandler is a type alias for a method that parses a task and returns any processing errors
-type TaskHandler interface {
-	// Process implements the specific Task parsing logic
-	Process(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) (err error)
-}
-
-// TaskHandlerFunc is an adapter that allows the use of a normal function
-// as a TaskHandler
-type TaskHandlerFunc func(context.Context, queue.Task, chan<- queue.Progress) error
-
-// Process implements the specific Task parsing logic
-func (f TaskHandlerFunc) Process(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) error {
-	return f(ctx, task, heartbeats)
-}
-
 type queueEvent struct {
 	task *queue.Task
 	err  error
 }
 
 // NewTaskWorker creates a new Task Worker instance
-func NewTaskWorker(dequeuer queue.Dequeuer, handler TaskHandler) queue.Worker {
+func NewTaskWorker(dequeuer queue.Dequeuer, handler queue.TaskHandler) queue.Worker {
 	return &taskWorker{
 		Tracer:   tracing.NewTracer("workers", "TaskWorker"),
 		dequeuer: dequeuer,
@@ -47,7 +32,7 @@ func NewTaskWorker(dequeuer queue.Dequeuer, handler TaskHandler) queue.Worker {
 type taskWorker struct {
 	tracing.Tracer
 
-	handler  TaskHandler
+	handler  queue.TaskHandler
 	dequeuer queue.Dequeuer
 	maxWait  time.Duration
 

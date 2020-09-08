@@ -34,7 +34,7 @@ func TestTaskWorkerMetrics(t *testing.T) {
 	qCh := make(chan *queue.Task)
 	q := &mockQueue{queue: qCh}
 
-	handler := TaskHandlerFunc(func(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) error {
+	handler := queue.TaskHandlerFunc(func(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) error {
 		defer close(heartbeats)
 
 		require.NotNil(t, task)
@@ -110,7 +110,7 @@ func TestTaskWorkerWork(t *testing.T) {
 		}
 		qCh <- testTask
 
-		handler := TaskHandlerFunc(func(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) error {
+		handler := queue.TaskHandlerFunc(func(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) error {
 			defer close(heartbeats)
 
 			require.NotNil(t, task)
@@ -146,7 +146,7 @@ func TestTaskWorkerWork(t *testing.T) {
 		}
 		qCh <- testTask
 
-		handler := TaskHandlerFunc(func(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) error {
+		handler := queue.TaskHandlerFunc(func(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) error {
 			defer close(heartbeats)
 			return errors.New("some serious error")
 		})
@@ -182,7 +182,7 @@ func TestTaskWorkerWork(t *testing.T) {
 		}
 		qCh <- testTask
 
-		handler := TaskHandlerFunc(func(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) error {
+		handler := queue.TaskHandlerFunc(func(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) error {
 			defer close(heartbeats)
 			heartbeats <- queue.Progress(`{"some":"text"}`)
 			return errors.New("some serious error")
@@ -225,7 +225,7 @@ func TestTaskWorkerWork(t *testing.T) {
 		}
 		qCh <- testTask
 
-		handler := TaskHandlerFunc(func(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) error {
+		handler := queue.TaskHandlerFunc(func(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) error {
 			defer close(heartbeats)
 
 			require.NotNil(t, task)
@@ -265,7 +265,7 @@ func TestTaskWorkerWork(t *testing.T) {
 
 		qCh := make(chan *queue.Task, 1)
 		testTask := &queue.Task{TaskBase: queue.TaskBase{Queue: "testQueue"}, ID: "testTask"}
-		handler := TaskHandlerFunc(func(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) error {
+		handler := queue.TaskHandlerFunc(func(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) error {
 			defer close(heartbeats)
 
 			require.NotNil(t, task)

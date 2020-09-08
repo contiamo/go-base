@@ -127,8 +127,8 @@ func cleanupDB() {
 // to run the test in isolation. Docker will be called to start a db that is read  to be used with GetDatabase.
 // Example usage:
 //
-//   err, cleanup := dbtest.EnsureDBReady(ctx)
-//   require.NoError(t, err)
+//   dberr, cleanup := dbtest.EnsureDBReady(ctx)
+//   require.NoError(t, dberr)
 //   defer cleanup()
 //
 //   _, db := dbtest.GetDatabase(t)

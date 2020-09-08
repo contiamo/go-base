@@ -159,6 +159,7 @@ func TestMetrics(t *testing.T) {
 	require.Equal(t, float64(2), testutil.ToFloat64(TaskSchedulingMetrics.WorkerWaiting))
 	// the first iteration starts immediately and the second after the interval tick
 	require.Equal(t, float64(2), testutil.ToFloat64(TaskSchedulingMetrics.WorkerWorking))
+	cancel()
 }
 
 type queueMock struct {

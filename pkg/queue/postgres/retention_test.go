@@ -1,29 +1,24 @@
-package handlers
+package postgres
 
 import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
-	"regexp"
 	"testing"
 	"time"
 
-	cdb "github.com/contiamo/go-base/pkg/db"
+	"github.com/contiamo/go-base/pkg/queue/handlers"
 	"go.uber.org/goleak"
 
 	"github.com/Masterminds/squirrel"
 	dbtest "github.com/contiamo/go-base/pkg/db/test"
 	"github.com/contiamo/go-base/pkg/queue"
-	"github.com/contiamo/go-base/pkg/queue/postgres"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
-
-var emptyJSON = []byte("{}")
 
 func TestRetentionHandler(t *testing.T) {
 	defer goleak.VerifyNone(t)
@@ -36,7 +31,7 @@ func TestRetentionHandler(t *testing.T) {
 
 	_, db := dbtest.GetDatabase(t)
 	defer db.Close()
-	require.NoError(t, postgres.SetupTables(ctx, db, nil))
+	require.NoError(t, SetupTables(ctx, db, nil))
 
 	// Start test setup
 	now := time.Now()
@@ -106,7 +101,7 @@ func TestRetentionHandler(t *testing.T) {
 
 	// Now test the handler
 	sevenDays := 7 * 24 * time.Hour
-	spec := createRetentionSpec("standard", "", queue.Finished, nil, sevenDays)
+	spec := createRetentionSpec("standard", "", queue.Finished, sevenDays)
 	specBytes, err := json.Marshal(spec)
 	require.NoError(t, err)
 
@@ -122,12 +117,12 @@ func TestRetentionHandler(t *testing.T) {
 
 	heartbeats := make(chan queue.Progress, 10)
 
-	seenBeats := []SQLTaskProgress{}
+	seenBeats := []handlers.SQLTaskProgress{}
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
 		for hb := range heartbeats {
-			progress := SQLTaskProgress{}
+			progress := handlers.SQLTaskProgress{}
 			err = json.Unmarshal(hb, &progress)
 			require.NoError(t, err, "can't parse progress")
 			seenBeats = append(seenBeats, progress)
@@ -138,24 +133,24 @@ func TestRetentionHandler(t *testing.T) {
 	err = handler.Process(ctx, retentionTask, heartbeats)
 	require.NoError(t, err, "processing error")
 
-	dbtest.EqualCount(t, db, 0, postgres.TasksTable, squirrel.Eq{
+	dbtest.EqualCount(t, db, 0, TasksTable, squirrel.Eq{
 		"task_id": toBeRemoved.ID,
 	}, "found toBeRemoved when it should be deleted")
-	dbtest.EqualCount(t, db, 1, postgres.TasksTable, squirrel.Eq{
+	dbtest.EqualCount(t, db, 1, TasksTable, squirrel.Eq{
 		"task_id": finishedTask.ID,
 	}, "can not find finishedTask")
-	dbtest.EqualCount(t, db, 1, postgres.TasksTable, squirrel.Eq{
+	dbtest.EqualCount(t, db, 1, TasksTable, squirrel.Eq{
 		"task_id": runningTask.ID,
 	}, "can not find runningTask")
-	dbtest.EqualCount(t, db, 1, postgres.TasksTable, squirrel.Eq{
+	dbtest.EqualCount(t, db, 1, TasksTable, squirrel.Eq{
 		"task_id": waitingTask.ID,
 	}, "can not find waitingTask")
 
-	dbtest.EqualCount(t, db, 3, postgres.TasksTable, nil, "incorrect task count")
+	dbtest.EqualCount(t, db, 3, TasksTable, nil, "incorrect task count")
 
 	<-done
 
-	require.Equal(t, SQLTaskProgress{}, seenBeats[0])
+	require.Equal(t, handlers.SQLTaskProgress{}, seenBeats[0])
 
 	lastBeat := seenBeats[len(seenBeats)-1]
 
@@ -201,8 +196,14 @@ func insertTestTask(ctx context.Context, db *sql.DB, task *queue.Task) error {
 }
 
 func TestAssertRetentionSchedule(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+
+	_, db := dbtest.GetDatabase(t)
+	defer db.Close()
+	require.NoError(t, SetupTables(ctx, db, nil))
 
 	cases := []struct {
 		name        string
@@ -210,7 +211,6 @@ func TestAssertRetentionSchedule(t *testing.T) {
 		taskType    queue.TaskType
 		status      queue.TaskStatus
 		age         time.Duration
-		filter      squirrel.Sqlizer
 		expectedSQL string
 	}{
 		{
@@ -219,6 +219,14 @@ func TestAssertRetentionSchedule(t *testing.T) {
 			taskType:    queue.TaskType("throw-away"),
 			status:      queue.Finished,
 			age:         time.Minute,
+			expectedSQL: `DELETE FROM tasks WHERE status = 'finished' AND finished_at <= now() - interval '1.000000 minutes' AND queue = 'basic' AND type = 'throw-away'`,
+		},
+		{
+			name:        "update retention retention policy age successful",
+			queueName:   "basic",
+			taskType:    queue.TaskType("throw-away"),
+			status:      queue.Finished,
+			age:         time.Hour, // must come after "retention without any extra filters is successful"
 			expectedSQL: `DELETE FROM tasks WHERE status = 'finished' AND finished_at <= now() - interval '1.000000 minutes' AND queue = 'basic' AND type = 'throw-away'`,
 		},
 		{
@@ -236,24 +244,6 @@ func TestAssertRetentionSchedule(t *testing.T) {
 			status:      queue.Finished,
 			age:         30 * 24 * time.Hour,
 			expectedSQL: `DELETE FROM tasks WHERE status = 'finished' AND finished_at <= now() - interval '43200.000000 minutes' AND queue = 'super' AND type = 'throw-away-3'`,
-		},
-		{
-			name:        "retention with additional sql filter is successful",
-			queueName:   "basic",
-			taskType:    queue.TaskType("throw-away"),
-			status:      queue.Failed,
-			age:         time.Minute,
-			filter:      squirrel.Eq{"resource_id": 101},
-			expectedSQL: `DELETE FROM tasks WHERE status = 'failed' AND finished_at <= now() - interval '1.000000 minutes' AND queue = 'basic' AND type = 'throw-away' AND resource_id = '101'`,
-		},
-		{
-			name:        "retention with complex subquery filter",
-			queueName:   "basic",
-			taskType:    queue.TaskType("throw-away"),
-			status:      queue.Finished,
-			age:         time.Minute,
-			filter:      squirrel.Expr("resource_id IN (SELECT resource_id FROM resources WHERE project_id = ?)", "abc"),
-			expectedSQL: `DELETE FROM tasks WHERE status = 'finished' AND finished_at <= now() - interval '1.000000 minutes' AND queue = 'basic' AND type = 'throw-away' AND resource_id IN (SELECT resource_id FROM resources WHERE project_id = 'abc')`,
 		},
 		{
 			name:        "retention for _any_ finished task, without queue or task type restriction",
@@ -279,39 +269,21 @@ func TestAssertRetentionSchedule(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			mock := schedulerMock{}
-			err := AssertRetentionSchedule(ctx, &mock, tc.queueName, tc.taskType, tc.status, tc.filter, tc.age)
+
+			err := AssertRetentionSchedule(ctx, db, tc.queueName, tc.taskType, tc.status, tc.age)
 			require.NoError(t, err, "unexpected assert error")
 
-			require.Equal(t, MaintenanceTaskQueue, mock.schedule.Queue)
-			require.Equal(t, RetentionTask, mock.schedule.Type)
-
-			spec := SQLExecTaskSpec{}
-			err = json.Unmarshal(mock.schedule.Spec, &spec)
-			require.NoError(t, err, "can not parse the task spec")
-
-			require.Equal(t, tc.expectedSQL, spec.SQL)
-			require.Regexp(t, regexp.MustCompile(`\d{1,2} * * * *`), mock.schedule.CronSchedule)
+			dbtest.EqualCount(t, db, 1, "schedules", squirrel.And{
+				squirrel.Eq{
+					"task_queue":              MaintenanceTaskQueue,
+					"task_type":               RetentionTask,
+					"task_spec->>'queueName'": tc.queueName,
+					"task_spec->>'taskType'":  tc.taskType,
+					"task_spec->>'status'":    tc.status,
+					"task_spec->>'age'":       tc.age,
+				},
+				squirrel.Expr(`cron_schedule ~ '\d{1,2} * * * *'`),
+			}, "unique retention task not found")
 		})
 	}
-}
-
-// schedulerMock implement scheduler with very simple counters for testing
-type schedulerMock struct {
-	schedule queue.TaskScheduleRequest
-
-	AssertError error
-}
-
-func (s *schedulerMock) Schedule(ctx context.Context, builder cdb.SQLBuilder, task queue.TaskScheduleRequest) (err error) {
-	return fmt.Errorf("do not call Schedule")
-}
-
-func (s *schedulerMock) EnsureSchedule(ctx context.Context, builder cdb.SQLBuilder, task queue.TaskScheduleRequest) error {
-	return fmt.Errorf("do not call EnsureSchedule")
-}
-
-func (s *schedulerMock) AssertSchedule(ctx context.Context, task queue.TaskScheduleRequest) error {
-	s.schedule = task
-	return s.AssertError
 }

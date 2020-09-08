@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/contiamo/go-base/pkg/queue"
-	"github.com/contiamo/go-base/pkg/queue/workers"
 	"github.com/contiamo/go-base/pkg/tokens"
 	"github.com/contiamo/go-base/pkg/tracing"
 	"github.com/opentracing/opentracing-go"
@@ -71,7 +70,7 @@ type APIRequestProgress struct {
 // NewAPIRequestHandler creates a task handler that makes an HTTP request to a target API.
 // The response from the request must be valid JSON or a stream of new line-separated
 // JSON objects, otherwise the task will fail.
-func NewAPIRequestHandler(tokenHeaderName string, tokenCreator tokens.Creator, client *http.Client) workers.TaskHandler {
+func NewAPIRequestHandler(tokenHeaderName string, tokenCreator tokens.Creator, client *http.Client) queue.TaskHandler {
 	return &apiRequestHandler{
 		Tracer:          tracing.NewTracer("handlers", "APIRequestHandler"),
 		tokenHeaderName: tokenHeaderName,

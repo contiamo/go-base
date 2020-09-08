@@ -17,9 +17,12 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 )
 
 func TestFinish(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
@@ -42,6 +45,8 @@ func TestFinish(t *testing.T) {
 			}
 		},
 	)
+
+	defer dbListener.Close()
 
 	q := NewDequeuer(db, dbListener, config.Queue{
 		HeartbeatTTL:  10 * time.Second,
@@ -87,6 +92,8 @@ func TestFinish(t *testing.T) {
 }
 
 func TestFail(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
@@ -110,6 +117,7 @@ func TestFail(t *testing.T) {
 			}
 		},
 	)
+	defer dbListener.Close()
 
 	q := NewDequeuer(db, dbListener, config.Queue{
 		HeartbeatTTL:  10 * time.Second,
@@ -155,6 +163,8 @@ func TestFail(t *testing.T) {
 }
 
 func TestHeartbeat(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
@@ -224,6 +234,7 @@ func TestHeartbeat(t *testing.T) {
 			}
 		},
 	)
+	defer dbListener.Close()
 
 	q := NewDequeuer(db, dbListener, config.Queue{
 		HeartbeatTTL:  10 * time.Second,
@@ -325,6 +336,8 @@ func TestHeartbeat(t *testing.T) {
 }
 
 func TestDequeueTicker(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
@@ -365,6 +378,7 @@ func TestDequeueTicker(t *testing.T) {
 					}
 				},
 			)
+			defer dbListener.Close()
 
 			q := NewDequeuer(db, dbListener, config.Queue{
 				HeartbeatTTL:  10 * time.Second,
@@ -412,6 +426,8 @@ func TestDequeueTicker(t *testing.T) {
 }
 
 func TestDequeue(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
@@ -490,6 +506,7 @@ func TestDequeue(t *testing.T) {
 					}
 				},
 			)
+			defer dbListener.Close()
 
 			q := NewDequeuer(db, dbListener, config.Queue{
 				HeartbeatTTL:  10 * time.Second,
@@ -543,6 +560,8 @@ func TestDequeue(t *testing.T) {
 }
 
 func TestProcessableQueues(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	tests := []struct {
 		name      string
 		inflight  []string
@@ -590,6 +609,8 @@ func TestProcessableQueues(t *testing.T) {
 }
 
 func TestQueueList(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	qs := []string{
@@ -627,26 +648,17 @@ func TestQueueList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			name, db := dbtest.GetDatabase(t)
+			_, db := dbtest.GetDatabase(t)
 			defer db.Close()
 			require.NoError(t, SetupTables(ctx, db, nil))
-			connStr := "user=contiamo_test password=localdev sslmode=disable dbname=" + name
-			dbListener := pq.NewListener(
-				connStr,
-				10*time.Second,
-				time.Minute,
-				func(ev pq.ListenerEventType, err error) {
-					if err != nil {
-						logrus.Error(err)
-					}
-				},
-			)
 
-			q := NewDequeuer(db, dbListener, config.Queue{
-				HeartbeatTTL:  10 * time.Second,
-				PollFrequency: 50 * time.Millisecond,
-			})
+			q := NewDequeuer(
+				db,
+				nil, // listener is not needed for this test
+				config.Queue{
+					HeartbeatTTL:  10 * time.Second,
+					PollFrequency: 50 * time.Millisecond,
+				})
 
 			pd := q.(*dequeuer)
 

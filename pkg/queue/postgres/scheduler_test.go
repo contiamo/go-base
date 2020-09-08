@@ -13,9 +13,12 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 )
 
 func TestSchedule(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
@@ -165,6 +168,8 @@ func TestSchedule(t *testing.T) {
 }
 
 func TestEnsure(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
@@ -285,6 +290,8 @@ func TestEnsure(t *testing.T) {
 }
 
 func TestAssertSchedule(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
