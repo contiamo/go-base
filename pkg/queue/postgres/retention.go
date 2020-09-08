@@ -40,7 +40,7 @@ func NewRetentionHandler(db *sql.DB) queue.TaskHandler {
 
 // AssertRetentionSchedule creates a new queue retention tasks for the supplied queue, finished tasks matching
 // the supplied parameters will be deleted
-func AssertRetentionSchedule(ctx context.Context, db *sql.DB, queueName string, taskType queue.TaskType, status queue.TaskStatus, age time.Duration) error {
+func AssertRetentionSchedule(ctx context.Context, db *sql.DB, queueName string, taskType queue.TaskType, status queue.TaskStatus, age time.Duration) (err error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "AssertRetentionSchedule")
 	span.SetTag("pkg.name", "postgres")
 
@@ -61,7 +61,7 @@ func AssertRetentionSchedule(ctx context.Context, db *sql.DB, queueName string, 
 	}
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("can not start transaction for scheduling: %w", err)
 	}
 	defer func() {
 		if err != nil {
@@ -80,28 +80,56 @@ func AssertRetentionSchedule(ctx context.Context, db *sql.DB, queueName string, 
 		PlaceholderFormat(squirrel.Dollar).
 		RunWith(cdb.WrapWithTracing(tx))
 
-	// TODO check if the schedule exists, if it does, delete it
-	res, err := builder.Delete("schedules").
+	var exists int
+	// use a unique error name here otherwise the sql.ErrNoRows might shadow
+	// us and things will break. This is also handled by the named error return
+	// variable, but this makes the code easier to copy and paste
+	existsErr := builder.Select("1").
+		From("schedules").
 		Where(squirrel.Eq{
 			"task_queue":              MaintenanceTaskQueue,
 			"task_type":               RetentionTask,
 			"task_spec->>'queueName'": queueName,
 			"task_spec->>'taskType'":  taskType,
 			"task_spec->>'status'":    status,
-		}).ExecContext(ctx)
-	if err != nil {
-		return err
+		}).ScanContext(ctx, &exists)
+	if existsErr != nil && existsErr != sql.ErrNoRows {
+		return fmt.Errorf("can not verify existing schedule: %w", existsErr)
 	}
 
-	removed, err := res.RowsAffected()
-	if err != nil {
-		return err
+	// will only non-zero if err is nil and task is not found
+	if exists == 0 {
+		span.SetTag("created", true)
+		// pass nil db because it doesn't need the raw db
+		return NewScheduler(nil).Schedule(ctx, builder, retentionSchedule)
 	}
 
-	span.SetTag("removed", removed)
+	span.SetTag("updated", true)
+	res, err := builder.Update("schedules").
+		Where(squirrel.Eq{
+			"task_queue":              MaintenanceTaskQueue,
+			"task_type":               RetentionTask,
+			"task_spec->>'queueName'": queueName,
+			"task_spec->>'taskType'":  taskType,
+			"task_spec->>'status'":    status,
+		}).
+		Set("updated_at", time.Now()).
+		Set("task_spec", retentionSchedule.Spec).
+		Set("cron_schedule", retentionSchedule.CronSchedule).
+		Set("next_execution_time", time.Now()).
+		ExecContext(ctx)
+	if err != nil {
+		return fmt.Errorf("can not update existing schdule: %w", err)
+	}
 
-	// pass nil db because it doesn't need the raw db
-	return NewScheduler(nil).Schedule(ctx, builder, retentionSchedule)
+	updated, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("can not determine the number of rows affected: %w", err)
+	}
+
+	span.SetTag("affected", updated)
+
+	return nil
 }
 
 //createRetentionSpec builds the task retention job spec. It is split out to simplify test setup

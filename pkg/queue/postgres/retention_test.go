@@ -214,19 +214,11 @@ func TestAssertRetentionSchedule(t *testing.T) {
 		expectedSQL string
 	}{
 		{
-			name:        "retention without any extra filters is successful",
+			name:        "retention wtih all filter values specified is successful",
 			queueName:   "basic",
 			taskType:    queue.TaskType("throw-away"),
 			status:      queue.Finished,
 			age:         time.Minute,
-			expectedSQL: `DELETE FROM tasks WHERE status = 'finished' AND finished_at <= now() - interval '1.000000 minutes' AND queue = 'basic' AND type = 'throw-away'`,
-		},
-		{
-			name:        "update retention retention policy age successful",
-			queueName:   "basic",
-			taskType:    queue.TaskType("throw-away"),
-			status:      queue.Finished,
-			age:         time.Hour, // must come after "retention without any extra filters is successful"
 			expectedSQL: `DELETE FROM tasks WHERE status = 'finished' AND finished_at <= now() - interval '1.000000 minutes' AND queue = 'basic' AND type = 'throw-away'`,
 		},
 		{
@@ -282,8 +274,47 @@ func TestAssertRetentionSchedule(t *testing.T) {
 					"task_spec->>'status'":    tc.status,
 					"task_spec->>'age'":       tc.age,
 				},
+				squirrel.Expr(`coalesce(task_spec->>'sql','') != ''`),
 				squirrel.Expr(`cron_schedule ~ '\d{1,2} * * * *'`),
 			}, "unique retention task not found")
 		})
 	}
+
+	t.Run("can reschedule a retention task with a new age policy", func(t *testing.T) {
+		queueName := "super_important"
+		taskType := queue.TaskType("update-test")
+		status := queue.Finished
+
+		err := AssertRetentionSchedule(ctx, db, queueName, taskType, status, 5*time.Minute)
+		require.NoError(t, err, "unexpected assert error")
+
+		dbtest.EqualCount(t, db, 1, "schedules", squirrel.And{
+			squirrel.Eq{
+				"task_queue":              MaintenanceTaskQueue,
+				"task_type":               RetentionTask,
+				"task_spec->>'queueName'": queueName,
+				"task_spec->>'taskType'":  taskType,
+				"task_spec->>'status'":    status,
+				"task_spec->>'age'":       5 * time.Minute,
+			},
+			squirrel.Expr(`coalesce(task_spec->>'sql','') != ''`),
+			squirrel.Expr(`cron_schedule ~ '\d{1,2} * * * *'`),
+		}, "initial retention task not found")
+
+		err = AssertRetentionSchedule(ctx, db, queueName, taskType, status, 10*time.Minute)
+		require.NoError(t, err, "unexpected assert error")
+
+		dbtest.EqualCount(t, db, 1, "schedules", squirrel.And{
+			squirrel.Eq{
+				"task_queue":              MaintenanceTaskQueue,
+				"task_type":               RetentionTask,
+				"task_spec->>'queueName'": queueName,
+				"task_spec->>'taskType'":  taskType,
+				"task_spec->>'status'":    status,
+				"task_spec->>'age'":       10 * time.Minute,
+			},
+			squirrel.Expr(`coalesce(task_spec->>'sql','') != ''`),
+			squirrel.Expr(`cron_schedule ~ '\d{1,2} * * * *'`),
+		}, "updated task with new age parameter not found")
+	})
 }
