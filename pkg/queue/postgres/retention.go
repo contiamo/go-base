@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
-	cdb "github.com/contiamo/go-base/pkg/db"
-	"github.com/contiamo/go-base/pkg/queue"
-	"github.com/contiamo/go-base/pkg/queue/handlers"
+	cdb "github.com/contiamo/go-base/v2/pkg/db"
+	"github.com/contiamo/go-base/v2/pkg/queue"
+	"github.com/contiamo/go-base/v2/pkg/queue/handlers"
 	"github.com/opentracing/opentracing-go"
 )
 

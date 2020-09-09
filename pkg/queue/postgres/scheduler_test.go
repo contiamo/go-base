@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
-	dbtest "github.com/contiamo/go-base/pkg/db/test"
-	"github.com/contiamo/go-base/pkg/queue"
+	dbtest "github.com/contiamo/go-base/v2/pkg/db/test"
+	"github.com/contiamo/go-base/v2/pkg/queue"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
