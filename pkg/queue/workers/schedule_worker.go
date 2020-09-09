@@ -7,9 +7,9 @@ import (
 
 	"github.com/Masterminds/squirrel"
 	cdb "github.com/contiamo/go-base/pkg/db"
+	"github.com/contiamo/go-base/pkg/queue"
 	"github.com/contiamo/go-base/pkg/tracing"
 	cvalidation "github.com/contiamo/go-base/pkg/validation"
-	"github.com/contiamo/go-base/pkg/queue"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -24,7 +24,7 @@ var (
 )
 
 // NewScheduleWorker creates a new task scheduling worker
-func NewScheduleWorker(db *sql.DB, queue queue.Queuer, interval time.Duration) Worker {
+func NewScheduleWorker(db *sql.DB, queue queue.Queuer, interval time.Duration) queue.Worker {
 	return newScheduleWorker(db, queue, interval)
 }
 

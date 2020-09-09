@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/contiamo/go-base/pkg/queue"
-	"github.com/contiamo/go-base/pkg/queue/workers"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
@@ -34,7 +33,7 @@ func TestDispatcherProcess(t *testing.T) {
 	t.Run("propagates the underlying handler's error", func(t *testing.T) {
 		task := queue.Task{TaskBase: queue.TaskBase{Type: "test"}}
 
-		h := NewDispatchHandler(map[queue.TaskType]workers.TaskHandler{
+		h := NewDispatchHandler(map[queue.TaskType]queue.TaskHandler{
 			"test": errHandler{t: t, expTask: task},
 		})
 
@@ -46,7 +45,7 @@ func TestDispatcherProcess(t *testing.T) {
 	t.Run("returns ErrNoHandlerFound when there is no handler and closes heartbeats", func(t *testing.T) {
 		task := queue.Task{TaskBase: queue.TaskBase{Type: "test"}}
 
-		h := NewDispatchHandler(map[queue.TaskType]workers.TaskHandler{})
+		h := NewDispatchHandler(map[queue.TaskType]queue.TaskHandler{})
 
 		heartbeats := make(chan queue.Progress)
 		err := h.Process(ctx, task, heartbeats)

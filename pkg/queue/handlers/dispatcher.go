@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/contiamo/go-base/pkg/queue"
-	"github.com/contiamo/go-base/pkg/queue/workers"
 	"github.com/contiamo/go-base/pkg/tracing"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -16,7 +15,7 @@ var (
 )
 
 // NewDispatchHandler creates a task handler that will dispatch tasks to other handlers
-func NewDispatchHandler(handlers map[queue.TaskType]workers.TaskHandler) workers.TaskHandler {
+func NewDispatchHandler(handlers map[queue.TaskType]queue.TaskHandler) queue.TaskHandler {
 	return &dispatchHandler{
 		Tracer:   tracing.NewTracer("handlers", "DispatchHandler"),
 		handlers: handlers,
@@ -25,7 +24,7 @@ func NewDispatchHandler(handlers map[queue.TaskType]workers.TaskHandler) workers
 
 type dispatchHandler struct {
 	tracing.Tracer
-	handlers map[queue.TaskType]workers.TaskHandler
+	handlers map[queue.TaskType]queue.TaskHandler
 }
 
 func (h *dispatchHandler) Process(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) (err error) {

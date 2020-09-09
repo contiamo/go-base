@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
-	"github.com/contiamo/go-base/pkg/db"
 	cdb "github.com/contiamo/go-base/pkg/db"
 	"github.com/contiamo/go-base/pkg/queue"
 	"github.com/contiamo/go-base/pkg/tracing"
@@ -174,7 +173,7 @@ func (q *scheduler) AssertSchedule(ctx context.Context, schedule queue.TaskSched
 
 	builder := squirrel.StatementBuilder.
 		PlaceholderFormat(squirrel.Dollar).
-		RunWith(db.WrapWithTracing(tx))
+		RunWith(cdb.WrapWithTracing(tx))
 
 	_, err = tx.ExecContext(ctx, `LOCK TABLE schedules IN ACCESS EXCLUSIVE MODE;`)
 	if err != nil {
