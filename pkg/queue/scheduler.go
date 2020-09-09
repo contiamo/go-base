@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	cdb "github.com/contiamo/go-base/pkg/db"
+	cdb "github.com/contiamo/go-base/v2/pkg/db"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

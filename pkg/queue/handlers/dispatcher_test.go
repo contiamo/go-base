@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/contiamo/go-base/pkg/queue"
+	"github.com/contiamo/go-base/v2/pkg/queue"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )

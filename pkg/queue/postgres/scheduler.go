@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
-	cdb "github.com/contiamo/go-base/pkg/db"
-	"github.com/contiamo/go-base/pkg/queue"
-	"github.com/contiamo/go-base/pkg/tracing"
-	cvalidation "github.com/contiamo/go-base/pkg/validation"
+	cdb "github.com/contiamo/go-base/v2/pkg/db"
+	"github.com/contiamo/go-base/v2/pkg/queue"
+	"github.com/contiamo/go-base/v2/pkg/tracing"
+	cvalidation "github.com/contiamo/go-base/v2/pkg/validation"
 	uuid "github.com/satori/go.uuid"
 )
 

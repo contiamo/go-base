@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/contiamo/go-base/pkg/db"
-	cstrings "github.com/contiamo/go-base/pkg/strings"
+	"github.com/contiamo/go-base/v2/pkg/db"
+	cstrings "github.com/contiamo/go-base/v2/pkg/strings"
 	"github.com/sirupsen/logrus"
 )
 

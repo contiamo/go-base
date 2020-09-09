@@ -6,9 +6,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/contiamo/go-base/pkg/queue"
+	"github.com/contiamo/go-base/v2/pkg/queue"
 
-	"github.com/contiamo/go-base/pkg/tracing"
+	"github.com/contiamo/go-base/v2/pkg/tracing"
 	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
