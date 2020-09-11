@@ -29,12 +29,18 @@ func TestSetupTables(t *testing.T) {
 		defer db.Close()
 		require.NoError(t, SetupTables(ctx, db, nil))
 
-		//SELECT * FROM pg_class c, pg_namespace n WHERE c.relnamespace = n.oid
-		// AND relname = 'unique_retention_idx' AND relkind = 'i';
-		dbtest.EqualCount(t, db, 1, "pg_class c, pg_namespace n", squirrel.Eq{
-			"relname": "unique_retention_idx",
-			"relkind": "i",
-			"nspname": "public",
+		dbtest.EqualCount(t, db, 1, "pg_indexes", squirrel.And{
+			squirrel.Eq{
+				"indexname": "unique_retention_idx",
+				"tablename": "schedules",
+			},
+			squirrel.Like{"indexdef": "CREATE UNIQUE INDEX%"},
+			squirrel.Like{"indexdef": "%task_queue%"},
+			squirrel.Like{"indexdef": "%task_spec%"},
+			squirrel.Like{"indexdef": "%queueName%"},
+			squirrel.Like{"indexdef": "%taskType%"},
+			squirrel.Like{"indexdef": "%status%"},
+			squirrel.Like{"indexdef": "%WHERE%"},
 		})
 	})
 
