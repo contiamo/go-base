@@ -175,7 +175,7 @@ func (q *scheduler) AssertSchedule(ctx context.Context, schedule queue.TaskSched
 		PlaceholderFormat(squirrel.Dollar).
 		RunWith(cdb.WrapWithTracing(tx))
 
-	_, err = tx.ExecContext(ctx, `LOCK TABLE schedules IN ACCESS EXCLUSIVE MODE;`)
+	_, err = tx.ExecContext(ctx, `LOCK TABLE schedules IN SHARE MODE;`)
 	if err != nil {
 		return fmt.Errorf("failed to lock `schedules`: %w", err)
 	}

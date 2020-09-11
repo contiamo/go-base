@@ -102,6 +102,13 @@ var (
 			Table:   SchedulesTable,
 			Columns: []string{"created_at DESC", "updated_at DESC"},
 		},
+		{
+			Table:     SchedulesTable,
+			Name:      "unique_retention_idx",
+			Columns:   []string{"task_queue", "task_type", "(task_spec->>'queueName')", "(task_spec->>'taskType')", "(task_spec->>'status')"},
+			Unique:    true,
+			Condition: fmt.Sprintf("task_type='%s'", RetentionTask),
+		},
 
 		// tasks
 		{
@@ -310,9 +317,10 @@ func syncTable(ctx context.Context, db db.SQLDB, tableName string, initColumns t
 }
 
 func listColumns(ctx context.Context, db db.SQLDB, tableName string) (columns map[string]nothing, err error) {
-	rows, err := db.QueryContext(ctx, `
-SELECT column_name FROM information_schema.columns WHERE table_name = $1;
-`, tableName)
+	rows, err := db.QueryContext(ctx,
+		`SELECT column_name FROM information_schema.columns WHERE table_name = $1;`,
+		tableName,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -349,9 +357,12 @@ func (s tableColumnSet) generateStatements() []string {
 
 // index describes all important properties of an index
 type index struct {
-	Table   string
-	Columns []string
-	Type    string
+	Name      string
+	Table     string
+	Columns   []string
+	Type      string
+	Unique    bool
+	Condition string
 }
 type indexList []index
 
@@ -361,22 +372,37 @@ func (l indexList) generateStatements() []string {
 	indexDefinitions := make([]string, 0, len(l))
 	for _, index := range l {
 		stmt := strings.Builder{}
-		stmt.WriteString("CREATE INDEX IF NOT EXISTS ")
+		stmt.WriteString("CREATE ")
+		if index.Unique {
+			stmt.WriteString("UNIQUE ")
+		}
+		stmt.WriteString("INDEX IF NOT EXISTS ")
 
 		columnList := strings.Join(index.Columns, ",")
 
-		stmt.WriteString(fmt.Sprintf(
-			"%s_%s_idx ON %s",
-			index.Table,
-			cstrings.ToUnderscoreCase(columnList),
-			index.Table,
-		))
+		// is a noop when string is empty
+		stmt.WriteString(index.Name)
+		if index.Name == "" {
+			stmt.WriteString(fmt.Sprintf(
+				"%s_%s_idx",
+				index.Table,
+				cstrings.ToUnderscoreCase(columnList),
+			))
+		}
+
+		stmt.WriteString(" ON ")
+		stmt.WriteString(index.Table)
 
 		if index.Type != "" {
 			stmt.WriteString(fmt.Sprintf(" USING %s ", index.Type))
 		}
 
-		stmt.WriteString("(" + columnList + ");")
+		stmt.WriteString("(" + columnList + ")")
+		if index.Condition != "" {
+			stmt.WriteString(" WHERE ")
+			stmt.WriteString(index.Condition)
+		}
+		stmt.WriteString(";")
 		indexDefinitions = append(indexDefinitions, stmt.String())
 	}
 

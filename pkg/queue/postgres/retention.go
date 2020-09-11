@@ -12,7 +12,9 @@ import (
 	cdb "github.com/contiamo/go-base/v2/pkg/db"
 	"github.com/contiamo/go-base/v2/pkg/queue"
 	"github.com/contiamo/go-base/v2/pkg/queue/handlers"
+	cvalidation "github.com/contiamo/go-base/v2/pkg/validation"
 	"github.com/opentracing/opentracing-go"
+	uuid "github.com/satori/go.uuid"
 )
 
 const (
@@ -59,67 +61,43 @@ func AssertRetentionSchedule(ctx context.Context, db *sql.DB, queueName string, 
 		},
 		CronSchedule: fmt.Sprintf("%d * * * *", when), // every hour at minute "when"
 	}
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("can not start transaction for scheduling: %w", err)
-	}
-	defer func() {
-		if err != nil {
-			_ = tx.Rollback()
-			return
-		}
-		err = tx.Commit()
-	}()
 
-	_, err = tx.ExecContext(ctx, `LOCK TABLE schedules IN ACCESS EXCLUSIVE MODE;`)
+	err = cvalidation.CronTab(retentionSchedule.CronSchedule)
 	if err != nil {
-		return fmt.Errorf("failed to lock `schedules`: %w", err)
+		return err
 	}
 
 	builder := squirrel.StatementBuilder.
 		PlaceholderFormat(squirrel.Dollar).
-		RunWith(cdb.WrapWithTracing(tx))
+		RunWith(cdb.WrapWithTracing(db))
 
-	var exists int
-	// use a unique error name here otherwise the sql.ErrNoRows might shadow
-	// us and things will break. This is also handled by the named error return
-	// variable, but this makes the code easier to copy and paste
-	existsErr := builder.Select("1").
-		From("schedules").
-		Where(squirrel.Eq{
-			"task_queue":              MaintenanceTaskQueue,
-			"task_type":               RetentionTask,
-			"task_spec->>'queueName'": queueName,
-			"task_spec->>'taskType'":  taskType,
-			"task_spec->>'status'":    status,
-		}).ScanContext(ctx, &exists)
-	if existsErr != nil && existsErr != sql.ErrNoRows {
-		return fmt.Errorf("can not verify existing schedule: %w", existsErr)
-	}
-
-	// will only non-zero if err is nil and task is not found
-	if exists == 0 {
-		span.SetTag("created", true)
-		// pass nil db because it doesn't need the raw db
-		return NewScheduler(nil).Schedule(ctx, builder, retentionSchedule)
-	}
-
-	span.SetTag("updated", true)
-	res, err := builder.Update("schedules").
-		Where(squirrel.Eq{
-			"task_queue":              MaintenanceTaskQueue,
-			"task_type":               RetentionTask,
-			"task_spec->>'queueName'": queueName,
-			"task_spec->>'taskType'":  taskType,
-			"task_spec->>'status'":    status,
-		}).
-		Set("updated_at", time.Now()).
-		Set("task_spec", retentionSchedule.Spec).
-		Set("cron_schedule", retentionSchedule.CronSchedule).
-		Set("next_execution_time", time.Now()).
-		ExecContext(ctx)
+	scheduleID := uuid.NewV4().String()
+	res, err := builder.Insert("schedules").
+		Columns(
+			"schedule_id",
+			"task_queue",
+			"task_type",
+			"task_spec",
+			"cron_schedule",
+			"next_execution_time",
+		).
+		Values(
+			scheduleID,
+			retentionSchedule.Queue,
+			retentionSchedule.Type,
+			retentionSchedule.Spec,
+			retentionSchedule.CronSchedule,
+			time.Now(), // the schedule will enqueue the task immediately
+		).Suffix(`
+			ON CONFLICT (task_queue,task_type,(task_spec->>'queueName'),(task_spec->>'taskType'),(task_spec->>'status')) WHERE task_type='retention'
+			DO UPDATE SET
+				updated_at=now(),
+				next_execution_time=now(),
+				task_spec=EXCLUDED.task_spec,
+				cron_schedule=EXCLUDED.cron_schedule
+		`).ExecContext(ctx)
 	if err != nil {
-		return fmt.Errorf("can not update existing schdule: %w", err)
+		return fmt.Errorf("can not upsert retention schedule: %w", err)
 	}
 
 	updated, err := res.RowsAffected()

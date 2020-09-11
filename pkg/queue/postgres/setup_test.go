@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Masterminds/squirrel"
 	dbtest "github.com/contiamo/go-base/v2/pkg/db/test"
 	"github.com/contiamo/go-base/v2/pkg/queue"
 	"github.com/sirupsen/logrus"
@@ -27,6 +28,20 @@ func TestSetupTables(t *testing.T) {
 		_, db := dbtest.GetDatabase(t)
 		defer db.Close()
 		require.NoError(t, SetupTables(ctx, db, nil))
+
+		dbtest.EqualCount(t, db, 1, "pg_indexes", squirrel.And{
+			squirrel.Eq{
+				"indexname": "unique_retention_idx",
+				"tablename": "schedules",
+			},
+			squirrel.Like{"indexdef": "CREATE UNIQUE INDEX%"},
+			squirrel.Like{"indexdef": "%task_queue%"},
+			squirrel.Like{"indexdef": "%task_spec%"},
+			squirrel.Like{"indexdef": "%queueName%"},
+			squirrel.Like{"indexdef": "%taskType%"},
+			squirrel.Like{"indexdef": "%status%"},
+			squirrel.Like{"indexdef": "%WHERE%"},
+		})
 	})
 
 	t.Run("bootstraps with references", func(t *testing.T) {
