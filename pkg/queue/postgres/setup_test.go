@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Masterminds/squirrel"
 	dbtest "github.com/contiamo/go-base/v2/pkg/db/test"
 	"github.com/contiamo/go-base/v2/pkg/queue"
 	"github.com/sirupsen/logrus"
@@ -27,6 +28,14 @@ func TestSetupTables(t *testing.T) {
 		_, db := dbtest.GetDatabase(t)
 		defer db.Close()
 		require.NoError(t, SetupTables(ctx, db, nil))
+
+		//SELECT * FROM pg_class c, pg_namespace n WHERE c.relnamespace = n.oid
+		// AND relname = 'unique_retention_idx' AND relkind = 'i';
+		dbtest.EqualCount(t, db, 1, "pg_class c, pg_namespace n", squirrel.Eq{
+			"relname": "unique_retention_idx",
+			"relkind": "i",
+			"nspname": "public",
+		})
 	})
 
 	t.Run("bootstraps with references", func(t *testing.T) {
