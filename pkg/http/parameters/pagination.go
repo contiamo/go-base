@@ -3,9 +3,12 @@ package parameters
 import "strconv"
 
 const (
-	defaultPageSize = 20
-	minPageSize     = 5
-	maxPageSize     = 100
+	// DefaultPageSize is a default size for the pagination
+	DefaultPageSize = uint32(20)
+	// MinPageSize is a minimal page size for the pagination
+	MinPageSize = uint32(5)
+	// MinPageSize is a maximal page size for the pagination
+	MaxPageSize = uint32(100)
 )
 
 // Page contains all the pagination parameters
@@ -18,8 +21,17 @@ type Page struct {
 
 // NormalizePagination returns a struct with normalized pagination parameters
 func NormalizePagination(pageNumber, pageSize string) Page {
-	number, _ := strconv.Atoi(pageNumber) // no need to handle an error, 0 values are fine
-	size, _ := strconv.Atoi(pageSize)
+	return NormalizePaginationWithValues(pageNumber, pageSize, DefaultPageSize, MinPageSize, MaxPageSize)
+}
+
+// NormalizePaginationWithValues returns a struct with normalized pagination parameters
+// according to the settings
+func NormalizePaginationWithValues(pageNumber, pageSize string, defaultPageSize, minPageSize, maxPageSize uint32) Page {
+	n, _ := strconv.ParseUint(pageNumber, 10, 32) // no need to handle an error, 0 values are fine
+	s, _ := strconv.ParseUint(pageSize, 10, 32)
+
+	number := uint32(n)
+	size := uint32(s)
 
 	if number < 1 {
 		number = 1
@@ -33,5 +45,5 @@ func NormalizePagination(pageNumber, pageSize string) Page {
 	case size > maxPageSize:
 		size = maxPageSize
 	}
-	return Page{uint32(number), uint32(size)}
+	return Page{number, size}
 }

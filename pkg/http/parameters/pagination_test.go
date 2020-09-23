@@ -19,14 +19,14 @@ func TestNormalizePagination(t *testing.T) {
 			size:   "NANNANNAN",
 			expected: Page{
 				Number: 1,
-				Size:   defaultPageSize,
+				Size:   DefaultPageSize,
 			},
 		},
 		{
 			name: "Returns default values when parameters are not set",
 			expected: Page{
 				Number: 1,
-				Size:   defaultPageSize,
+				Size:   DefaultPageSize,
 			},
 		},
 		{
@@ -44,7 +44,7 @@ func TestNormalizePagination(t *testing.T) {
 			size:   "1",
 			expected: Page{
 				Number: 5,
-				Size:   minPageSize,
+				Size:   MinPageSize,
 			},
 		},
 		{
@@ -53,7 +53,7 @@ func TestNormalizePagination(t *testing.T) {
 			size:   "999",
 			expected: Page{
 				Number: 5,
-				Size:   maxPageSize,
+				Size:   MaxPageSize,
 			},
 		},
 	}
