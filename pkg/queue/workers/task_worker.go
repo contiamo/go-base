@@ -2,6 +2,7 @@ package workers
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"time"
@@ -14,18 +15,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type queueEvent struct {
-	task *queue.Task
-	err  error
-}
-
 // NewTaskWorker creates a new Task Worker instance
 func NewTaskWorker(dequeuer queue.Dequeuer, handler queue.TaskHandler) queue.Worker {
 	return &taskWorker{
 		Tracer:   tracing.NewTracer("workers", "TaskWorker"),
 		dequeuer: dequeuer,
 		handler:  handler,
-		maxWait:  1 * time.Minute,
+		interval: 1 * time.Minute,
 	}
 }
 
@@ -34,52 +30,116 @@ type taskWorker struct {
 
 	handler  queue.TaskHandler
 	dequeuer queue.Dequeuer
-	maxWait  time.Duration
+	interval time.Duration
 
 	queue.Worker
 }
 
-func (w *taskWorker) iteration(ctx context.Context, tracer opentracing.Tracer, ticker *time.Ticker) (err error) {
-	logrus.Debug("starting work attempt")
+func (w *taskWorker) Work(ctx context.Context) (err error) {
+	tracer := opentracing.GlobalTracer()
+	ticker := time.NewTicker(w.interval)
+	defer ticker.Stop()
+	queue.TaskWorkerMetrics.ActiveGauge.Inc()
+	defer queue.TaskWorkerMetrics.ActiveGauge.Dec()
 
+	// the error in the iteration should not stop the work
+	// it's logged by the Tracer interface, so we don't have to handle it here
+	// since the ticker delivers the first tick after the interval we need to run it for the
+	// first time out of the loop
+	e := w.iteration(ctx, tracer)
+	if e != nil {
+		logrus.Error(e)
+	}
+
+	logrus.Debug("starting task worker loop...")
+	// while ctx is not cancelled or interrupted
+	for {
+		queue.TaskWorkerMetrics.WaitingGauge.Inc()
+
+		select {
+		case <-ctx.Done():
+			queue.TaskWorkerMetrics.WaitingGauge.Dec()
+			logrus.Debug("processing loop is interrupted")
+			return ctx.Err()
+		case <-ticker.C:
+			queue.TaskWorkerMetrics.WaitingGauge.Dec()
+			e := w.iteration(ctx, tracer)
+			if e != nil {
+				logrus.Error(e)
+			}
+		}
+	}
+}
+
+func (w *taskWorker) iteration(ctx context.Context, tracer opentracing.Tracer) (err error) {
 	span := tracer.StartSpan("iteration")
 	ctx, cancel := context.WithCancel(opentracing.ContextWithSpan(ctx, span))
 	defer func() {
-		// stop any ongoing dequeue attempt or work
 		cancel()
 		w.FinishSpan(span, err)
+		if err != nil {
+			queue.TaskWorkerMetrics.ErrorsCounter.Inc()
+		}
 	}()
 
-	events := w.startDequeue(ctx)
-	TaskQueueMetrics.WorkerWaiting.Inc()
-	logrus.Debug("waiting to dequeue a task")
+	queue.TaskWorkerMetrics.WorkingGauge.Inc()
+	defer queue.TaskWorkerMetrics.WorkingGauge.Dec()
 
-	select {
-	case <-ctx.Done():
+	logrus.Debug("starting work attempt...")
+
+	for {
+		// check if the iteration was cancelled
 		err = ctx.Err()
+		if err != nil {
+			logrus.Debug("task processing iteration is interrupted")
+			return err
+		}
+
+		logrus.Debug("trying to find a task to process...")
+
+		task, err := w.tryDequeueTask(ctx, tracer)
+		// empty queue is not an error
+		if err == sql.ErrNoRows {
+			return nil
+		}
 		if err != nil {
 			return err
 		}
-		span.SetTag("cancelled", "true")
-		logrus.Debug("worker cancelled")
-	case <-ticker.C:
-		// set a ticker so that the tracing/logging isn't too long, otherwise
-		// we can end up with spans that are hours long
-		span.SetTag("skipped", "true")
-		logrus.Debug("work loop skipped/reset")
-		return nil
-	case event := <-events:
-		err = w.verifyQueueEvent(event)
-		if err != nil {
-			logrus.Errorf("error dequeueing task: %s", err.Error())
-			TaskQueueMetrics.QueueErrors.Inc()
-			return nil
+
+		if task == nil {
+			return errors.New("task cannot be nil")
 		}
-
-		return w.handleTask(ctx, *event.task)
+		err = w.handleTask(ctx, *task)
+		if err != nil {
+			return err
+		}
 	}
+}
 
-	return nil
+func (w *taskWorker) tryDequeueTask(ctx context.Context, tracer opentracing.Tracer) (task *queue.Task, err error) {
+	span, ctx := w.StartSpan(ctx, "tryDequeueTask")
+	defer func() {
+		// this not really an error that we need to log
+		// it's just to indicate the calling function to take a break
+		// before it tries again
+		if err == sql.ErrNoRows {
+			w.FinishSpan(span, nil)
+		} else {
+			w.FinishSpan(span, err)
+		}
+	}()
+	defer func() {
+		if err != nil {
+			queue.TaskWorkerMetrics.DequeueErrorCounter.Inc()
+		}
+	}()
+
+	queue.TaskWorkerMetrics.DequeueingGauge.Inc()
+	defer queue.TaskWorkerMetrics.DequeueingGauge.Dec()
+	timer := prometheus.NewTimer(queue.TaskWorkerMetrics.DequeueingDuration)
+	defer timer.ObserveDuration()
+
+	return w.dequeuer.Dequeue(ctx)
 }
 
 // handleTask is responsible for actually calling the handler.Process method.  This method includes
@@ -90,20 +150,12 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 	defer func() {
 		cancel()
 		w.FinishSpan(span, err)
-
 	}()
 
-	log := logrus.WithField("worker", "handleTask")
-
-	l := prometheus.Labels{"queue": task.Queue, "type": task.Type.String()}
-	timer := prometheus.NewTimer(TaskQueueMetrics.TaskDuration.With(l))
+	timer := prometheus.NewTimer(queue.TaskWorkerMetrics.ProcessingDuration)
 	defer timer.ObserveDuration()
 
-	TaskQueueMetrics.WorkerWorking.With(l).Inc()
-	TaskQueueMetrics.WorkerTask.With(l).Inc()
-
-	TaskQueueMetrics.WorkerWorkingGauge.With(l).Inc()
-	defer TaskQueueMetrics.WorkerWorkingGauge.With(l).Dec()
+	log := logrus.WithField("worker", "handleTask")
 
 	heartbeats := make(chan queue.Progress)
 	done := make(chan struct{})
@@ -114,9 +166,6 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 		// handler.Process is responsible for closing the heartbeats channel
 		// if `Process` returns an error it means the task failed
 		workErr = w.handler.Process(ctx, task, heartbeats)
-		if workErr != nil {
-			TaskQueueMetrics.WorkerErrors.With(l).Inc()
-		}
 	}()
 
 	// assumes that the handler will close the heartbeats channel when if finishes/errors
@@ -147,7 +196,14 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 		return w.dequeuer.Fail(ctx, task.ID, progress)
 	}
 
-	return w.dequeuer.Finish(ctx, task.ID, progress)
+	err = w.dequeuer.Finish(ctx, task.ID, progress)
+	if err != nil {
+		return err
+	}
+
+	l := prometheus.Labels{"queue": task.Queue, "type": task.Type.String()}
+	queue.TaskWorkerMetrics.ProcessedCounter.With(l).Inc()
+	return nil
 }
 
 func (w *taskWorker) setError(progress queue.Progress, err error) queue.Progress {
@@ -168,54 +224,4 @@ func (w *taskWorker) setError(progress queue.Progress, err error) queue.Progress
 		return progress
 	}
 	return queue.Progress(bytes)
-}
-
-func (w *taskWorker) Work(ctx context.Context) (err error) {
-	logrus.Debug("starting task worker")
-	TaskQueueMetrics.WorkerGauge.Inc()
-	defer TaskQueueMetrics.WorkerGauge.Dec()
-
-	tracer := opentracing.GlobalTracer()
-
-	ticker := time.NewTicker(w.maxWait)
-	defer ticker.Stop()
-
-	// while ctx is not cancelled or interrupted
-	for err == nil {
-		err = w.iteration(ctx, tracer, ticker)
-	}
-
-	return err
-}
-
-// verifyQueueEvent is a helper to detect if the queue emitted an error
-func (w *taskWorker) verifyQueueEvent(event *queueEvent) error {
-	if event.err != nil {
-		return event.err
-	}
-
-	if event.task == nil {
-		return errors.New("unexpected empty task")
-	}
-	return nil
-}
-
-// dequeue wraps the Dequeue in channels to make the channel select easier
-func (w *taskWorker) startDequeue(ctx context.Context) <-chan *queueEvent {
-	queueEvents := make(chan *queueEvent, 1)
-	go func() {
-		timer := prometheus.NewTimer(TaskQueueMetrics.DequeueDuration)
-		defer timer.ObserveDuration()
-
-		t, err := w.dequeuer.Dequeue(ctx)
-
-		if t != nil {
-			l := prometheus.Labels{"queue": t.Queue, "type": t.Type.String()}
-			TaskQueueMetrics.TaskWaiting.With(l).Observe(time.Since(t.CreatedAt).Seconds())
-		}
-
-		queueEvents <- &queueEvent{task: t, err: err}
-	}()
-
-	return queueEvents
 }

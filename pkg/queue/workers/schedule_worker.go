@@ -50,8 +50,8 @@ func (w *scheduleWorker) Work(ctx context.Context) (err error) {
 	tracer := opentracing.GlobalTracer()
 	ticker := time.NewTicker(w.interval)
 	defer ticker.Stop()
-	TaskSchedulingMetrics.WorkerGauge.Inc()
-	defer TaskSchedulingMetrics.WorkerGauge.Dec()
+	queue.ScheduleWorkerMetrics.ActiveGauge.Inc()
+	defer queue.ScheduleWorkerMetrics.ActiveGauge.Dec()
 
 	// the error in the iteration should not stop the work
 	// it's logged by the Tracer interface, so we don't have to handle it here
@@ -65,17 +65,19 @@ func (w *scheduleWorker) Work(ctx context.Context) (err error) {
 	logrus.Debug("starting task scheduling loop...")
 	// while ctx is not cancelled or interrupted
 	for {
-		TaskSchedulingMetrics.WorkerWaiting.Inc()
+		queue.ScheduleWorkerMetrics.WaitingGauge.Inc()
+
 		select {
 		case <-ctx.Done():
+			queue.ScheduleWorkerMetrics.WaitingGauge.Dec()
 			logrus.Debug("scheduling loop is interrupted")
 			return ctx.Err()
 		case <-ticker.C:
+			queue.ScheduleWorkerMetrics.WaitingGauge.Dec()
 			e := w.iteration(ctx, tracer)
 			if e != nil {
 				logrus.Error(e)
 			}
-
 		}
 	}
 }
@@ -91,15 +93,12 @@ func (w *scheduleWorker) iteration(ctx context.Context, tracer opentracing.Trace
 		cancel()
 		w.FinishSpan(span, err)
 		if err != nil {
-			TaskSchedulingMetrics.WorkerErrors.Inc()
+			queue.ScheduleWorkerMetrics.ErrorsCounter.Inc()
 		}
 	}()
 
-	TaskSchedulingMetrics.WorkerWorking.Inc()
-	TaskSchedulingMetrics.WorkerWorkingGauge.Inc()
-	defer TaskSchedulingMetrics.WorkerWorkingGauge.Dec()
-	timer := prometheus.NewTimer(TaskSchedulingMetrics.IterationDuration)
-	defer timer.ObserveDuration()
+	queue.ScheduleWorkerMetrics.WorkingGauge.Inc()
+	defer queue.ScheduleWorkerMetrics.WorkingGauge.Dec()
 
 	logrus.Debug("starting task scheduling iteration...")
 	for {
@@ -113,7 +112,6 @@ func (w *scheduleWorker) iteration(ctx context.Context, tracer opentracing.Trace
 		logrus.Debug("trying to find a task to schedule...")
 		err = w.scheduleTask(ctx)
 		if err == ErrScheduleQueueIsEmpty {
-			logrus.Debug(err.Error())
 			return nil
 		}
 		if err != nil {
@@ -159,6 +157,8 @@ func (w *scheduleWorker) scheduleTask(ctx context.Context) (err error) {
 		specBytes    []byte
 	)
 
+	timer := prometheus.NewTimer(queue.ScheduleWorkerMetrics.DequeueingDuration)
+
 	// this will lock the schedule row until the transaction is closed
 	row := builder.
 		Select(
@@ -187,12 +187,18 @@ func (w *scheduleWorker) scheduleTask(ctx context.Context) (err error) {
 		&specBytes,
 		&cronSchedule,
 	)
+	timer.ObserveDuration()
+
 	if err == sql.ErrNoRows {
 		return ErrScheduleQueueIsEmpty
 	}
 	if err != nil {
+		queue.ScheduleWorkerMetrics.DequeueErrorCounter.Inc()
 		return err
 	}
+
+	timer = prometheus.NewTimer(queue.ScheduleWorkerMetrics.ProcessingDuration)
+	defer timer.ObserveDuration()
 
 	span.SetTag("schedule.id", scheduleID)
 	span.SetTag("schedule.cron", cronSchedule)
@@ -218,9 +224,6 @@ func (w *scheduleWorker) scheduleTask(ctx context.Context) (err error) {
 		return err
 	}
 
-	l := prometheus.Labels{"queue": taskQueue, "type": taskType.String()}
-	TaskSchedulingMetrics.WorkerTaskScheduled.With(l).Inc()
-
 	logrus.Debug("task has been scheduled successfully")
 
 	logrus.Debug("calculating and updating the next execution time...")
@@ -245,5 +248,8 @@ func (w *scheduleWorker) scheduleTask(ctx context.Context) (err error) {
 		return err
 	}
 	logrus.Debug("the new execution time is set")
+
+	l := prometheus.Labels{"queue": taskQueue, "type": taskType.String()}
+	queue.ScheduleWorkerMetrics.ProcessedCounter.With(l).Inc()
 	return nil
 }
