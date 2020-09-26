@@ -26,19 +26,35 @@ type SchedulerMetricsType struct {
 
 // WorkerMetricsType provides access to the prometheus metric objects for a worker
 type WorkerMetricsType struct {
+	// Labels available in its vector metrics
 	Labels []string
 
-	ActiveGauge     prometheus.Gauge
-	WorkingGauge    prometheus.Gauge
-	WaitingGauge    prometheus.Gauge
+	// ActiveGauge is a gauge of active instances
+	ActiveGauge prometheus.Gauge
+	// WorkingGauge is a gauge of working instances
+	WorkingGauge prometheus.Gauge
+	// DequeueingGauge is a gauge of instances that are trying to dequeue a task
 	DequeueingGauge prometheus.Gauge
 
+	// ProcessingDuration is a total duration of tasks being processed in seconds
 	ProcessingDuration prometheus.Histogram
+	// DequeueingDuration is a total duration spent waiting for a new task in seconds
 	DequeueingDuration prometheus.Histogram
 
-	ProcessedCounter    *prometheus.CounterVec
+	// ProcessedCounter is a total count of processed tasks
+	ProcessedCounter *prometheus.CounterVec
+	// DequeueErrorCounter is a total count of dequeueing errors
 	DequeueErrorCounter prometheus.Counter
-	ErrorsCounter       prometheus.Counter
+	// ErrorsCounter is a total count of errors
+	ErrorsCounter prometheus.Counter
+}
+
+// ScheduleWorkerMetricsType provides access to the prometheus metric objects for a schedule worker
+type ScheduleWorkerMetricsType struct {
+	WorkerMetricsType
+	// WaitingGauge is a gauge of waiting instances.
+	// Unlike the task worker the schedule worker also waits between its iterations.
+	WaitingGauge prometheus.Gauge
 }
 
 const (
@@ -109,13 +125,6 @@ var (
 		Subsystem:   "task_worker",
 		Name:        "working_gauge",
 		Help:        "gauge of working instances",
-		ConstLabels: constLabels,
-	}
-	defTaskWorkerWaitingGaugeOpts = prometheus.GaugeOpts{
-		Namespace:   "queue",
-		Subsystem:   "task_worker",
-		Name:        "waiting_gauge",
-		Help:        "gauge of waiting instances",
 		ConstLabels: constLabels,
 	}
 	defTaskWorkerDequeueingGaugeOpts = prometheus.GaugeOpts{
@@ -252,7 +261,6 @@ var (
 
 		ActiveGauge:     promauto.NewGauge(defTaskWorkerActiveGaugeOpts),
 		WorkingGauge:    promauto.NewGauge(defTaskWorkerWorkingGaugeOpts),
-		WaitingGauge:    promauto.NewGauge(defTaskWorkerWaitingGaugeOpts),
 		DequeueingGauge: promauto.NewGauge(defTaskWorkerDequeueingGaugeOpts),
 
 		ProcessingDuration: promauto.NewHistogram(defTaskWorkerProcessingDurationOpts),
@@ -277,20 +285,24 @@ var (
 	}
 
 	// ScheduleWorkerMetrics is the global metrics instance for the schedule worker of this instance
-	ScheduleWorkerMetrics = WorkerMetricsType{
-		Labels: taskMetricLabels,
+	ScheduleWorkerMetrics = ScheduleWorkerMetricsType{
+		WorkerMetricsType: WorkerMetricsType{
+			Labels: taskMetricLabels,
 
-		ActiveGauge:     promauto.NewGauge(defScheduleWorkerActiveGaugeOpts),
-		WorkingGauge:    promauto.NewGauge(defScheduleWorkerWorkingGaugeOpts),
-		WaitingGauge:    promauto.NewGauge(defScheduleWorkerWaitingGaugeOpts),
-		DequeueingGauge: promauto.NewGauge(defScheduleWorkerDequeueingGaugeOpts),
+			ActiveGauge:  promauto.NewGauge(defScheduleWorkerActiveGaugeOpts),
+			WorkingGauge: promauto.NewGauge(defScheduleWorkerWorkingGaugeOpts),
 
-		ProcessingDuration: promauto.NewHistogram(defScheduleWorkerProcessingDurationOpts),
-		DequeueingDuration: promauto.NewHistogram(defScheduleWorkerDequeueingDurationOpts),
+			DequeueingGauge: promauto.NewGauge(defScheduleWorkerDequeueingGaugeOpts),
 
-		ProcessedCounter:    promauto.NewCounterVec(defScheduleWorkerProcessedCounterOpts, taskMetricLabels),
-		DequeueErrorCounter: promauto.NewCounter(defScheduleWorkerDequeueErrorsCounterOpts),
-		ErrorsCounter:       promauto.NewCounter(defScheduleWorkerErrorsCounterOpts),
+			ProcessingDuration: promauto.NewHistogram(defScheduleWorkerProcessingDurationOpts),
+			DequeueingDuration: promauto.NewHistogram(defScheduleWorkerDequeueingDurationOpts),
+
+			ProcessedCounter:    promauto.NewCounterVec(defScheduleWorkerProcessedCounterOpts, taskMetricLabels),
+			DequeueErrorCounter: promauto.NewCounter(defScheduleWorkerDequeueErrorsCounterOpts),
+			ErrorsCounter:       promauto.NewCounter(defScheduleWorkerErrorsCounterOpts),
+		},
+
+		WaitingGauge: promauto.NewGauge(defScheduleWorkerWaitingGaugeOpts),
 	}
 )
 
@@ -325,9 +337,6 @@ func SwitchMetricsServiceName(serviceName string) {
 
 	newTaskWorkerWorkingGaugeOpts := defTaskWorkerWorkingGaugeOpts
 	newTaskWorkerWorkingGaugeOpts.ConstLabels = newConstLabels
-
-	newTaskWorkerWaitingGaugeOpts := defTaskWorkerWaitingGaugeOpts
-	newTaskWorkerWaitingGaugeOpts.ConstLabels = newConstLabels
 
 	newTaskWorkerDequeueingGaugeOpts := defTaskWorkerDequeueingGaugeOpts
 	newTaskWorkerDequeueingGaugeOpts.ConstLabels = newConstLabels
@@ -417,7 +426,6 @@ func SwitchMetricsServiceName(serviceName string) {
 	prometheus.Unregister(TaskWorkerMetrics.DequeueingDuration)
 	prometheus.Unregister(TaskWorkerMetrics.ActiveGauge)
 	prometheus.Unregister(TaskWorkerMetrics.WorkingGauge)
-	prometheus.Unregister(TaskWorkerMetrics.WaitingGauge)
 	prometheus.Unregister(TaskWorkerMetrics.DequeueingGauge)
 	prometheus.Unregister(TaskWorkerMetrics.ProcessedCounter)
 	prometheus.Unregister(TaskWorkerMetrics.ErrorsCounter)
@@ -427,7 +435,6 @@ func SwitchMetricsServiceName(serviceName string) {
 
 		ActiveGauge:     promauto.NewGauge(newTaskWorkerActiveGaugeOpts),
 		WorkingGauge:    promauto.NewGauge(newTaskWorkerWorkingGaugeOpts),
-		WaitingGauge:    promauto.NewGauge(newTaskWorkerWaitingGaugeOpts),
 		DequeueingGauge: promauto.NewGauge(newTaskWorkerDequeueingGaugeOpts),
 
 		ProcessingDuration: promauto.NewHistogram(newTaskWorkerProcessingDurationOpts),
@@ -449,20 +456,23 @@ func SwitchMetricsServiceName(serviceName string) {
 	prometheus.Unregister(ScheduleWorkerMetrics.ProcessedCounter)
 	prometheus.Unregister(ScheduleWorkerMetrics.ErrorsCounter)
 	prometheus.Unregister(ScheduleWorkerMetrics.DequeueErrorCounter)
-	ScheduleWorkerMetrics = WorkerMetricsType{
-		Labels: taskMetricLabels,
+	ScheduleWorkerMetrics = ScheduleWorkerMetricsType{
+		WorkerMetricsType: WorkerMetricsType{
+			Labels: taskMetricLabels,
 
-		ActiveGauge:     promauto.NewGauge(newScheduleWorkerActiveGaugeOpts),
-		WorkingGauge:    promauto.NewGauge(newScheduleWorkerWorkingGaugeOpts),
-		WaitingGauge:    promauto.NewGauge(newScheduleWorkerWaitingGaugeOpts),
-		DequeueingGauge: promauto.NewGauge(newScheduleWorkerDequeueingGaugeOpts),
+			ActiveGauge:  promauto.NewGauge(newScheduleWorkerActiveGaugeOpts),
+			WorkingGauge: promauto.NewGauge(newScheduleWorkerWorkingGaugeOpts),
 
-		ProcessingDuration: promauto.NewHistogram(newScheduleWorkerProcessingDurationOpts),
-		DequeueingDuration: promauto.NewHistogram(newScheduleWorkerDequeueingDurationOpts),
+			DequeueingGauge: promauto.NewGauge(newScheduleWorkerDequeueingGaugeOpts),
 
-		ProcessedCounter:    promauto.NewCounterVec(newScheduleWorkerProcessedCounterOpts, taskMetricLabels),
-		DequeueErrorCounter: promauto.NewCounter(newScheduleWorkerDequeueErrorsCounterOpts),
-		ErrorsCounter:       promauto.NewCounter(newScheduleWorkerErrorsCounterOpts),
+			ProcessingDuration: promauto.NewHistogram(newScheduleWorkerProcessingDurationOpts),
+			DequeueingDuration: promauto.NewHistogram(newScheduleWorkerDequeueingDurationOpts),
+
+			ProcessedCounter:    promauto.NewCounterVec(newScheduleWorkerProcessedCounterOpts, taskMetricLabels),
+			DequeueErrorCounter: promauto.NewCounter(newScheduleWorkerDequeueErrorsCounterOpts),
+			ErrorsCounter:       promauto.NewCounter(newScheduleWorkerErrorsCounterOpts),
+		},
+		WaitingGauge: promauto.NewGauge(newScheduleWorkerWaitingGaugeOpts),
 	}
 }
 

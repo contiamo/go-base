@@ -68,7 +68,6 @@ func TestTaskWorkerMetrics(t *testing.T) {
 	t.Run("calling work inc the worker", func(t *testing.T) {
 		require.Equal(t, float64(1), testutil.ToFloat64(queue.TaskWorkerMetrics.ActiveGauge))
 		require.Equal(t, float64(1), testutil.ToFloat64(queue.TaskWorkerMetrics.WorkingGauge))
-		require.Equal(t, float64(0), testutil.ToFloat64(queue.TaskWorkerMetrics.WaitingGauge))
 	})
 
 	qCh <- testTask
