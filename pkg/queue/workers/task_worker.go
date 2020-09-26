@@ -15,13 +15,16 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var (
+	maxSpanDuration = 1 * time.Minute
+)
+
 // NewTaskWorker creates a new Task Worker instance
 func NewTaskWorker(dequeuer queue.Dequeuer, handler queue.TaskHandler) queue.Worker {
 	return &taskWorker{
 		Tracer:   tracing.NewTracer("workers", "TaskWorker"),
 		dequeuer: dequeuer,
 		handler:  handler,
-		interval: 1 * time.Minute,
 	}
 }
 
@@ -30,15 +33,12 @@ type taskWorker struct {
 
 	handler  queue.TaskHandler
 	dequeuer queue.Dequeuer
-	interval time.Duration
 
 	queue.Worker
 }
 
 func (w *taskWorker) Work(ctx context.Context) (err error) {
 	tracer := opentracing.GlobalTracer()
-	ticker := time.NewTicker(w.interval)
-	defer ticker.Stop()
 	queue.TaskWorkerMetrics.ActiveGauge.Inc()
 	defer queue.TaskWorkerMetrics.ActiveGauge.Dec()
 
@@ -54,15 +54,11 @@ func (w *taskWorker) Work(ctx context.Context) (err error) {
 	logrus.Debug("starting task worker loop...")
 	// while ctx is not cancelled or interrupted
 	for {
-		queue.TaskWorkerMetrics.WaitingGauge.Inc()
-
 		select {
 		case <-ctx.Done():
-			queue.TaskWorkerMetrics.WaitingGauge.Dec()
 			logrus.Debug("processing loop is interrupted")
 			return ctx.Err()
-		case <-ticker.C:
-			queue.TaskWorkerMetrics.WaitingGauge.Dec()
+		default:
 			e := w.iteration(ctx, tracer)
 			if e != nil {
 				logrus.Error(e)
@@ -85,33 +81,39 @@ func (w *taskWorker) iteration(ctx context.Context, tracer opentracing.Tracer) (
 	queue.TaskWorkerMetrics.WorkingGauge.Inc()
 	defer queue.TaskWorkerMetrics.WorkingGauge.Dec()
 
+	timeout := time.After(maxSpanDuration)
+
 	logrus.Debug("starting work attempt...")
 
 	for {
+		select {
 		// check if the iteration was cancelled
-		err = ctx.Err()
-		if err != nil {
+		case <-ctx.Done():
 			logrus.Debug("task processing iteration is interrupted")
-			return err
-		}
-
-		logrus.Debug("trying to find a task to process...")
-
-		task, err := w.tryDequeueTask(ctx, tracer)
-		// empty queue is not an error
-		if err == sql.ErrNoRows {
+			return ctx.Err()
+		case <-timeout:
+			// we should not hold tracing spans open for more then maxSpanDuration
+			// so, we just restart the span with a new iteration
 			return nil
-		}
-		if err != nil {
-			return err
-		}
+		default:
+			logrus.Debug("trying to find a task to process...")
 
-		if task == nil {
-			return errors.New("task cannot be nil")
-		}
-		err = w.handleTask(ctx, *task)
-		if err != nil {
-			return err
+			task, err := w.tryDequeueTask(ctx, tracer)
+			// empty queue is not an error
+			if err == sql.ErrNoRows {
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+
+			if task == nil {
+				return errors.New("task cannot be nil")
+			}
+			err = w.handleTask(ctx, *task)
+			if err != nil {
+				return err
+			}
 		}
 	}
 }
