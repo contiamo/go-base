@@ -216,13 +216,16 @@ func (h *apiRequestHandler) Process(ctx context.Context, task queue.Task, heartb
 	}()
 
 	decoder := json.NewDecoder(resp.Body)
-	for decoder.More() {
+	for {
 		err = ctx.Err()
 		if err != nil {
 			return err
 		}
 		var m json.RawMessage
 		err = decoder.Decode(&m)
+		if err == io.EOF {
+			break
+		}
 		if err != nil {
 			return err
 		}
