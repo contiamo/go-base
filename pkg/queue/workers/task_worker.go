@@ -150,9 +150,13 @@ func (w *taskWorker) tryDequeueTask(ctx context.Context, tracer opentracing.Trac
 func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error) {
 	span, ctx := w.StartSpan(ctx, "handleTask")
 	ctx, cancel := context.WithCancel(ctx)
+	labels := prometheus.Labels{"queue": task.Queue, "type": task.Type.String()}
 	defer func() {
 		cancel()
 		w.FinishSpan(span, err)
+		if err != nil {
+			queue.TaskWorkerMetrics.ProcessingErrorsCounter.With(labels).Inc()
+		}
 	}()
 
 	timer := prometheus.NewTimer(queue.TaskWorkerMetrics.ProcessingDuration)
@@ -204,8 +208,7 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 		return err
 	}
 
-	l := prometheus.Labels{"queue": task.Queue, "type": task.Type.String()}
-	queue.TaskWorkerMetrics.ProcessedCounter.With(l).Inc()
+	queue.TaskWorkerMetrics.ProcessedCounter.With(labels).Inc()
 	return nil
 }
 

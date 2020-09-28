@@ -197,6 +197,12 @@ func (w *scheduleWorker) scheduleTask(ctx context.Context) (err error) {
 		return err
 	}
 
+	labels := prometheus.Labels{"queue": taskQueue, "type": taskType.String()}
+	defer func() {
+		if err != nil {
+			queue.ScheduleWorkerMetrics.ProcessingErrorsCounter.With(labels).Inc()
+		}
+	}()
 	timer = prometheus.NewTimer(queue.ScheduleWorkerMetrics.ProcessingDuration)
 	defer timer.ObserveDuration()
 
@@ -242,14 +248,15 @@ func (w *scheduleWorker) scheduleTask(ctx context.Context) (err error) {
 	_, err = builder.
 		Update("schedules").
 		Set("next_execution_time", nextExecution).
-		Where("schedule_id=?", scheduleID).
+		Where(squirrel.Eq{
+			"schedule_id": scheduleID,
+		}).
 		ExecContext(ctx)
 	if err != nil {
 		return err
 	}
 	logrus.Debug("the new execution time is set")
 
-	l := prometheus.Labels{"queue": taskQueue, "type": taskType.String()}
-	queue.ScheduleWorkerMetrics.ProcessedCounter.With(l).Inc()
+	queue.ScheduleWorkerMetrics.ProcessedCounter.With(labels).Inc()
 	return nil
 }

@@ -45,6 +45,8 @@ type WorkerMetricsType struct {
 	ProcessedCounter *prometheus.CounterVec
 	// DequeueErrorCounter is a total count of dequeueing errors
 	DequeueErrorCounter prometheus.Counter
+	// ProcessingErrorsCounter is a total count of errors while handling the task
+	ProcessingErrorsCounter *prometheus.CounterVec
 	// ErrorsCounter is a total count of errors
 	ErrorsCounter prometheus.Counter
 }
@@ -164,6 +166,13 @@ var (
 		Help:        "total count of dequeueing errors",
 		ConstLabels: constLabels,
 	}
+	defTaskWorkerProcessingErrorsCounterOpts = prometheus.CounterOpts{
+		Namespace:   "queue",
+		Subsystem:   "task_worker",
+		Name:        "processing_error_count",
+		Help:        "total count of errors while processing a task",
+		ConstLabels: constLabels,
+	}
 	defTaskWorkerErrorsCounterOpts = prometheus.CounterOpts{
 		Namespace:   "queue",
 		Subsystem:   "task_worker",
@@ -232,6 +241,13 @@ var (
 		Help:        "total count of schedule dequeueing errors",
 		ConstLabels: constLabels,
 	}
+	defScheduleWorkerProcessingErrorsCounterOpts = prometheus.CounterOpts{
+		Namespace:   "queue",
+		Subsystem:   "schedule_worker",
+		Name:        "processing_error_count",
+		Help:        "total count of errors while processing a schedule",
+		ConstLabels: constLabels,
+	}
 	defScheduleWorkerErrorsCounterOpts = prometheus.CounterOpts{
 		Namespace:   "queue",
 		Subsystem:   "schedule_worker",
@@ -266,9 +282,10 @@ var (
 		ProcessingDuration: promauto.NewHistogram(defTaskWorkerProcessingDurationOpts),
 		DequeueingDuration: promauto.NewHistogram(defTaskWorkerDequeueingDurationOpts),
 
-		ProcessedCounter:    promauto.NewCounterVec(defTaskWorkerProcessedCounterOpts, taskMetricLabels),
-		DequeueErrorCounter: promauto.NewCounter(defTaskWorkerDequeueErrorsCounterOpts),
-		ErrorsCounter:       promauto.NewCounter(defTaskWorkerErrorsCounterOpts),
+		ProcessedCounter:        promauto.NewCounterVec(defTaskWorkerProcessedCounterOpts, taskMetricLabels),
+		DequeueErrorCounter:     promauto.NewCounter(defTaskWorkerDequeueErrorsCounterOpts),
+		ProcessingErrorsCounter: promauto.NewCounterVec(defTaskWorkerProcessingErrorsCounterOpts, taskMetricLabels),
+		ErrorsCounter:           promauto.NewCounter(defTaskWorkerErrorsCounterOpts),
 	}
 
 	// SchedulerMetrics is the global metrics instance for the scheduler of this instance
@@ -297,9 +314,10 @@ var (
 			ProcessingDuration: promauto.NewHistogram(defScheduleWorkerProcessingDurationOpts),
 			DequeueingDuration: promauto.NewHistogram(defScheduleWorkerDequeueingDurationOpts),
 
-			ProcessedCounter:    promauto.NewCounterVec(defScheduleWorkerProcessedCounterOpts, taskMetricLabels),
-			DequeueErrorCounter: promauto.NewCounter(defScheduleWorkerDequeueErrorsCounterOpts),
-			ErrorsCounter:       promauto.NewCounter(defScheduleWorkerErrorsCounterOpts),
+			ProcessedCounter:        promauto.NewCounterVec(defScheduleWorkerProcessedCounterOpts, taskMetricLabels),
+			DequeueErrorCounter:     promauto.NewCounter(defScheduleWorkerDequeueErrorsCounterOpts),
+			ProcessingErrorsCounter: promauto.NewCounterVec(defScheduleWorkerProcessingErrorsCounterOpts, taskMetricLabels),
+			ErrorsCounter:           promauto.NewCounter(defScheduleWorkerErrorsCounterOpts),
 		},
 
 		WaitingGauge: promauto.NewGauge(defScheduleWorkerWaitingGaugeOpts),
@@ -353,6 +371,9 @@ func SwitchMetricsServiceName(serviceName string) {
 	newTaskWorkerDequeueErrorsCounterOpts := defTaskWorkerDequeueErrorsCounterOpts
 	newTaskWorkerDequeueErrorsCounterOpts.ConstLabels = newConstLabels
 
+	newTaskWorkerProcessingErrorsCounterOpts := defTaskWorkerProcessingErrorsCounterOpts
+	newTaskWorkerProcessingErrorsCounterOpts.ConstLabels = newConstLabels
+
 	newTaskWorkerErrorsCounterOpts := defTaskWorkerErrorsCounterOpts
 	newTaskWorkerErrorsCounterOpts.ConstLabels = newConstLabels
 
@@ -381,6 +402,9 @@ func SwitchMetricsServiceName(serviceName string) {
 
 	newScheduleWorkerDequeueErrorsCounterOpts := defScheduleWorkerDequeueErrorsCounterOpts
 	newScheduleWorkerDequeueErrorsCounterOpts.ConstLabels = newConstLabels
+
+	newScheduleWorkerProcessingErrorsCounterOpts := defScheduleWorkerProcessingErrorsCounterOpts
+	newScheduleWorkerProcessingErrorsCounterOpts.ConstLabels = newConstLabels
 
 	newScheduleWorkerErrorsCounterOpts := defScheduleWorkerErrorsCounterOpts
 	newScheduleWorkerErrorsCounterOpts.ConstLabels = newConstLabels
@@ -428,6 +452,7 @@ func SwitchMetricsServiceName(serviceName string) {
 	prometheus.Unregister(TaskWorkerMetrics.WorkingGauge)
 	prometheus.Unregister(TaskWorkerMetrics.DequeueingGauge)
 	prometheus.Unregister(TaskWorkerMetrics.ProcessedCounter)
+	prometheus.Unregister(TaskWorkerMetrics.ProcessingErrorsCounter)
 	prometheus.Unregister(TaskWorkerMetrics.ErrorsCounter)
 	prometheus.Unregister(TaskWorkerMetrics.DequeueErrorCounter)
 	TaskWorkerMetrics = WorkerMetricsType{
@@ -440,9 +465,10 @@ func SwitchMetricsServiceName(serviceName string) {
 		ProcessingDuration: promauto.NewHistogram(newTaskWorkerProcessingDurationOpts),
 		DequeueingDuration: promauto.NewHistogram(newTaskWorkerDequeueingDurationOpts),
 
-		ProcessedCounter:    promauto.NewCounterVec(newTaskWorkerProcessedCounterOpts, taskMetricLabels),
-		DequeueErrorCounter: promauto.NewCounter(newTaskWorkerDequeueErrorsCounterOpts),
-		ErrorsCounter:       promauto.NewCounter(newTaskWorkerErrorsCounterOpts),
+		ProcessedCounter:        promauto.NewCounterVec(newTaskWorkerProcessedCounterOpts, taskMetricLabels),
+		DequeueErrorCounter:     promauto.NewCounter(newTaskWorkerDequeueErrorsCounterOpts),
+		ProcessingErrorsCounter: promauto.NewCounterVec(newTaskWorkerProcessingErrorsCounterOpts, taskMetricLabels),
+		ErrorsCounter:           promauto.NewCounter(newTaskWorkerErrorsCounterOpts),
 	}
 
 	// schedule worker
@@ -454,6 +480,7 @@ func SwitchMetricsServiceName(serviceName string) {
 	prometheus.Unregister(ScheduleWorkerMetrics.WaitingGauge)
 	prometheus.Unregister(ScheduleWorkerMetrics.DequeueingGauge)
 	prometheus.Unregister(ScheduleWorkerMetrics.ProcessedCounter)
+	prometheus.Unregister(ScheduleWorkerMetrics.ProcessingErrorsCounter)
 	prometheus.Unregister(ScheduleWorkerMetrics.ErrorsCounter)
 	prometheus.Unregister(ScheduleWorkerMetrics.DequeueErrorCounter)
 	ScheduleWorkerMetrics = ScheduleWorkerMetricsType{
@@ -468,9 +495,10 @@ func SwitchMetricsServiceName(serviceName string) {
 			ProcessingDuration: promauto.NewHistogram(newScheduleWorkerProcessingDurationOpts),
 			DequeueingDuration: promauto.NewHistogram(newScheduleWorkerDequeueingDurationOpts),
 
-			ProcessedCounter:    promauto.NewCounterVec(newScheduleWorkerProcessedCounterOpts, taskMetricLabels),
-			DequeueErrorCounter: promauto.NewCounter(newScheduleWorkerDequeueErrorsCounterOpts),
-			ErrorsCounter:       promauto.NewCounter(newScheduleWorkerErrorsCounterOpts),
+			ProcessedCounter:        promauto.NewCounterVec(newScheduleWorkerProcessedCounterOpts, taskMetricLabels),
+			DequeueErrorCounter:     promauto.NewCounter(newScheduleWorkerDequeueErrorsCounterOpts),
+			ProcessingErrorsCounter: promauto.NewCounterVec(newScheduleWorkerProcessingErrorsCounterOpts, taskMetricLabels),
+			ErrorsCounter:           promauto.NewCounter(newScheduleWorkerErrorsCounterOpts),
 		},
 		WaitingGauge: promauto.NewGauge(newScheduleWorkerWaitingGaugeOpts),
 	}
