@@ -81,7 +81,8 @@ func (w *taskWorker) iteration(ctx context.Context, tracer opentracing.Tracer) (
 	queue.TaskWorkerMetrics.WorkingGauge.Inc()
 	defer queue.TaskWorkerMetrics.WorkingGauge.Dec()
 
-	timeout := time.After(maxSpanDuration)
+	timer := time.NewTimer(maxSpanDuration)
+	defer timer.Stop()
 
 	logrus.Debug("starting work attempt...")
 
@@ -91,7 +92,7 @@ func (w *taskWorker) iteration(ctx context.Context, tracer opentracing.Tracer) (
 		case <-ctx.Done():
 			logrus.Debug("task processing iteration is interrupted")
 			return ctx.Err()
-		case <-timeout:
+		case <-timer.C:
 			// we should not hold tracing spans open for more then maxSpanDuration
 			// so, we just restart the span with a new iteration
 			return nil
