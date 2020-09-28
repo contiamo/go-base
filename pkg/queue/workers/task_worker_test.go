@@ -14,7 +14,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -54,7 +53,7 @@ func TestTaskWorkerMetrics(t *testing.T) {
 	w := NewTaskWorker(q, handler)
 
 	t.Run("worker count starts at 0", func(t *testing.T) {
-		require.Equal(t, float64(0), testutil.ToFloat64(TaskQueueMetrics.WorkerGauge))
+		require.Equal(t, float64(0), testutil.ToFloat64(queue.TaskWorkerMetrics.ActiveGauge))
 	})
 	go func() {
 		err := w.Work(ctx)
@@ -66,25 +65,21 @@ func TestTaskWorkerMetrics(t *testing.T) {
 	metricSleep := 50 * time.Millisecond
 	time.Sleep(metricSleep)
 	testTask := &queue.Task{TaskBase: queue.TaskBase{Queue: "testQueue"}, ID: "testTask"}
-	promLabels := prometheus.Labels{"queue": testTask.Queue, "type": testTask.Type.String()}
 	t.Run("calling work inc the worker", func(t *testing.T) {
-		require.Equal(t, float64(1), testutil.ToFloat64(TaskQueueMetrics.WorkerGauge))
-		require.Equal(t, float64(1), testutil.ToFloat64(TaskQueueMetrics.WorkerWaiting))
-		require.Equal(t, float64(0), testutil.ToFloat64(TaskQueueMetrics.WorkerWorkingGauge.With(promLabels)))
-		require.Equal(t, float64(0), testutil.ToFloat64(TaskQueueMetrics.WorkerWorking.With(promLabels)))
+		require.Equal(t, float64(1), testutil.ToFloat64(queue.TaskWorkerMetrics.ActiveGauge))
+		require.Equal(t, float64(1), testutil.ToFloat64(queue.TaskWorkerMetrics.WorkingGauge))
 	})
 
 	qCh <- testTask
 	time.Sleep(metricSleep)
 	t.Run("active worker count inc after enqueueing a task", func(t *testing.T) {
-		require.Equal(t, float64(1), testutil.ToFloat64(TaskQueueMetrics.WorkerWorking.With(promLabels)))
-		require.Equal(t, float64(1), testutil.ToFloat64(TaskQueueMetrics.WorkerWorkingGauge.With(promLabels)))
+		require.Equal(t, float64(1), testutil.ToFloat64(queue.TaskWorkerMetrics.WorkingGauge))
 	})
 
 	cancel()
 	time.Sleep(metricSleep)
 	t.Run("worker count returns to 0 when worker is cancelled", func(t *testing.T) {
-		require.Equal(t, float64(0), testutil.ToFloat64(TaskQueueMetrics.WorkerGauge))
+		require.Equal(t, float64(0), testutil.ToFloat64(queue.TaskWorkerMetrics.WorkingGauge))
 	})
 
 }
@@ -97,41 +92,6 @@ func TestTaskWorkerWork(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-
-	t.Run("worker stops and returns error when queue returns a heartbeat error", func(t *testing.T) {
-		qCh := make(chan *queue.Task, 1)
-		q := &mockQueue{queue: qCh, heartbeatErr: errors.New("can not hearbeat")}
-
-		testTask := &queue.Task{
-			TaskBase: queue.TaskBase{
-				Queue: "testQueue",
-			},
-			ID: "testTask",
-		}
-		qCh <- testTask
-
-		handler := queue.TaskHandlerFunc(func(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) error {
-			defer close(heartbeats)
-
-			require.NotNil(t, task)
-			require.Equal(t, testTask.ID, task.ID)
-			require.Equal(t, testTask.Queue, task.Queue)
-
-			select {
-			case <-ctx.Done():
-				return nil
-			case <-time.NewTimer(time.Second).C:
-				// mimic a successfull processing
-				heartbeats <- queue.Progress{}
-			}
-
-			return nil
-		})
-
-		w := NewTaskWorker(q, handler)
-		err := w.Work(ctx)
-		require.EqualError(t, err, "can not hearbeat")
-	})
 
 	t.Run("worker sets the error to the progress if handler returns an error", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(ctx)

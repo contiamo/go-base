@@ -99,16 +99,16 @@ func TestScheduleTask(t *testing.T) {
 		})
 
 		// these should stay zero because they are not incremented in the scheduleTask function
-		require.Equal(t, float64(0), testutil.ToFloat64(TaskSchedulingMetrics.WorkerGauge))
-		require.Equal(t, float64(0), testutil.ToFloat64(TaskSchedulingMetrics.WorkerWorkingGauge))
-		require.Equal(t, float64(0), testutil.ToFloat64(TaskSchedulingMetrics.WorkerWaiting))
-		require.Equal(t, float64(0), testutil.ToFloat64(TaskSchedulingMetrics.WorkerWorking))
-		require.Equal(t, float64(0), testutil.ToFloat64(TaskSchedulingMetrics.WorkerErrors))
+		require.Equal(t, float64(0), testutil.ToFloat64(queue.ScheduleWorkerMetrics.ActiveGauge))
+		require.Equal(t, float64(0), testutil.ToFloat64(queue.ScheduleWorkerMetrics.WorkingGauge))
+		require.Equal(t, float64(0), testutil.ToFloat64(queue.ScheduleWorkerMetrics.WaitingGauge))
+		require.Equal(t, float64(0), testutil.ToFloat64(queue.ScheduleWorkerMetrics.DequeueingGauge))
+		require.Equal(t, float64(0), testutil.ToFloat64(queue.ScheduleWorkerMetrics.ErrorsCounter))
 		// this should increase because the task is scheduled
 		promLabels1 := prometheus.Labels{"queue": task1.Queue, "type": task1.Type.String()}
-		require.Equal(t, float64(1), testutil.ToFloat64(TaskSchedulingMetrics.WorkerTaskScheduled.With(promLabels1)))
+		require.Equal(t, float64(1), testutil.ToFloat64(queue.ScheduleWorkerMetrics.ProcessedCounter.With(promLabels1)))
 		promLabels2 := prometheus.Labels{"queue": task2.Queue, "type": task2.Type.String()}
-		require.Equal(t, float64(1), testutil.ToFloat64(TaskSchedulingMetrics.WorkerTaskScheduled.With(promLabels2)))
+		require.Equal(t, float64(1), testutil.ToFloat64(queue.ScheduleWorkerMetrics.ProcessedCounter.With(promLabels2)))
 	})
 
 	t.Run("Returns ErrScheduleQueueIsEmpty if there is no task to schedule", func(t *testing.T) {
@@ -129,10 +129,10 @@ func TestMetrics(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
 	// these should be zero in the beginning of the test
-	require.Equal(t, float64(0), testutil.ToFloat64(TaskSchedulingMetrics.WorkerGauge))
-	require.Equal(t, float64(0), testutil.ToFloat64(TaskSchedulingMetrics.WorkerWorkingGauge))
-	require.Equal(t, float64(0), testutil.ToFloat64(TaskSchedulingMetrics.WorkerWaiting))
-	require.Equal(t, float64(0), testutil.ToFloat64(TaskSchedulingMetrics.WorkerWorking))
+	require.Equal(t, float64(0), testutil.ToFloat64(queue.ScheduleWorkerMetrics.ActiveGauge))
+	require.Equal(t, float64(0), testutil.ToFloat64(queue.ScheduleWorkerMetrics.WorkingGauge))
+	require.Equal(t, float64(0), testutil.ToFloat64(queue.ScheduleWorkerMetrics.WaitingGauge))
+	require.Equal(t, float64(0), testutil.ToFloat64(queue.ScheduleWorkerMetrics.DequeueingGauge))
 
 	_, db := dbtest.GetDatabase(t)
 	defer db.Close()
@@ -150,15 +150,13 @@ func TestMetrics(t *testing.T) {
 	<-time.After(100 * time.Millisecond) // let the work to shutdown
 
 	// these gauges should get back to zero
-	require.Equal(t, float64(0), testutil.ToFloat64(TaskSchedulingMetrics.WorkerGauge))
-	require.Equal(t, float64(0), testutil.ToFloat64(TaskSchedulingMetrics.WorkerWorkingGauge))
+	require.Equal(t, float64(0), testutil.ToFloat64(queue.ScheduleWorkerMetrics.ActiveGauge))
+	require.Equal(t, float64(0), testutil.ToFloat64(queue.ScheduleWorkerMetrics.WorkingGauge))
+	require.Equal(t, float64(0), testutil.ToFloat64(queue.ScheduleWorkerMetrics.WaitingGauge))
+	require.Equal(t, float64(0), testutil.ToFloat64(queue.ScheduleWorkerMetrics.DequeueingGauge))
 	// because context interruption is an error
-	require.Equal(t, float64(0), testutil.ToFloat64(TaskSchedulingMetrics.WorkerErrors))
+	require.Equal(t, float64(0), testutil.ToFloat64(queue.ScheduleWorkerMetrics.ErrorsCounter))
 	// these counters should increase
-	// the first iteration has time to succeed, the second waiting is interrupted
-	require.Equal(t, float64(2), testutil.ToFloat64(TaskSchedulingMetrics.WorkerWaiting))
-	// the first iteration starts immediately and the second after the interval tick
-	require.Equal(t, float64(2), testutil.ToFloat64(TaskSchedulingMetrics.WorkerWorking))
 	cancel()
 }
 

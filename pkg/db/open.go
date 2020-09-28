@@ -41,7 +41,7 @@ func Open(ctx context.Context, cfg config.Database) (db *sql.DB, err error) {
 				db, err = sql.Open(cfg.DriverName, connStr)
 				if err != nil {
 					errMsg := fmt.Sprintf("failed to open db connection: %s", err)
-					span.LogEvent(errMsg)
+					span.LogKV("error", errMsg)
 					logrus.Errorf(errMsg)
 					return err
 				}
@@ -49,7 +49,7 @@ func Open(ctx context.Context, cfg config.Database) (db *sql.DB, err error) {
 				err = db.Ping()
 				if err != nil {
 					errMsg := fmt.Sprintf("failed to ping target db: %s", err)
-					span.LogEvent(errMsg)
+					span.LogKV("error", errMsg)
 					logrus.Errorf(errMsg)
 					return err
 				}
