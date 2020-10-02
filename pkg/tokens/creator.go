@@ -50,17 +50,19 @@ type Creator interface {
 }
 
 // NewCreator creates a new token creator for tasks
-func NewCreator(privateKey *rsa.PrivateKey, lifetime time.Duration) Creator {
+func NewCreator(issuer string, privateKey *rsa.PrivateKey, lifetime time.Duration) Creator {
 	if lifetime < 5 {
 		lifetime = 5 * time.Second
 	}
 	return &tokenCreator{
+		issuer:   issuer,
 		jwtKey:   privateKey,
 		lifetime: lifetime,
 	}
 }
 
 type tokenCreator struct {
+	issuer   string
 	jwtKey   *rsa.PrivateKey
 	lifetime time.Duration
 }
@@ -81,13 +83,13 @@ func (t *tokenCreator) create(adminProjects, memberProjects []string, reference 
 	maxSkew := 5 * time.Second
 	requestToken := token{
 		ID:                             uuid.NewV4().String(),
-		Issuer:                         "hub",
+		Issuer:                         t.issuer,
 		IssuedAt:                       float64(now.Unix()),
 		NotBefore:                      float64(now.Add(-1 * maxSkew).Unix()),
 		Expires:                        float64(now.Add(t.lifetime).Unix()),
 		UserID:                         uuid.Nil.String(),
-		UserName:                       "@hub",
-		Email:                          "hub@contiamo.com",
+		UserName:                       "@" + t.issuer,
+		Email:                          t.issuer + "@contiamo.com",
 		RealmIDs:                       memberProjects,
 		GroupIDs:                       []string{},
 		AllowedIPs:                     []string{},
