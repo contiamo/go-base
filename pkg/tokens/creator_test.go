@@ -20,7 +20,7 @@ func TestTokenCreatorCreateProjectAdmin(t *testing.T) {
 		publicKey, err := cfg.GetPublicKey()
 		require.NoError(t, err)
 
-		tc := NewCreator(privateKey, 0)
+		tc := NewCreator("go-base", privateKey, 0)
 		tokenStr, err := tc.CreateProjectAdmin("project", "background-task")
 		require.NoError(t, err)
 		require.NotEmpty(t, tokenStr)
@@ -30,14 +30,14 @@ func TestTokenCreatorCreateProjectAdmin(t *testing.T) {
 		token, err := jwt.ParseWithClaims(tokenStr, &claims, keyFunc)
 		require.NoError(t, err)
 		require.NotNil(t, token)
-		require.Equal(t, "hub", claims.Issuer)
-		require.Equal(t, "@hub", claims.UserName)
+		require.Equal(t, "go-base", claims.Issuer)
+		require.Equal(t, "@go-base", claims.UserName)
 		require.Equal(t, []string{"project"}, claims.AdminRealmIDs)
 		require.Equal(t, []string{"background-task"}, claims.AuthenticationMethodReferences)
 	})
 
 	t.Run("fails if the private key is empty", func(t *testing.T) {
-		tc := NewCreator(nil, 0)
+		tc := NewCreator("go-base", nil, 0)
 		tokenStr, err := tc.CreateProjectAdmin("project", "background-task")
 		require.Empty(t, tokenStr)
 		require.Error(t, err)

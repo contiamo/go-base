@@ -47,24 +47,26 @@ var (
 // 	AllowedIPs       []string `protobuf:"bytes,13,rep,name=AllowedIPs,json=allowedIPs,proto3" json:"AllowedIPs,omitempty"`
 // 	IsTenantAdmin    bool     `protobuf:"varint,14,opt,name=IsTenantAdmin,json=isTenantAdmin,proto3" json:"IsTenantAdmin,omitempty"`
 // 	AdminRealmIDs    []string `protobuf:"bytes,15,rep,name=AdminRealmIDs,json=adminRealmIDs,proto3" json:"AdminRealmIDs,omitempty"`
+// 	AuthenticationMethodReferences []string `protobuf:"bytes,16,rep,name=AuthenticationMethodReferences,json=amr,proto3" json:"AuthenticationMethodReferences,omitempty"`
 // }
 type Claims struct {
-	ID               string    `json:"id"`
-	IssuedAt         Timestamp `json:"iat"`
-	NotBefore        Timestamp `json:"nbf"`
-	Expires          Timestamp `json:"exp"`
-	Issuer           string    `json:"iss"`
-	UserID           string    `json:"sub"`
-	UserName         string    `json:"name"`
-	TenantID         string    `json:"tenantID"`
-	Email            string    `json:"email"`
-	RealmIDs         []string  `json:"realmIDs"`
-	GroupIDs         []string  `json:"groupIDs"`
-	ResourceTokenIDs []string  `json:"resourceTokenIDs"`
-	AllowedIPs       []string  `json:"allowedIPs"`
-	IsTenantAdmin    bool      `json:"isTenantAdmin"`
-	AdminRealmIDs    []string  `json:"adminRealmIDs"`
-	SourceToken      string    `json:"-"`
+	ID                             string    `json:"id"`
+	IssuedAt                       Timestamp `json:"iat"`
+	NotBefore                      Timestamp `json:"nbf"`
+	Expires                        Timestamp `json:"exp"`
+	Issuer                         string    `json:"iss"`
+	UserID                         string    `json:"sub"`
+	UserName                       string    `json:"name"`
+	TenantID                       string    `json:"tenantID"`
+	Email                          string    `json:"email"`
+	RealmIDs                       []string  `json:"realmIDs"`
+	GroupIDs                       []string  `json:"groupIDs"`
+	ResourceTokenIDs               []string  `json:"resourceTokenIDs"`
+	AllowedIPs                     []string  `json:"allowedIPs"`
+	IsTenantAdmin                  bool      `json:"isTenantAdmin"`
+	AdminRealmIDs                  []string  `json:"adminRealmIDs"`
+	SourceToken                    string    `json:"-"`
+	AuthenticationMethodReferences []string  `json:"amr"`
 }
 
 // Valid tests if the Claims object contains the minimal required information
