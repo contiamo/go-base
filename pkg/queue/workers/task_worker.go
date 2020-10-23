@@ -111,10 +111,7 @@ func (w *taskWorker) iteration(ctx context.Context, tracer opentracing.Tracer) (
 			if task == nil {
 				return errors.New("task cannot be nil")
 			}
-			err = w.handleTask(ctx, *task)
-			if err != nil {
-				return err
-			}
+			return  w.handleTask(ctx, *task)
 		}
 	}
 }
