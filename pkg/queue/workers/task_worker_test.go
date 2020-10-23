@@ -93,6 +93,46 @@ func TestTaskWorkerWork(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
+	t.Run("worker handles multiple tasks without stopping", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(ctx)
+		qCh := make(chan *queue.Task, 2)
+		q := &mockQueue{queue: qCh}
+		seenTasks := []string{}
+
+		testTaskOne := &queue.Task{
+			TaskBase: queue.TaskBase{
+				Queue: "testQueue",
+			},
+			ID: "testTask1",
+		}
+		testTaskTwo := &queue.Task{
+			TaskBase: queue.TaskBase{
+				Queue: "testQueue",
+			},
+			ID: "testTask2",
+		}
+		qCh <- testTaskOne
+		qCh <- testTaskTwo
+
+		handler := queue.TaskHandlerFunc(func(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) error {
+			defer close(heartbeats)
+			seenTasks = append(seenTasks, task.ID)
+			return nil
+		})
+
+		w := NewTaskWorker(q, handler)
+
+		done := make(chan error)
+		go func() {
+			done <- w.Work(ctx)
+		}()
+
+		time.Sleep(5 * time.Millisecond)
+		cancel()
+		<-done
+		require.Equal(t, []string{testTaskOne.ID, testTaskTwo.ID}, seenTasks)
+	})
+
 	t.Run("worker sets the error to the progress if handler returns an error", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(ctx)
 		qCh := make(chan *queue.Task, 1)
