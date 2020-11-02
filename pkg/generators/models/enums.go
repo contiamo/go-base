@@ -154,6 +154,7 @@ var fmap = template.FuncMap{
 	"commentBlock": tpl.CommentBlock,
 	"toPascalCase": tpl.ToPascalCase,
 	"toSnakeCase":  tpl.ToSnakeCase,
+	"jsonTag": tpl.JSONTag,
 }
 
 var enumTemplateSource = `

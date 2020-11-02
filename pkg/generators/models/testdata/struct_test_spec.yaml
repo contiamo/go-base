@@ -1,0 +1,24 @@
+openapi: 3.0.0
+info:
+  version: 0.1.0
+  title: Hub Service
+paths: {}
+components:
+  schemas:
+    User:
+      description: service user object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        gender:
+          type: string
+          nullable: true
+        preferredConnection:
+          $ref: "#/components/schemas/ConnectionSpec"
+    ConnectionSpec:
+      description: a connection string value or a object of connection parameters
+      oneOf:
+        - type: string
+        - type: object
