@@ -74,6 +74,18 @@ func GenerateModels(specFile io.Reader, dst string, opts Options) error {
 
 		for propName, propSpec := range s.Value.Properties {
 			propertyType := goTypeFromSpec(propSpec.Ref, propSpec.Value)
+			if propertyType == "time.Time" {
+				found := false
+				for _, i := range modelContext.Imports {
+					if i == "time" {
+						found = true
+						break
+					}
+				}
+				if !found {
+					modelContext.Imports = append(modelContext.Imports, "time")
+				}
+			}
 			modelContext.Properties = append(modelContext.Properties, propertyContext{
 				Name:     tpl.ToPascalCase(propName),
 				Type:     propertyType,
@@ -105,6 +117,7 @@ func GenerateModels(specFile io.Reader, dst string, opts Options) error {
 
 type modelContext struct {
 	Filename    string
+	Imports     []string
 	SpecTitle   string
 	SpecVersion string
 	PackageName string
@@ -141,7 +154,9 @@ var modelTemplateSource = `
 package {{ .PackageName }}
 
 import (
-	"time"
+{{- range .Imports}}
+	"{{.}}"
+{{- end}}
 )
 
 {{ (printf "%s is an object. %s" .ModelName .Description) | commentBlock }}
