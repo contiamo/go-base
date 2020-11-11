@@ -25,6 +25,10 @@ func goTypeFromSpec(ref string, spec *openapi3.Schema) string {
 		} else {
 			propertyType = "map[string]interface{}"
 		}
+	case "string":
+		if spec.Format == "date-time" || spec.Format == "time" {
+			propertyType = "time.Time"
+		}
 	case "array":
 		propertyType = "[]" + goTypeFromSpec(spec.Items.Ref, spec.Items.Value)
 	case "boolean":
@@ -135,6 +139,10 @@ var modelTemplateSource = `
 //     Title: {{.SpecTitle}}
 //     Version: {{.SpecVersion}}
 package {{ .PackageName }}
+
+import (
+_ "time"
+)
 
 {{ (printf "%s is an object. %s" .ModelName .Description) | commentBlock }}
 type {{.ModelName}} struct {
