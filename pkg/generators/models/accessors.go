@@ -14,17 +14,17 @@ import (
 	tpl "github.com/contiamo/go-base/v2/pkg/generators/templates"
 )
 
-func goTypeFromSpec(spec *openapi3.SchemaRef) string {
-	propertyType := spec.Value.Type
+func goTypeFromSpec(ref string, spec *openapi3.Schema) string {
+	propertyType := spec.Type
 	switch propertyType {
 	case "object":
-		if spec.Ref != "" {
-			propertyType = filepath.Base(spec.Ref)
+		if ref != "" {
+			propertyType = filepath.Base(ref)
 		} else {
 			propertyType = "map[string]interface{}"
 		}
 	case "array":
-		propertyType = "[]" + goTypeFromSpec(spec.Value.Items)
+		propertyType = "[]" + goTypeFromSpec(spec.Items.Ref, spec.Items.Value)
 	case "boolean":
 		propertyType = "bool"
 	case "integer":
@@ -58,21 +58,7 @@ func GenerateAccessors(specFile io.Reader, dst string, opts Options) error {
 	for modelName, modelSpec := range swagger.Components.Schemas {
 		if modelSpec.Value.Type == "object" {
 			for propName, propSpec := range modelSpec.Value.Properties {
-				propertyType := goTypeFromSpec(propSpec)
-				switch propertyType {
-				case "object":
-					if propSpec.Ref != "" {
-						propertyType = filepath.Base(propSpec.Ref)
-					} else {
-						propertyType = "map[string]interface{}"
-					}
-				case "array":
-					propertyType = "[]" + filepath.Base(propSpec.Value.Items.Ref)
-				case "boolean":
-					propertyType = "bool"
-				case "integer":
-					propertyType = "int32"
-				}
+				propertyType := goTypeFromSpec(propSpec.Ref, propSpec.Value)
 				templateCtx.Getters = append(templateCtx.Getters, getterTemplateCtx{
 					ModelName:  modelName,
 					FieldName:  tpl.ToPascalCase(propName),
