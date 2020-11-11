@@ -31,6 +31,8 @@ func goTypeFromSpec(ref string, spec *openapi3.Schema) string {
 		propertyType = "bool"
 	case "integer", "number":
 		propertyType = "int32"
+	default:
+		propertyType = "interface{}"
 	}
 	return propertyType
 }
