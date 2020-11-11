@@ -35,7 +35,6 @@ func GenerateModels(specFile io.Reader, dst string, opts Options) error {
 
 	// to do sort and iterate over the sorted schema
 	for name, s := range swagger.Components.Schemas {
-		fmt.Println(name)
 		if s.Value.Type != "object" {
 			continue
 		}
@@ -120,25 +119,26 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation"
 )
 
-{{ (printf "%s is an enum. %s" .ModelName .Description) | commentBlock }}
+{{ (printf "%s is an object. %s" .ModelName .Description) | commentBlock }}
 type {{.ModelName}} struct {
 {{- range .Properties}}
-	// {{.Description}}
+	// {{.Name}} {{.Description}}
 	{{.Name}} {{.Type}} {{.JSONTags}}
 {{- end}}
 }
 
 {{- $modelName := .ModelName }}
-{{- range .Properties}}
+{{ range .Properties}}
+// Get{{.Name}} returns the {{.Name}} property
 func (m {{$modelName}})	Get{{.Name}}() {{.Type}} {
 	return m.{{.Name}}
 }
 
+// Set{{.Name}} sets the {{.Name}} property
 func (m {{$modelName}}) Set{{.Name}}(val {{.Type}}) {
 	m.{{.Name}} = val
 }
-
-{{- end}}
+{{ end}}
 `
 
 var modelTemplate = template.Must(
