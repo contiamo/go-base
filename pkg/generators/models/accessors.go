@@ -40,22 +40,26 @@ func GenerateAccessors(specFile io.Reader, dst string, opts Options) error {
 		fmt.Println(modelSpec.Value.Type)
 		if modelSpec.Value.Type == "object" {
 			for propName, propSpec := range modelSpec.Value.Properties {
+				propertyType := propSpec.Value.Type
+				if propertyType == "object" {
+					propertyType = filepath.Base(propSpec.Ref)
+				}
 				templateCtx.Getters = append(templateCtx.Getters, getterTemplateCtx{
 					ModelName:  modelName,
 					FieldName:  tpl.ToPascalCase(propName),
-					ReturnType: propSpec.Value.Type,
+					ReturnType: propertyType,
 				})
 				templateCtx.Setters = append(templateCtx.Setters, setterTemplateCtx{
 					ModelName:    modelName,
 					FieldName:    tpl.ToPascalCase(propName),
-					ArgumentType: propSpec.Value.Type,
+					ArgumentType: propertyType,
 				})
 			}
 		}
 	}
 
 	filename := filepath.Join(dst, "accessors.go")
-	logrus.Debugf("writing %s\n", filename)
+	logrus.Debugf("writings %s\n", filename)
 	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return err

@@ -26,6 +26,13 @@ components:
                 type: int
               bar:
                 type: string
+              baz:
+                $ref: "#/components/schemas/SubType"
+        SubType:
+            type: object
+            properties:
+                foo:
+                    type: string
 `
 
 func TestGenerateAccessors(t *testing.T) {
