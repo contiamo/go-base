@@ -90,9 +90,10 @@ type modelContext struct {
 }
 
 type propertyContext struct {
-	Name     string
-	Type     string
-	JSONTags string
+	Name        string
+	Description string
+	Type        string
+	JSONTags    string
 }
 
 type modelContexts []modelContext
@@ -122,6 +123,7 @@ import (
 {{ (printf "%s is an enum. %s" .ModelName .Description) | commentBlock }}
 type {{.ModelName}} struct {
 {{- range .Properties}}
+	// {{.Description}}
 	{{.Name}} {{.Type}} {{.JSONTags}}
 {{- end}}
 }
