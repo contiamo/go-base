@@ -141,7 +141,7 @@ var modelTemplateSource = `
 package {{ .PackageName }}
 
 import (
-_ "time"
+	"time"
 )
 
 {{ (printf "%s is an object. %s" .ModelName .Description) | commentBlock }}
