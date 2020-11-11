@@ -29,6 +29,9 @@ func goTypeFromSpec(ref string, spec *openapi3.Schema) string {
 		if spec.Format == "date-time" || spec.Format == "time" {
 			propertyType = "time.Time"
 		}
+		if len(spec.Enum) > 0 {
+			propertyType = filepath.Base(ref)
+		}
 	case "array":
 		propertyType = "[]" + goTypeFromSpec(spec.Items.Ref, spec.Items.Value)
 	case "boolean":
