@@ -14,6 +14,25 @@ import (
 	tpl "github.com/contiamo/go-base/v2/pkg/generators/templates"
 )
 
+func goTypeFromSpec(spec *openapi3.SchemaRef) string {
+	propertyType := spec.Value.Type
+	switch propertyType {
+	case "object":
+		if spec.Ref != "" {
+			propertyType = filepath.Base(spec.Ref)
+		} else {
+			propertyType = "map[string]interface{}"
+		}
+	case "array":
+		propertyType = "[]" + goTypeFromSpec(spec.Value.Items)
+	case "boolean":
+		propertyType = "bool"
+	case "integer":
+		propertyType = "int32"
+	}
+	return propertyType
+}
+
 // GenerateAccessors outputs accessors for all the models
 func GenerateAccessors(specFile io.Reader, dst string, opts Options) error {
 	if opts.PackageName == "" {
@@ -39,7 +58,7 @@ func GenerateAccessors(specFile io.Reader, dst string, opts Options) error {
 	for modelName, modelSpec := range swagger.Components.Schemas {
 		if modelSpec.Value.Type == "object" {
 			for propName, propSpec := range modelSpec.Value.Properties {
-				propertyType := propSpec.Value.Type
+				propertyType := goTypeFromSpec(propSpec)
 				switch propertyType {
 				case "object":
 					if propSpec.Ref != "" {
