@@ -38,6 +38,9 @@ func goTypeFromSpec(ref string, spec *openapi3.Schema) string {
 	case "":
 		propertyType = "interface{}"
 	}
+	if spec.Nullable {
+		propertyType = "*" + propertyType
+	}
 	return propertyType
 }
 
