@@ -25,10 +25,6 @@ func goTypeFromSpec(ref string, spec *openapi3.Schema) string {
 		} else {
 			propertyType = "map[string]interface{}"
 		}
-	case "string":
-		if ref != "" {
-			propertyType = filepath.Base(ref)
-		}
 	case "array":
 		propertyType = "[]" + goTypeFromSpec(spec.Items.Ref, spec.Items.Value)
 	case "boolean":
