@@ -115,10 +115,6 @@ var modelTemplateSource = `
 //     Version: {{.SpecVersion}}
 package {{ .PackageName }}
 
-import (
-	validation "github.com/go-ozzo/ozzo-validation"
-)
-
 {{ (printf "%s is an object. %s" .ModelName .Description) | commentBlock }}
 type {{.ModelName}} struct {
 {{- range .Properties}}
