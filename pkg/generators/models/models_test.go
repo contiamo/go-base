@@ -1,10 +1,8 @@
 package models
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -12,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var accessorsSpec = `
+var modelsSpec = `
 openapi: 3.0.0
 info:
   version: 0.1.0
@@ -37,25 +35,21 @@ components:
                     type: string
 `
 
-func TestGenerateAccessors(t *testing.T) {
+func TestGenerateModels(t *testing.T) {
 
-	dname, err := ioutil.TempDir("", "accessordir")
+	dname, err := ioutil.TempDir("", "modeldir")
 	require.NoError(t, err)
 
-	defer os.RemoveAll(dname)
+	//defer os.RemoveAll(dname)
 
 	opts := Options{PackageName: "testpkg"}
 
-	specReader := strings.NewReader(accessorsSpec)
-	err = GenerateAccessors(specReader, dname, opts)
+	specReader := strings.NewReader(modelsSpec)
+	err = GenerateModels(specReader, dname, opts)
 	require.NoError(t, err)
 
-	content, err := ioutil.ReadFile(filepath.Join(dname, "accessors.go"))
+	content, err := ioutil.ReadFile(filepath.Join(dname, "model_test_type.go"))
 	require.NoError(t, err)
 	fmt.Println(string(content))
-	expectedFilterType, err := ioutil.ReadFile("testdata/accessors.go")
-	require.NoError(t, err)
-	expectedFilterType = bytes.TrimSpace(expectedFilterType)
-	content = bytes.TrimSpace(content)
-	require.Equal(t, string(expectedFilterType), string(content))
+	t.Fail()
 }
