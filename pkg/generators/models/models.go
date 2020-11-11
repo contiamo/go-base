@@ -30,6 +30,7 @@ func goTypeFromSpec(ref string, spec *openapi3.Schema) string {
 			propertyType = "time.Time"
 		}
 		if len(spec.Enum) > 0 {
+			fmt.Println(ref)
 			propertyType = filepath.Base(ref)
 		}
 	case "array":
