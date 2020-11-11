@@ -37,12 +37,18 @@ func GenerateAccessors(specFile io.Reader, dst string, opts Options) error {
 
 	// to do sort and iterate over the sorted schema
 	for modelName, modelSpec := range swagger.Components.Schemas {
-		fmt.Println(modelSpec.Value.Type)
 		if modelSpec.Value.Type == "object" {
 			for propName, propSpec := range modelSpec.Value.Properties {
 				propertyType := propSpec.Value.Type
-				if propertyType == "object" {
+				switch propertyType {
+				case "object":
 					propertyType = filepath.Base(propSpec.Ref)
+				case "array":
+					propertyType = "[]" + filepath.Base(propSpec.Value.Items.Ref)
+				case "boolean":
+					propertyType = "bool"
+				case "integer":
+					propertyType = "int32"
 				}
 				templateCtx.Getters = append(templateCtx.Getters, getterTemplateCtx{
 					ModelName:  modelName,
