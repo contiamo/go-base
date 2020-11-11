@@ -77,7 +77,7 @@ func GenerateModels(specFile io.Reader, dst string, opts Options) error {
 
 		for propName, propSpec := range s.Value.Properties {
 			propertyType := goTypeFromSpec(propSpec.Ref, propSpec.Value)
-			if propertyType == "time.Time" {
+			if propertyType == "time.Time" || propertyType == "*time.Time" {
 				found := false
 				for _, i := range modelContext.Imports {
 					if i == "time" {
