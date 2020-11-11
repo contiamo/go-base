@@ -42,7 +42,7 @@ func GenerateAccessors(specFile io.Reader, dst string, opts Options) error {
 				propertyType := propSpec.Value.Type
 				switch propertyType {
 				case "object":
-					if propSpec.Ref != "." {
+					if propSpec.Ref != "" {
 						propertyType = filepath.Base(propSpec.Ref)
 					} else {
 						propertyType = "map[string]interface{}"
