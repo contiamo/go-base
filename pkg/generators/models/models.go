@@ -16,6 +16,25 @@ import (
 	tpl "github.com/contiamo/go-base/v2/pkg/generators/templates"
 )
 
+func goTypeFromSpec(ref string, spec *openapi3.Schema) string {
+	propertyType := spec.Type
+	switch propertyType {
+	case "object":
+		if ref != "" {
+			propertyType = filepath.Base(ref)
+		} else {
+			propertyType = "map[string]interface{}"
+		}
+	case "array":
+		propertyType = "[]" + goTypeFromSpec(spec.Items.Ref, spec.Items.Value)
+	case "boolean":
+		propertyType = "bool"
+	case "integer", "number":
+		propertyType = "int32"
+	}
+	return propertyType
+}
+
 // GenerateModels outputs the Go enum models with validators
 func GenerateModels(specFile io.Reader, dst string, opts Options) error {
 	if opts.PackageName == "" {
