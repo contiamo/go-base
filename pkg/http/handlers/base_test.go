@@ -81,21 +81,21 @@ func TestError(t *testing.T) {
 			name:      "Returns 501 when ErrNotImplemented",
 			err:       cerrors.ErrNotImplemented,
 			expStatus: http.StatusNotImplemented,
-			expBody: `{"errors":[{"type":"GeneralError","message":"Method is not implemented"}]}
+			expBody: `{"errors":[{"message":"Method is not implemented","type":"GeneralError"}]}
 `,
 		},
 		{
 			name:      "Returns 401 when ErrAuthorization",
 			err:       cerrors.ErrAuthorization,
 			expStatus: http.StatusUnauthorized,
-			expBody: `{"errors":[{"type":"GeneralError","message":"User is unauthorized, make sure you've logged in"}]}
+			expBody: `{"errors":[{"message":"User is unauthorized, make sure you've logged in","type":"GeneralError"}]}
 `,
 		},
 		{
 			name:      "Returns 403 when ErrPermission",
 			err:       cerrors.ErrPermission,
 			expStatus: http.StatusForbidden,
-			expBody: `{"errors":[{"type":"GeneralError","message":"You don't have required permission to perform this action"}]}
+			expBody: `{"errors":[{"message":"You don't have required permission to perform this action","type":"GeneralError"}]}
 `,
 		},
 		{
@@ -105,28 +105,28 @@ func TestError(t *testing.T) {
 				cerrors.ErrUnmarshalling.Error(),
 			),
 			expStatus: http.StatusUnprocessableEntity,
-			expBody: `{"errors":[{"type":"GeneralError","message":"Failed to read JSON from the request body: unexpected end of file"}]}
+			expBody: `{"errors":[{"message":"Failed to read JSON from the request body: unexpected end of file","type":"GeneralError"}]}
 `,
 		},
 		{
 			name:      "Returns 404 when ErrNotFound",
 			err:       cerrors.ErrNotFound,
 			expStatus: http.StatusNotFound,
-			expBody: `{"errors":[{"type":"GeneralError","message":"The requested object was not found"}]}
+			expBody: `{"errors":[{"message":"The requested object was not found","type":"GeneralError"}]}
 `,
 		},
 		{
 			name:      "Returns 422 and field errors when validation errors",
 			err:       cerrors.ValidationErrors{"field": errors.New("terrible")},
 			expStatus: http.StatusUnprocessableEntity,
-			expBody: `{"errors":[{"type":"FieldError","message":"terrible","key":"field"}]}
+			expBody: `{"errors":[{"key":"field","message":"terrible","type":"FieldError"}]}
 `,
 		},
 		{
 			name:      "Returns 500 when unknown error",
 			err:       errors.New("terrible"),
 			expStatus: http.StatusInternalServerError,
-			expBody: `{"errors":[{"type":"GeneralError","message":"Internal server error, please try again later"}]}
+			expBody: `{"errors":[{"message":"Internal server error, please try again later","type":"GeneralError"}]}
 `,
 		},
 		{
@@ -134,7 +134,7 @@ func TestError(t *testing.T) {
 			err:       errors.New("terrible"),
 			debug:     true,
 			expStatus: http.StatusInternalServerError,
-			expBody: `{"errors":[{"type":"GeneralError","message":"terrible"}]}
+			expBody: `{"errors":[{"message":"terrible","type":"GeneralError"}]}
 `,
 		},
 		{

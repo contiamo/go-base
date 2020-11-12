@@ -1,8 +1,8 @@
 package models
 
 import (
-	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -40,7 +40,7 @@ func TestGenerateModels(t *testing.T) {
 	dname, err := ioutil.TempDir("", "modeldir")
 	require.NoError(t, err)
 
-	//defer os.RemoveAll(dname)
+	defer os.RemoveAll(dname)
 
 	opts := Options{PackageName: "testpkg"}
 
@@ -48,8 +48,15 @@ func TestGenerateModels(t *testing.T) {
 	err = GenerateModels(specReader, dname, opts)
 	require.NoError(t, err)
 
-	content, err := ioutil.ReadFile(filepath.Join(dname, "model_test_type.go"))
+	testTypeContent, err := ioutil.ReadFile(filepath.Join(dname, "model_test_type.go"))
 	require.NoError(t, err)
-	fmt.Println(string(content))
-	t.Fail()
+	expectedTestType, err := ioutil.ReadFile("testdata/model_test_type.go")
+	require.NoError(t, err)
+	require.Equal(t, string(expectedTestType), string(testTypeContent))
+
+	subTypeContent, err := ioutil.ReadFile(filepath.Join(dname, "model_sub_type.go"))
+	require.NoError(t, err)
+	expectedSubType, err := ioutil.ReadFile("testdata/model_sub_type.go")
+	require.NoError(t, err)
+	require.Equal(t, string(expectedSubType), string(subTypeContent))
 }

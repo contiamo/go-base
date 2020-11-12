@@ -170,24 +170,23 @@ func (e propertyContexts) Len() int           { return len(e) }
 func (e propertyContexts) Swap(i, j int)      { e[i], e[j] = e[j], e[i] }
 func (e propertyContexts) Less(i, j int) bool { return e[i].Name < e[j].Name }
 
-var modelTemplateSource = `
-// This file is auto-generated, DO NOT EDIT.
+var modelTemplateSource = `// This file is auto-generated, DO NOT EDIT.
 //
 // Source:
 //     Title: {{.SpecTitle}}
 //     Version: {{.SpecVersion}}
 package {{ .PackageName }}
 
-import (
+{{- if .Imports }}import ({{end}}
 {{- range .Imports}}
 	"{{.}}"
 {{- end}}
-)
+{{- if .Imports }}){{end}}
 
 {{ (printf "%s is an object. %s" .ModelName .Description) | commentBlock }}
 type {{.ModelName}} struct {
 {{- range .Properties}}
-	// {{.Name}} {{.Description}}
+	// {{.Name}}{{if .Description}}: {{.Description}}{{end}}
 	{{.Name}} {{.Type}} {{.JSONTags}}
 {{- end}}
 }
@@ -195,7 +194,7 @@ type {{.ModelName}} struct {
 {{- $modelName := .ModelName }}
 {{ range .Properties}}
 // Get{{.Name}} returns the {{.Name}} property
-func (m {{$modelName}})	Get{{.Name}}() {{.Type}} {
+func (m {{$modelName}}) Get{{.Name}}() {{.Type}} {
 	return m.{{.Name}}
 }
 
@@ -203,8 +202,7 @@ func (m {{$modelName}})	Get{{.Name}}() {{.Type}} {
 func (m {{$modelName}}) Set{{.Name}}(val {{.Type}}) {
 	m.{{.Name}} = val
 }
-{{ end}}
-`
+{{ end}}`
 
 var modelTemplate = template.Must(
 	template.New("model").
