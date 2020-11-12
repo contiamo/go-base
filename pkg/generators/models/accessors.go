@@ -39,7 +39,7 @@ func GenerateAccessors(specFile io.Reader, dst string, opts Options) error {
 	for modelName, modelSpec := range swagger.Components.Schemas {
 		if modelSpec.Value.Type == "object" {
 			for propName, propSpec := range modelSpec.Value.Properties {
-				propertyType := goTypeFromSpec(propSpec.Ref, propSpec.Value)
+				propertyType := goTypeFromSpec(propSpec)
 				templateCtx.Getters = append(templateCtx.Getters, getterTemplateCtx{
 					ModelName:  modelName,
 					FieldName:  tpl.ToPascalCase(propName),

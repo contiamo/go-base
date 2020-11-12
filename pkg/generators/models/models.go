@@ -38,7 +38,7 @@ func goTypeFromSpec(schemaRef *openapi3.SchemaRef) string {
 			propertyType = filepath.Base(schemaRef.Ref)
 		}
 	case "array":
-		propertyType = "[]" + goTypeFromSpec(schema.Items.Ref, schema.Items.Value)
+		propertyType = "[]" + goTypeFromSpec(schema.Items)
 	case "boolean":
 		propertyType = "bool"
 	case "integer", "number":
@@ -84,7 +84,7 @@ func GenerateModels(specFile io.Reader, dst string, opts Options) error {
 		}
 
 		for propName, propSpec := range s.Value.Properties {
-			propertyType := goTypeFromSpec(propSpec.Ref, propSpec.Value)
+			propertyType := goTypeFromSpec(propSpec)
 			if propertyType == "time.Time" || propertyType == "*time.Time" {
 				found := false
 				for _, i := range modelContext.Imports {
