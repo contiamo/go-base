@@ -41,8 +41,10 @@ func goTypeFromSpec(schemaRef *openapi3.SchemaRef) string {
 		propertyType = "[]" + goTypeFromSpec(schema.Items)
 	case "boolean":
 		propertyType = "bool"
-	case "integer", "number":
+	case "integer"
 		propertyType = "int32"
+	case "number":
+		propertyType = "float32"
 	case "":
 		propertyType = "interface{}"
 	}
