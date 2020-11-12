@@ -105,7 +105,7 @@ func GenerateModels(specFile io.Reader, dst string, opts Options) error {
 				JSONTags: fmt.Sprintf("`json:\"%s\"`", propName),
 			})
 		}
-		//sort.Sort(modelContext.Properties)
+		sort.Sort(modelContext.Properties)
 		models = append(models, modelContext)
 	}
 
