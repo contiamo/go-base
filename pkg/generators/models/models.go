@@ -99,10 +99,22 @@ func GenerateModels(specFile io.Reader, dst string, opts Options) error {
 					modelContext.Imports = append(modelContext.Imports, "time")
 				}
 			}
+			omitEmpty := true
+			for _, required := range s.Value.Required {
+				if required == propName {
+					omitEmpty = false
+					break
+				}
+			}
+			jsonTags := "`json:\"" + propName
+			if omitEmpty {
+				jsonTags += ",omitempty"
+			}
+			jsonTags += "\"`"
 			modelContext.Properties = append(modelContext.Properties, propertyContext{
 				Name:     tpl.ToPascalCase(propName),
 				Type:     propertyType,
-				JSONTags: fmt.Sprintf("`json:\"%s\"`", propName),
+				JSONTags: jsonTags,
 			})
 		}
 		sort.Sort(modelContext.Properties)
