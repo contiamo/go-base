@@ -48,7 +48,7 @@ func goTypeFromSpec(schemaRef *openapi3.SchemaRef) string {
 	case "":
 		propertyType = "interface{}"
 	}
-	if schema.Nullable {
+	if schema.Nullable && !strings.HasPrefix(propertyType, "[]") && !strings.HasPrefix(propertyType, "map[") {
 		propertyType = "*" + propertyType
 	}
 	return propertyType
