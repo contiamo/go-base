@@ -16,24 +16,29 @@ import (
 	tpl "github.com/contiamo/go-base/v2/pkg/generators/templates"
 )
 
-func goTypeFromSpec(ref string, spec *openapi3.Schema) string {
-	propertyType := spec.Type
+func goTypeFromSpec(schemaRef *openapi3.SchemaRef) string {
+	schema := schemaRef.Value
+	propertyType := schemaRef.Value.Type
 	switch propertyType {
 	case "object":
-		if ref != "" {
-			propertyType = filepath.Base(ref)
+		if schemaRef.Ref != "" {
+			propertyType = filepath.Base(schemaRef.Ref)
 		} else {
-			propertyType = "map[string]interface{}"
+			subType := "interface{}"
+			if schema.AdditionalProperties != nil {
+				subType = goTypeFromSpec(schema.AdditionalProperties)
+			}
+			propertyType = "map[string]" + subType
 		}
 	case "string":
-		if spec.Format == "date-time" || spec.Format == "time" {
+		if schema.Format == "date-time" || schema.Format == "time" {
 			propertyType = "time.Time"
 		}
-		if len(spec.Enum) > 0 && ref != "" {
-			propertyType = filepath.Base(ref)
+		if len(schema.Enum) > 0 && schemaRef.Ref != "" {
+			propertyType = filepath.Base(schemaRef.Ref)
 		}
 	case "array":
-		propertyType = "[]" + goTypeFromSpec(spec.Items.Ref, spec.Items.Value)
+		propertyType = "[]" + goTypeFromSpec(schema.Items.Ref, schema.Items.Value)
 	case "boolean":
 		propertyType = "bool"
 	case "integer", "number":
@@ -41,7 +46,7 @@ func goTypeFromSpec(ref string, spec *openapi3.Schema) string {
 	case "":
 		propertyType = "interface{}"
 	}
-	if spec.Nullable {
+	if schema.Nullable {
 		propertyType = "*" + propertyType
 	}
 	return propertyType
