@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math/rand"
 	"net/http"
+	"time"
 
 	"github.com/contiamo/go-base/v2/pkg/crypto"
 	"github.com/sirupsen/logrus"
@@ -17,6 +19,7 @@ type MigrationConfig struct {
 	MigrationStatements []string
 	ViewStatements []string
 	Assets http.FileSystem
+	JitterInterval time.Duration
 }
 
 // NewPrepareDatabase is the standard entrypoint for setting up and migrating the application db.
@@ -41,7 +44,14 @@ func NewPrepareDatabase(config MigrationConfig, queueConfig *QueueDBConfig, appV
 	migrateDB := NewMigrater(config.MigrationStatements, config.Assets)
 	setupViews := NewPostIniter(config.ViewStatements, config.Assets)
 
+	if config.JitterInterval == 0 {
+		// up to half second jitter, this should help HA deployments to avoid
+		// any lock conflicts
+		config.JitterInterval = 500 * time.Millisecond
+	}
+
 	return func(ctx context.Context, database *sql.DB) (err error) {
+		time.Sleep(getJitter(config.JitterInterval))
 		logger := logrus.WithField("version", appVersion)
 
 		logger.Debug("preparing migration tracking")
@@ -211,4 +221,13 @@ func saveVersionHash(ctx context.Context, name string, assets http.FileSystem, t
 	}
 
 	return nil
+}
+
+// getJitter returns a duration within [0.05*interval, interval]
+func getJitter(interval time.Duration) time.Duration {
+	var random = rand.Float64()
+	var minJitter = 0.05 * float64(interval)
+	var maxJitter = float64(interval)
+
+	return time.Duration(minJitter + (random * (maxJitter - minJitter)))
 }
