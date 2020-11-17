@@ -12,7 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// NewIniter creates a db init command that will execut the 000_init.sql
+// NewIniter creates a db init command that will execute the 000_init.sql
 func NewIniter(assets http.FileSystem) func(context.Context, *sql.DB) error {
 	return func(ctx context.Context, db *sql.DB) error {
 		return backoff.Retry(

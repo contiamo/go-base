@@ -4,7 +4,7 @@ Package migrations provides standardized database migration tools.
 Typical usage of the package requires a little bit of preparation
 in your project. The goal is that you will be able to write SQL files
 that are then bundled in your final compiled binary automatically. We
-use vfsgendevfor this.
+use vfsgendev for this.
 
 The final file system may look like this
 
@@ -75,4 +75,3 @@ and then
 	var ConfigureViews = migrations.NewPostIniter(dbConfig.ViewStatements, Assets)
 */
 package migrations
-

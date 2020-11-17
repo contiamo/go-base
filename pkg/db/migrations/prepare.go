@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// MigrationConfig contains the ordered migraiton and view sql statements
+// MigrationConfig contains the ordered migration and view sql statements
 // that will be run during startup as well as the assets filesystem object.
 // Use NewSQLAssets to generate this filesystem object.
 type MigrationConfig struct {

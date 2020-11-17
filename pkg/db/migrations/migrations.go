@@ -11,7 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// NewMigrater creates a migration command that will execut the given list of migrations
+// NewMigrater creates a migration command that will execute the given list of migrations
 func NewMigrater(stmts []string, assets http.FileSystem) func(context.Context, *sql.DB) error {
 	return func(ctx context.Context, db *sql.DB) error {
 		return migrate(ctx, db, stmts, assets)
