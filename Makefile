@@ -51,7 +51,7 @@ setup-env:
 
 .PHONY: .test-ci
 .test-ci:
-	go test -cover ./...
+	go test -count=1 -cover ./...
 
 .PHONY: changelog
 changelog: ## Print git hitstory based changelog

@@ -51,7 +51,7 @@ func NewPrepareDatabase(config MigrationConfig, queueConfig *QueueDBConfig, appV
 	}
 
 	return func(ctx context.Context, database *sql.DB) (err error) {
-		time.Sleep(getJitter(config.JitterInterval))
+		time.Sleep(GetJitter(config.JitterInterval))
 		logger := logrus.WithField("version", appVersion)
 
 		logger.Debug("preparing migration tracking")
@@ -223,8 +223,8 @@ func saveVersionHash(ctx context.Context, name string, assets http.FileSystem, t
 	return nil
 }
 
-// getJitter returns a duration within [0.05*interval, interval]
-func getJitter(interval time.Duration) time.Duration {
+// GetJitter returns a duration within [0.05*interval, interval]
+func GetJitter(interval time.Duration) time.Duration {
 	var random = rand.Float64()
 	var minJitter = 0.05 * float64(interval)
 	var maxJitter = float64(interval)

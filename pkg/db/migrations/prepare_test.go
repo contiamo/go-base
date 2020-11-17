@@ -13,6 +13,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestGetJitter(t *testing.T) {
+	value := float64(GetJitter(time.Second))
+	require.LessOrEqual(t, value, float64(time.Second))
+	require.GreaterOrEqual(t, value, 0.05*float64(time.Second))
+}
 func TestInitAndMigrate(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
