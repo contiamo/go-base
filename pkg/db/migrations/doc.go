@@ -53,7 +53,11 @@ and then
 
 	package db
 
-	import "github.com/contiamo/app/pkg/config"
+	import (
+		"github.com/contiamo/go-base/v2/pkg/db/migrations"
+		"github.com/contiamo/go-base/v2/pkg/queue/postgres"
+		"github.com/contiamo/app/pkg/config"
+	)
 
 	var dbConfig = migrations.MigrationConfig{
 		MigrationStatements: []string{
@@ -70,8 +74,21 @@ and then
 		Assets: Assets,
 	}
 
-	var PrepareDatabase = migrations.NewPrepareDatabase(dbConfig, config.Version)
-	var Init = migrations.NewIniter(Assets)
+	var queue = migrations.QueueDBConfig{
+		References: []postgres.ForeignReference{
+			// To add a new reference you have to write a separate migration.
+			// Once this table structure created for the first time, it will never be modified
+			{
+				ColumnName:       "message_id",
+				ColumnType:       "UUID",
+				ReferencedTable:  "messages",
+				ReferencedColumn: "message_id",
+			},
+		},
+	}
+
+	var PrepareDatabase = migrations.NewPrepareDatabase(dbConfig, &queue, config.Version)
+	var Init = migrations.NewIniter(Assets, &queue)
 	var ConfigureViews = migrations.NewPostIniter(dbConfig.ViewStatements, Assets)
 */
 package migrations

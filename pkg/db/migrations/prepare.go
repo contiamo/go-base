@@ -36,8 +36,8 @@ type MigrationConfig struct {
 // To force a migration to rerun, you will need to delete the record from the tracking table
 //
 // 	delete from migrations where version = '<migration version>';
-func NewPrepareDatabase(config MigrationConfig, appVersion string) func(context.Context, *sql.DB) error {
-	initDB := NewIniter(config.Assets)
+func NewPrepareDatabase(config MigrationConfig, queueConfig *QueueDBConfig, appVersion string) func(context.Context, *sql.DB) error {
+	initDB := NewIniter(config.Assets, queueConfig)
 	migrateDB := NewMigrater(config.MigrationStatements, config.Assets)
 	setupViews := NewPostIniter(config.ViewStatements, config.Assets)
 
