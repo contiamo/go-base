@@ -153,7 +153,7 @@ func NewPrepareDatabase(config MigrationConfig, queueConfig *QueueDBConfig, appV
 			appVersion,
 		)
 		if err != nil {
-			return err
+			return fmt.Errorf("can not save app version to migration tracking: %w",err)
 		}
 
 		return nil

@@ -19,7 +19,7 @@ type SQLAssets struct {
 // with the migration utilities.
 func NewSQLAssets(assets SQLAssets) http.FileSystem {
 	return union.New(map[string]http.FileSystem{
-		"/migrations":      assets.Migrations,
-		"/views": assets.Views,
+		"migrations":      assets.Migrations,
+		"views": assets.Views,
 	})
 }

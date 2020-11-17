@@ -19,12 +19,12 @@ const (
 func getSQL(name string, kind sqlKind, assets http.FileSystem) (string, error) {
 	file, err := assets.Open(filepath.Join(string(kind),name))
 	if err != nil {
-		return "", fmt.Errorf("asSQL failed: %w", err)
+		return "", fmt.Errorf("getSQL failed: %w", err)
 	}
 
 	s, err := ioutil.ReadAll(file)
 	if err != nil {
-		return "", fmt.Errorf("asSQL failed: %w", err)
+		return "", fmt.Errorf("getSQL failed: %w", err)
 	}
 
 	return string(s), nil
