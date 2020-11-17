@@ -149,7 +149,7 @@ func NewPrepareDatabase(config MigrationConfig, queueConfig *QueueDBConfig, appV
 
 		// store the migration into the log
 		_, err = tx.ExecContext(ctx, `
-			INSERT INT stringO migrations (version) VALUES ($1);`,
+			INSERT INTO migrations (version) VALUES ($1);`,
 			appVersion,
 		)
 		if err != nil {

@@ -56,16 +56,7 @@ func initialize(ctx context.Context, db *sql.DB, assets http.FileSystem, queueCo
 
 	// setup queue tables ('tasks' and 'schedules') and setup cascading delete for references
 	logger.Info("queue initialize attempt")
-	err = qpostgres.SetupTables(ctx, db, []postgres.ForeignReference{
-		// To add a new reference you have to write a separate migration.
-		// Once this table structure created for the first time, it will never be modified
-		{
-			ColumnName:       "message_id",
-			ColumnType:       "UUID",
-			ReferencedTable:  "messages",
-			ReferencedColumn: "message_id",
-		},
-	})
+	err = qpostgres.SetupTables(ctx, db, queueConfig.References)
 	if err != nil {
 		return fmt.Errorf("queue initialization failed: %w", err)
 	}
