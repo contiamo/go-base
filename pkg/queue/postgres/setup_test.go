@@ -12,11 +12,11 @@ import (
 	"github.com/contiamo/go-base/v2/pkg/queue"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/goleak"
 )
 
 func TestSetupTables(t *testing.T) {
-	defer goleak.VerifyNone(t)
+	verifyLeak(t)
+
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

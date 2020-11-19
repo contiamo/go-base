@@ -4,6 +4,7 @@
 ifneq ($(.GIT_UNTRACKEDCHANGES),)
 	GITCOMMIT := $(GITCOMMIT)-dirty
 endif
+
 # Set an output prefix, which is the local directory if not specified
 .PREFIX?=$(shell pwd)
 
@@ -51,7 +52,7 @@ setup-env:
 
 .PHONY: .test-ci
 .test-ci:
-	go test -count=1 -cover ./...
+	go test -v -cover ./...
 
 .PHONY: changelog
 changelog: ## Print git hitstory based changelog

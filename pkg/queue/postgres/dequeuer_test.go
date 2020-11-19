@@ -17,11 +17,11 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/goleak"
 )
 
 func TestFinish(t *testing.T) {
-	defer goleak.VerifyNone(t)
+	verifyLeak(t)
+
 
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
@@ -92,7 +92,8 @@ func TestFinish(t *testing.T) {
 }
 
 func TestFail(t *testing.T) {
-	defer goleak.VerifyNone(t)
+	verifyLeak(t)
+
 
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
@@ -163,7 +164,8 @@ func TestFail(t *testing.T) {
 }
 
 func TestHeartbeat(t *testing.T) {
-	defer goleak.VerifyNone(t)
+	verifyLeak(t)
+
 
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
@@ -336,7 +338,8 @@ func TestHeartbeat(t *testing.T) {
 }
 
 func TestDequeueTicker(t *testing.T) {
-	defer goleak.VerifyNone(t)
+	verifyLeak(t)
+
 
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
@@ -426,7 +429,8 @@ func TestDequeueTicker(t *testing.T) {
 }
 
 func TestDequeue(t *testing.T) {
-	defer goleak.VerifyNone(t)
+	verifyLeak(t)
+
 
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
@@ -560,7 +564,8 @@ func TestDequeue(t *testing.T) {
 }
 
 func TestProcessableQueues(t *testing.T) {
-	defer goleak.VerifyNone(t)
+	verifyLeak(t)
+
 
 	tests := []struct {
 		name      string
@@ -609,7 +614,8 @@ func TestProcessableQueues(t *testing.T) {
 }
 
 func TestQueueList(t *testing.T) {
-	defer goleak.VerifyNone(t)
+	verifyLeak(t)
+
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
