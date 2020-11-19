@@ -12,12 +12,11 @@ type sqlKind string
 
 const (
 	migrations sqlKind = "migrations"
-	views sqlKind = "views"
+	views      sqlKind = "views"
 )
 
-
 func getSQL(name string, kind sqlKind, assets http.FileSystem) (string, error) {
-	file, err := assets.Open(filepath.Join(string(kind),name))
+	file, err := assets.Open(filepath.Join("/", string(kind), name))
 	if err != nil {
 		return "", fmt.Errorf("getSQL failed: %w", err)
 	}

@@ -12,11 +12,11 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/goleak"
 )
 
 func TestEnqueue(t *testing.T) {
-	defer goleak.VerifyNone(t)
+	verifyLeak(t)
+
 
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)

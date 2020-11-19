@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/contiamo/go-base/v2/pkg/queue/handlers"
-	"go.uber.org/goleak"
 
 	"github.com/Masterminds/squirrel"
 	dbtest "github.com/contiamo/go-base/v2/pkg/db/test"
@@ -21,7 +20,8 @@ import (
 )
 
 func TestRetentionHandler(t *testing.T) {
-	defer goleak.VerifyNone(t)
+	verifyLeak(t)
+
 
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
@@ -196,7 +196,8 @@ func insertTestTask(ctx context.Context, db *sql.DB, task *queue.Task) error {
 }
 
 func TestAssertRetentionSchedule(t *testing.T) {
-	defer goleak.VerifyNone(t)
+	verifyLeak(t)
+
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
