@@ -69,7 +69,10 @@ func TestSpanHook(t *testing.T) {
 
 			require.NoError(t, err)
 			if tc.span != nil {
-				spanFields := map[string]string{}
+				spanFields := map[string]string{
+					"traceId": fmt.Sprintf("%v",  tc.span.SpanContext.TraceID),
+					"spanId": fmt.Sprintf("%v",  tc.span.SpanContext.SpanID),
+				}
 				logs := tc.span.Logs()
 				for _, record := range logs {
 					for _, f := range record.Fields {

@@ -1,9 +1,13 @@
 package tracing
 
 import (
+	"fmt"
+
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
+	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/sirupsen/logrus"
+	jaeger "github.com/uber/jaeger-client-go"
 )
 
 // SpanHook is a logrus Hook to send write logs and their fields to the current span.
@@ -35,7 +39,14 @@ func (hook *SpanHook) Fire(entry *logrus.Entry) error {
 
 	span.LogFields(fields...)
 
-
+	switch sc := span.Context().(type) {
+	case jaeger.SpanContext:
+		entry.Data["traceId"] = sc.TraceID().String()
+		entry.Data["spanId"] = sc.SpanID().String()
+	case mocktracer.MockSpanContext:
+		entry.Data["traceId"] = fmt.Sprintf("%v",  sc.TraceID)
+		entry.Data["spanId"] = fmt.Sprintf("%v",  sc.SpanID)
+	}
 	return nil
 }
 
@@ -43,3 +54,4 @@ func (hook *SpanHook) Fire(entry *logrus.Entry) error {
 func (hook *SpanHook) Levels() []logrus.Level {
 	return logrus.AllLevels
 }
+
