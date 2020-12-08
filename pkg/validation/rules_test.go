@@ -75,7 +75,7 @@ func TestSQLNameOrUUID(t *testing.T) {
 	t.Run("Returns error if the value is invalid", func(t *testing.T) {
 		err := SQLNameOrUUID("neither-uuid-nor-name")
 		require.Error(t, err)
-		require.Equal(t, "SQL names must start with an alphabetic character and may only include alphanumeric characters and underscores '_'", err.Error())
+		require.Equal(t, "must be a valid UUID or a valid SQL identifier: SQL names must start with an alphabetic character and may only include alphanumeric characters and underscores '_'", err.Error())
 	})
 }
 
