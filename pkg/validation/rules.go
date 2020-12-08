@@ -77,7 +77,11 @@ func SQLNameOrUUID(value string) (err error) {
 	if err == nil {
 		return nil
 	}
-	return SQLIdentifier(value)
+	err = SQLIdentifier(value)
+	if err != nil {
+		return errors.Wrap(err, "must be a valid UUID or a valid SQL identifier")
+	}
+	return nil
 }
 
 // NotEmpty checks if the value is not empty
