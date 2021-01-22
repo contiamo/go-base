@@ -5,10 +5,10 @@ import (
 	"database/sql"
 
 	"github.com/Masterminds/squirrel"
-
 	"github.com/contiamo/go-base/v2/pkg/db"
 	"github.com/contiamo/go-base/v2/pkg/http/parameters"
 	"github.com/contiamo/go-base/v2/pkg/tracing"
+	"github.com/lann/builder"
 )
 
 // PageInfo - Contains the pagination metadata for a response
@@ -39,6 +39,12 @@ type BaseManager interface {
 	// The user would not see any counts beyond the scope
 	// but will see the total count beyond the filter
 	GetPageInfo(ctx context.Context, table string, page parameters.Page, scope, filter squirrel.Sqlizer) (pageInfo PageInfo, err error)
+	// GetPageInfoWithQuery is a more low-level version of `GetPageInfo` that allow to use an arbitrary
+	// query for calculating `PageInfo`.
+	// Can be used when some joins or additional query parameters are needed.
+	// Any query setting that conflicts with `Select("COUNT(1)")` (e.g. `ORDER BY`) should not be
+	// used in the `query`, otherwise an invalid query will be generated and an error will be returned.
+	GetPageInfoWithQuery(ctx context.Context, query squirrel.SelectBuilder, page parameters.Page, filter squirrel.Sqlizer) (pageInfo PageInfo, err error)
 }
 
 // NewBaseManager creates a new base manager
@@ -73,18 +79,36 @@ func (m *baseManager) GetPageInfo(ctx context.Context, table string, page parame
 		m.FinishSpan(span, err)
 	}()
 
+	span.SetTag("table", table)
+	span.SetTag("scope", scope)
+
+	query := m.GetQueryBuilder().
+		Select("*"). // it's overwritten later
+		From(table).
+		Where(scope)
+
+	return m.GetPageInfoWithQuery(ctx, query, page, filter)
+}
+
+func (m *baseManager) GetPageInfoWithQuery(ctx context.Context, query squirrel.SelectBuilder, page parameters.Page, filter squirrel.Sqlizer) (pageInfo PageInfo, err error) {
+	span, ctx := m.StartSpan(ctx, "GetPageInfoWithQuery")
+	defer func() {
+		m.FinishSpan(span, err)
+	}()
+
 	pageInfo.ItemsPerPage = page.Size
 	pageInfo.Current = page.Number
 
 	span.SetTag("pageInfo.curent", pageInfo.Current)
 	span.SetTag("pageInfo.itemsPerPage", pageInfo.ItemsPerPage)
 
-	builder := m.GetQueryBuilder()
+	// it's tied to the squirrel implementation now but there is no other way I know of to
+	// overwrite the columns in a `SelectBuilder`. The `.Columns(string)` function just appends more.
+	counter := builder.
+		Delete(query, "Columns").(squirrel.SelectBuilder).
+		Columns("COUNT(1)")
 
-	err = builder.
-		Select("COUNT(*)").
-		From(table).
-		Where(scope).
+	err = counter.
 		QueryRowContext(ctx).
 		Scan(&pageInfo.UnfilteredItemCount)
 	if err != nil {
@@ -92,10 +116,7 @@ func (m *baseManager) GetPageInfo(ctx context.Context, table string, page parame
 	}
 
 	if filter != nil {
-		err = builder.
-			Select("COUNT(*)").
-			From(table).
-			Where(scope).
+		err = counter.
 			Where(filter).
 			QueryRowContext(ctx).
 			Scan(&pageInfo.ItemCount)
