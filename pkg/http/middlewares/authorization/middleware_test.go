@@ -3,6 +3,7 @@ package authorization
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -209,4 +210,28 @@ func Test_middleware(t *testing.T) {
 
 		require.Equal(t, "Unauthorized\n", string(b))
 	})
+}
+
+func Test_sanitizeHeaderValue(t *testing.T) {
+
+	cases := [][2]string{
+		{"   ", ""},
+		{"a", "****"},
+		{"abc", "a****"},
+		{"abcd", "ab****"},
+		{"abcd..", "abc****"},
+		{"a.bc.d", "a.b****"},
+		{
+			"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+			"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.****",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(
+			fmt.Sprintf("scrubbing %q should produce %s", tc[0], tc[1]),
+			func(t *testing.T) {
+				out := sanitizeHeaderValue(tc[0])
+				require.Equal(t, tc[1], out)
+			})
+	}
 }
