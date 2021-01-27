@@ -87,7 +87,8 @@ func AssertRetentionScheduleWithSpec(ctx context.Context, db *sql.DB, spec Reten
 		RunWith(cdb.WrapWithTracing(db))
 
 	scheduleID := uuid.NewV4().String()
-	res, err := builder.Insert("schedules").
+	now := time.Now()
+	q := builder.Insert("schedules").
 		Columns(
 			"schedule_id",
 			"task_queue",
@@ -102,15 +103,18 @@ func AssertRetentionScheduleWithSpec(ctx context.Context, db *sql.DB, spec Reten
 			retentionSchedule.Type,
 			retentionSchedule.Spec,
 			retentionSchedule.CronSchedule,
-			time.Now(), // the schedule will enqueue the task immediately
+			now, // the schedule will enqueue the task immediately
 		).Suffix(`
 			ON CONFLICT (task_queue,task_type,(task_spec->>'queueName'),(task_spec->>'taskType'),(task_spec->>'status')) WHERE task_type='retention'
 			DO UPDATE SET
-				updated_at=now(),
-				next_execution_time=now(),
+				updated_at=?,
+				next_execution_time=?,
 				task_spec=EXCLUDED.task_spec,
 				cron_schedule=EXCLUDED.cron_schedule
-		`).ExecContext(ctx)
+		`, now, now)
+
+	// fmt.Println(squirrel.DebugSqlizer(q))
+	res, err := q.ExecContext(ctx)
 	if err != nil {
 		return fmt.Errorf("can not upsert retention schedule: %w", err)
 	}

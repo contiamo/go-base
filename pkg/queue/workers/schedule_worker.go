@@ -169,7 +169,7 @@ func (w *scheduleWorker) scheduleTask(ctx context.Context) (err error) {
 			"cron_schedule",
 		).
 		From("schedules").
-		Where("next_execution_time <= Now()").
+		Where(squirrel.LtOrEq{"next_execution_time": time.Now()}).
 		OrderBy("next_execution_time").
 		Limit(1).
 		// Skipping locked rows provides an inconsistent view of the data,
