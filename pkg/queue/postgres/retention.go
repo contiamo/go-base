@@ -113,7 +113,6 @@ func AssertRetentionScheduleWithSpec(ctx context.Context, db *sql.DB, spec Reten
 				cron_schedule=EXCLUDED.cron_schedule
 		`, now, now)
 
-	// fmt.Println(squirrel.DebugSqlizer(q))
 	res, err := q.ExecContext(ctx)
 	if err != nil {
 		return fmt.Errorf("can not upsert retention schedule: %w", err)
