@@ -102,6 +102,10 @@ func sanitizeHeaderValue(value string) string {
 	// need at least enough space for the JWT header
 	parts := strings.Split(trimmed, ".")
 	header := parts[0]
+
+	// the encoded length for a JWT will be at least 36 characters, if the header
+	// isn't this long, then it probably wasn't a real JWT and we use the default
+	// behavior
 	if len(header) >= 36 && len(parts) == 3 {
 		return header + ".****"
 	}
