@@ -22,7 +22,6 @@ import (
 func TestRetentionHandler(t *testing.T) {
 	verifyLeak(t)
 
-
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
@@ -198,7 +197,6 @@ func insertTestTask(ctx context.Context, db *sql.DB, task *queue.Task) error {
 func TestAssertRetentionSchedule(t *testing.T) {
 	verifyLeak(t)
 
-
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -276,8 +274,23 @@ func TestAssertRetentionSchedule(t *testing.T) {
 					"task_spec->>'age'":       tc.age,
 				},
 				squirrel.Expr(`coalesce(task_spec->>'sql','') != ''`),
-				squirrel.Expr(`cron_schedule ~ '\d{1,2} * * * *'`),
+				squirrel.Expr(`cron_schedule ~ '\d{1,2} * * *'`),
 			}, "unique retention task not found")
+
+			specSQL := ""
+			err = squirrel.Select("task_spec->>'sql'").From("schedules").Where(
+				squirrel.Eq{
+					"task_queue":              MaintenanceTaskQueue,
+					"task_type":               RetentionTask,
+					"task_spec->>'queueName'": tc.queueName,
+					"task_spec->>'taskType'":  tc.taskType,
+					"task_spec->>'status'":    tc.status,
+					"task_spec->>'age'":       tc.age,
+				}).RunWith(db).
+				PlaceholderFormat(squirrel.Dollar).
+				ScanContext(ctx, &specSQL)
+			require.NoError(t, err)
+			require.Equal(t, tc.expectedSQL, specSQL)
 		})
 	}
 
@@ -302,6 +315,22 @@ func TestAssertRetentionSchedule(t *testing.T) {
 			squirrel.Expr(`cron_schedule ~ '\d{1,2} * * * *'`),
 		}, "initial retention task not found")
 
+		specSQL := ""
+		expectedSQL := `DELETE FROM tasks WHERE status = 'finished' AND finished_at <= now() - interval '5.000000 minutes' AND queue = 'super_important' AND type = 'update-test'`
+		err = squirrel.Select("task_spec->>'sql'").From("schedules").Where(
+			squirrel.Eq{
+				"task_queue":              MaintenanceTaskQueue,
+				"task_type":               RetentionTask,
+				"task_spec->>'queueName'": queueName,
+				"task_spec->>'taskType'":  taskType,
+				"task_spec->>'status'":    status,
+				"task_spec->>'age'":       5 * time.Minute,
+			}).RunWith(db).
+			PlaceholderFormat(squirrel.Dollar).
+			ScanContext(ctx, &specSQL)
+		require.NoError(t, err)
+		require.Equal(t, expectedSQL, specSQL)
+
 		err = AssertRetentionSchedule(ctx, db, queueName, taskType, status, 10*time.Minute)
 		require.NoError(t, err, "unexpected assert error")
 
@@ -317,5 +346,21 @@ func TestAssertRetentionSchedule(t *testing.T) {
 			squirrel.Expr(`coalesce(task_spec->>'sql','') != ''`),
 			squirrel.Expr(`cron_schedule ~ '\d{1,2} * * * *'`),
 		}, "updated task with new age parameter not found")
+
+		specSQL = ""
+		expectedSQL = `DELETE FROM tasks WHERE status = 'finished' AND finished_at <= now() - interval '10.000000 minutes' AND queue = 'super_important' AND type = 'update-test'`
+		err = squirrel.Select("task_spec->>'sql'").From("schedules").Where(
+			squirrel.Eq{
+				"task_queue":              MaintenanceTaskQueue,
+				"task_type":               RetentionTask,
+				"task_spec->>'queueName'": queueName,
+				"task_spec->>'taskType'":  taskType,
+				"task_spec->>'status'":    status,
+				"task_spec->>'age'":       10 * time.Minute,
+			}).RunWith(db).
+			PlaceholderFormat(squirrel.Dollar).
+			ScanContext(ctx, &specSQL)
+		require.NoError(t, err)
+		require.Equal(t, expectedSQL, specSQL)
 	})
 }
