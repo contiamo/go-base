@@ -62,7 +62,7 @@ func (a *middleware) WrapHandler(next http.Handler) http.Handler {
 			return
 		}
 
-		span.SetTag("header.value", headerValue)
+		span.SetTag("header.value", sanitizeHeaderValue(headerValue))
 
 		// If auth fails or there was an error, do not call next.
 		token, err := jwt.Parse(headerValue, getKeyFunction(a.publicKey))
@@ -90,6 +90,28 @@ func (a *middleware) WrapHandler(next http.Handler) http.Handler {
 		r = SetClaims(r, claims)
 		next.ServeHTTP(w, r)
 	})
+}
+
+// sanitizeHeaderValue partially scrubs the header value so that the full value
+// is not logged or reusable.
+func sanitizeHeaderValue(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return trimmed
+	}
+	// need at least enough space for the JWT header
+	parts := strings.Split(trimmed, ".")
+	header := parts[0]
+
+	// the encoded length for a JWT will be at least 36 characters, if the header
+	// isn't this long, then it probably wasn't a real JWT and we use the default
+	// behavior
+	if len(header) >= 36 && len(parts) == 3 {
+		return header + ".****"
+	}
+
+	// return half + 4 stars
+	return trimmed[0:len(trimmed)/2] + "****"
 }
 
 func parseClaims(token string) (claims Claims, err error) {
