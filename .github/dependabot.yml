@@ -1,0 +1,9 @@
+version: 2
+# reference: https://docs.github.com/en/github/administering-a-repository/configuration-options-for-dependency-updates
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "Europe/Berlin"
