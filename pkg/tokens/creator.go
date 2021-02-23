@@ -22,6 +22,7 @@ type token struct {
 	IssuedAt  float64 `json:"iat"`
 	NotBefore float64 `json:"nbf"`
 	Expires   float64 `json:"exp"`
+	Audience  string  `json:"aud"`
 
 	UserID   string `json:"sub"`
 	UserName string `json:"name"`
@@ -34,19 +35,32 @@ type token struct {
 	IsTenantAdmin                  bool     `json:"isTenantAdmin"`
 	AdminRealmIDs                  []string `json:"adminRealmIDs"`
 	AuthenticationMethodReferences []string `json:"amr"`
+	// AuthorizedParty is used to indicate that the requests is authorizing as a
+	// serice request, giving it super-admin privileges to completely any request.
+	// This replaces the "project admin" behavior of the current tokens.
+	AuthorizedParty string `json:"azp"`
 }
 
 func (token) Valid() error {
 	return nil
 }
 
+// Options control the value or the generation of the claims in the resulting token.
+// All values are optional and the empty value will be ignored.
+type Options struct {
+	// Audience is name of the service that receives the request. Other
+	// services should not validate tokens intended for other services.
+	Audience string
+	// ProjectID is the UUID string for a project that the token should be
+	// considered a member and an admin of. This value is deprecated, but
+	// exists for backwards compatibility during the transition to `azp`.
+	ProjectID string
+}
+
 // Creator creates all kinds of signed tokens for the background tasks
 type Creator interface {
-	// CreateProjectAdmin creates a signed token that has admin permissions for the project.
-	// Reference is passed as the JWT `amr` value
-	CreateProjectAdmin(projectID string, reference string) (string, error)
-	// Create creates a signed token that has no admin permissions.
-	Create(reference string) (string, error)
+	// Create creates a signed token that can be used for interservice communication.
+	Create(reference string, opts Options) (string, error)
 }
 
 // NewCreator creates a new token creator for tasks
@@ -67,14 +81,7 @@ type tokenCreator struct {
 	lifetime time.Duration
 }
 
-func (t *tokenCreator) CreateProjectAdmin(projectID string, reference string) (string, error) {
-	return t.create([]string{projectID}, []string{projectID}, reference)
-}
-func (t *tokenCreator) Create(reference string) (string, error) {
-	return t.create([]string{}, []string{}, reference)
-}
-
-func (t *tokenCreator) create(adminProjects, memberProjects []string, reference string) (string, error) {
+func (t *tokenCreator) Create(reference string, opts Options) (string, error) {
 	if t.jwtKey == nil {
 		return "", ErrNoPrivateKeySpecified
 	}
@@ -90,11 +97,21 @@ func (t *tokenCreator) create(adminProjects, memberProjects []string, reference 
 		UserID:                         uuid.Nil.String(),
 		UserName:                       "@" + t.issuer,
 		Email:                          t.issuer + "@contiamo.com",
-		RealmIDs:                       memberProjects,
+		RealmIDs:                       []string{},
 		GroupIDs:                       []string{},
 		AllowedIPs:                     []string{},
-		AdminRealmIDs:                  adminProjects,
+		AdminRealmIDs:                  []string{},
 		AuthenticationMethodReferences: []string{reference},
+		AuthorizedParty:                t.issuer,
+	}
+
+	if opts.Audience != "" {
+		requestToken.Audience = opts.Audience
+	}
+
+	if opts.ProjectID != "" {
+		requestToken.AdminRealmIDs = append(requestToken.AdminRealmIDs, opts.ProjectID)
+		requestToken.RealmIDs = append(requestToken.RealmIDs, opts.ProjectID)
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS512, requestToken)

@@ -142,7 +142,7 @@ func (h *apiRequestHandler) Process(ctx context.Context, task queue.Task, heartb
 	}
 
 	if spec.Authorized {
-		token, err := h.tokenCreator.Create("apiRequestTask")
+		token, err := h.tokenCreator.Create("apiRequestTask", tokens.Options{})
 		if err != nil {
 			return err
 		}
