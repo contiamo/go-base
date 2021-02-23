@@ -35,8 +35,8 @@ type token struct {
 	IsTenantAdmin                  bool     `json:"isTenantAdmin"`
 	AdminRealmIDs                  []string `json:"adminRealmIDs"`
 	AuthenticationMethodReferences []string `json:"amr"`
-	// AuthorizedParty is used to indicate that the requests is authorizing as a
-	// serice request, giving it super-admin privileges to completely any request.
+	// AuthorizedParty is used to indicate that the request is authorizing as a
+	// service request, giving it super-admin privileges to completely any request.
 	// This replaces the "project admin" behavior of the current tokens.
 	AuthorizedParty string `json:"azp"`
 }
@@ -48,7 +48,7 @@ func (token) Valid() error {
 // Options control the value or the generation of the claims in the resulting token.
 // All values are optional and the empty value will be ignored.
 type Options struct {
-	// Audience is name of the service that receives the request. Other
+	// Audience is a name of the service that receives the request. Other
 	// services should not validate tokens intended for other services.
 	Audience string
 	// ProjectID is the UUID string for a project that the token should be
