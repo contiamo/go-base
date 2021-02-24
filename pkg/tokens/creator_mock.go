@@ -1,16 +1,13 @@
 package tokens
 
+// CreatorMock is a utility function to simplify writing tests that use the Creator
 type CreatorMock struct {
-	Err       error
-	ProjectID string
-	Token     string
+	Err   error
+	Token string
+	Opts  Options
 }
 
-func (m *CreatorMock) CreateProjectAdmin(projectID string, reference string) (string, error) {
-	m.ProjectID = projectID
-	return m.Token, m.Err
-}
-
-func (m *CreatorMock) Create(reference string) (string, error) {
+// Create implements tokens.Creator
+func (m *CreatorMock) Create(reference string, opts Options) (string, error) {
 	return m.Token, m.Err
 }
