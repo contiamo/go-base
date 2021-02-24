@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
-	"github.com/contiamo/go-base/v2/pkg/config"
-	"github.com/contiamo/go-base/v2/pkg/data/managers"
-	dbtest "github.com/contiamo/go-base/v2/pkg/db/test"
-	"github.com/contiamo/go-base/v2/pkg/queue"
+	"github.com/contiamo/go-base/v3/pkg/config"
+	"github.com/contiamo/go-base/v3/pkg/data/managers"
+	dbtest "github.com/contiamo/go-base/v3/pkg/db/test"
+	"github.com/contiamo/go-base/v3/pkg/queue"
 	"github.com/lib/pq"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
@@ -21,7 +21,6 @@ import (
 
 func TestFinish(t *testing.T) {
 	verifyLeak(t)
-
 
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
@@ -94,7 +93,6 @@ func TestFinish(t *testing.T) {
 func TestFail(t *testing.T) {
 	verifyLeak(t)
 
-
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
@@ -165,7 +163,6 @@ func TestFail(t *testing.T) {
 
 func TestHeartbeat(t *testing.T) {
 	verifyLeak(t)
-
 
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
@@ -340,7 +337,6 @@ func TestHeartbeat(t *testing.T) {
 func TestDequeueTicker(t *testing.T) {
 	verifyLeak(t)
 
-
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
@@ -430,7 +426,6 @@ func TestDequeueTicker(t *testing.T) {
 
 func TestDequeue(t *testing.T) {
 	verifyLeak(t)
-
 
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
@@ -566,7 +561,6 @@ func TestDequeue(t *testing.T) {
 func TestProcessableQueues(t *testing.T) {
 	verifyLeak(t)
 
-
 	tests := []struct {
 		name      string
 		inflight  []string
@@ -615,7 +609,6 @@ func TestProcessableQueues(t *testing.T) {
 
 func TestQueueList(t *testing.T) {
 	verifyLeak(t)
-
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

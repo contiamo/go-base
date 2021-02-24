@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
-	dbtest "github.com/contiamo/go-base/v2/pkg/db/test"
-	"github.com/contiamo/go-base/v2/pkg/http/parameters"
+	dbtest "github.com/contiamo/go-base/v3/pkg/db/test"
+	"github.com/contiamo/go-base/v3/pkg/http/parameters"
 	"github.com/stretchr/testify/require"
 )
 

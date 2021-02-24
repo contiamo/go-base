@@ -8,15 +8,14 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
-	dbtest "github.com/contiamo/go-base/v2/pkg/db/test"
-	"github.com/contiamo/go-base/v2/pkg/queue"
+	dbtest "github.com/contiamo/go-base/v3/pkg/db/test"
+	"github.com/contiamo/go-base/v3/pkg/queue"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
 
 func TestSetupTables(t *testing.T) {
 	verifyLeak(t)
-
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

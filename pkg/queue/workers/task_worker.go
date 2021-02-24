@@ -7,9 +7,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/contiamo/go-base/v2/pkg/queue"
+	"github.com/contiamo/go-base/v3/pkg/queue"
 
-	"github.com/contiamo/go-base/v2/pkg/tracing"
+	"github.com/contiamo/go-base/v3/pkg/tracing"
 	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
@@ -111,7 +111,7 @@ func (w *taskWorker) iteration(ctx context.Context, tracer opentracing.Tracer) (
 			if task == nil {
 				return errors.New("task cannot be nil")
 			}
-			return  w.handleTask(ctx, *task)
+			return w.handleTask(ctx, *task)
 		}
 	}
 }

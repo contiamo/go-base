@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/contiamo/go-base/v2/pkg/data/managers"
-	"github.com/contiamo/go-base/v2/pkg/queue"
+	"github.com/contiamo/go-base/v3/pkg/data/managers"
+	"github.com/contiamo/go-base/v3/pkg/queue"
 	uuid "github.com/satori/go.uuid"
 )
 

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/contiamo/go-base/v2/pkg/queue"
+	"github.com/contiamo/go-base/v3/pkg/queue"
 
 	"github.com/sirupsen/logrus"
 
@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 
-	"github.com/contiamo/go-base/v2/pkg/http/middlewares/authorization"
+	"github.com/contiamo/go-base/v3/pkg/http/middlewares/authorization"
 )
 
 func TestTaskWorkerMetrics(t *testing.T) {

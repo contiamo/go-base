@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	recovery "github.com/bakins/net-http-recover"
-	server "github.com/contiamo/go-base/v2/pkg/http"
+	server "github.com/contiamo/go-base/v3/pkg/http"
 )
 
 // WithRecovery configures panic recovery for that server
