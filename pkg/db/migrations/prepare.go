@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/contiamo/go-base/v2/pkg/crypto"
+	"github.com/contiamo/go-base/v3/pkg/crypto"
 	"github.com/sirupsen/logrus"
 )
 
@@ -17,9 +17,9 @@ import (
 // Use NewSQLAssets to generate this filesystem object.
 type MigrationConfig struct {
 	MigrationStatements []string
-	ViewStatements []string
-	Assets http.FileSystem
-	JitterInterval time.Duration
+	ViewStatements      []string
+	Assets              http.FileSystem
+	JitterInterval      time.Duration
 }
 
 // NewPrepareDatabase is the standard entrypoint for setting up and migrating the application db.
@@ -163,7 +163,7 @@ func NewPrepareDatabase(config MigrationConfig, queueConfig *QueueDBConfig, appV
 			appVersion,
 		)
 		if err != nil {
-			return fmt.Errorf("can not save app version to migration tracking: %w",err)
+			return fmt.Errorf("can not save app version to migration tracking: %w", err)
 		}
 
 		return nil

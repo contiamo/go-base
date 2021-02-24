@@ -22,7 +22,7 @@ type token struct {
 	IssuedAt  float64 `json:"iat"`
 	NotBefore float64 `json:"nbf"`
 	Expires   float64 `json:"exp"`
-	Audience  string  `json:"aud"`
+	Audience  string  `json:"aud,omitempty"`
 
 	UserID   string `json:"sub"`
 	UserName string `json:"name"`
@@ -31,14 +31,14 @@ type token struct {
 	TenantID                       string   `json:"tenantID"`
 	RealmIDs                       []string `json:"realmIDs"`
 	GroupIDs                       []string `json:"groupIDs"`
-	AllowedIPs                     []string `json:"allowedIPs"`
+	AllowedIPs                     []string `json:"allowedIPs,omitempty"`
 	IsTenantAdmin                  bool     `json:"isTenantAdmin"`
 	AdminRealmIDs                  []string `json:"adminRealmIDs"`
 	AuthenticationMethodReferences []string `json:"amr"`
 	// AuthorizedParty is used to indicate that the request is authorizing as a
 	// service request, giving it super-admin privileges to completely any request.
 	// This replaces the "project admin" behavior of the current tokens.
-	AuthorizedParty string `json:"azp"`
+	AuthorizedParty string `json:"azp,omitempty"`
 }
 
 func (token) Valid() error {
@@ -103,10 +103,7 @@ func (t *tokenCreator) Create(reference string, opts Options) (string, error) {
 		AdminRealmIDs:                  []string{},
 		AuthenticationMethodReferences: []string{reference},
 		AuthorizedParty:                t.issuer,
-	}
-
-	if opts.Audience != "" {
-		requestToken.Audience = opts.Audience
+		Audience:                       opts.Audience,
 	}
 
 	if opts.ProjectID != "" {

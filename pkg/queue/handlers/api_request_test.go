@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/contiamo/go-base/v2/pkg/queue"
-	test "github.com/contiamo/go-base/v2/pkg/testing"
-	"github.com/contiamo/go-base/v2/pkg/tokens"
+	"github.com/contiamo/go-base/v3/pkg/queue"
+	test "github.com/contiamo/go-base/v3/pkg/testing"
+	"github.com/contiamo/go-base/v3/pkg/tokens"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
@@ -40,7 +40,6 @@ func toComparableAPIRequestProgress(val APIRequestProgress) httpRequestProgressT
 
 func TestAPIRequestHandlerProcess(t *testing.T) {
 	defer verifyLeak(t)
-
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -564,7 +563,6 @@ func intP(n int) *int {
 func strP(s string) *string {
 	return &s
 }
-
 
 func verifyLeak(t *testing.T) {
 	_, exists := os.LookupEnv("CI")

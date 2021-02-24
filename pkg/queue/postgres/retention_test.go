@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/contiamo/go-base/v2/pkg/queue/handlers"
+	"github.com/contiamo/go-base/v3/pkg/queue/handlers"
 
 	"github.com/Masterminds/squirrel"
-	dbtest "github.com/contiamo/go-base/v2/pkg/db/test"
-	"github.com/contiamo/go-base/v2/pkg/queue"
+	dbtest "github.com/contiamo/go-base/v3/pkg/db/test"
+	"github.com/contiamo/go-base/v3/pkg/queue"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"

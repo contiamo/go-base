@@ -1,4 +1,4 @@
-module github.com/contiamo/go-base/v2
+module github.com/contiamo/go-base/v3
 
 require (
 	github.com/HdrHistogram/hdrhistogram-go v1.0.1 // indirect

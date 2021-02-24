@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
-	"github.com/contiamo/go-base/v2/pkg/data/managers"
-	cdb "github.com/contiamo/go-base/v2/pkg/db"
-	"github.com/contiamo/go-base/v2/pkg/queue"
+	"github.com/contiamo/go-base/v3/pkg/data/managers"
+	cdb "github.com/contiamo/go-base/v3/pkg/db"
+	"github.com/contiamo/go-base/v3/pkg/queue"
 	"github.com/lib/pq"
 
-	"github.com/contiamo/go-base/v2/pkg/config"
+	"github.com/contiamo/go-base/v3/pkg/config"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )

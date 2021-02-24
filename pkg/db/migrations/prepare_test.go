@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
-	dbtest "github.com/contiamo/go-base/v2/pkg/db/test"
-	"github.com/contiamo/go-base/v2/pkg/queue/postgres"
+	dbtest "github.com/contiamo/go-base/v3/pkg/db/test"
+	"github.com/contiamo/go-base/v3/pkg/queue/postgres"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/require"
 )

@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"strings"
 
-	cerrors "github.com/contiamo/go-base/v2/pkg/errors"
-	"github.com/contiamo/go-base/v2/pkg/tracing"
+	cerrors "github.com/contiamo/go-base/v3/pkg/errors"
+	"github.com/contiamo/go-base/v3/pkg/tracing"
 	"github.com/pkg/errors"
 )
 

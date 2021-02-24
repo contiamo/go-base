@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	dbtest "github.com/contiamo/go-base/v2/pkg/db/test"
-	"github.com/contiamo/go-base/v2/pkg/queue"
+	dbtest "github.com/contiamo/go-base/v3/pkg/db/test"
+	"github.com/contiamo/go-base/v3/pkg/queue"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
@@ -16,7 +16,6 @@ import (
 
 func TestEnqueue(t *testing.T) {
 	verifyLeak(t)
-
 
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)

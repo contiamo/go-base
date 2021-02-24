@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
-	dbtest "github.com/contiamo/go-base/v2/pkg/db/test"
-	"github.com/contiamo/go-base/v2/pkg/queue"
+	dbtest "github.com/contiamo/go-base/v3/pkg/db/test"
+	"github.com/contiamo/go-base/v3/pkg/queue"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
@@ -17,7 +17,6 @@ import (
 
 func TestSchedule(t *testing.T) {
 	verifyLeak(t)
-
 
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
@@ -170,7 +169,6 @@ func TestSchedule(t *testing.T) {
 func TestEnsure(t *testing.T) {
 	verifyLeak(t)
 
-
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
@@ -292,7 +290,6 @@ func TestEnsure(t *testing.T) {
 
 func TestAssertSchedule(t *testing.T) {
 	verifyLeak(t)
-
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

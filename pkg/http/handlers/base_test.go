@@ -9,7 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	cerrors "github.com/contiamo/go-base/v2/pkg/errors"
+	cerrors "github.com/contiamo/go-base/v3/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 
