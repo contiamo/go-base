@@ -53,6 +53,7 @@ github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDk
 github.com/cockroachdb/datadriven v0.0.0-20190809214429-80d97fb3cbaa/go.mod h1:zn76sxSg3SzpJ0PPJaLDCu+Bu0Lg3sKTORVIj19EIF8=
 github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd h1:qMd81Ts1T2OTKmB4acZcyKaMtRnY5Y44NuXGX2GFJ1w=
 github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd/go.mod h1:sE/e/2PUdi/liOCUjSTXgM1o87ZssimdTWN964YiIeI=
+github.com/contiamo/go-base/v2 v2.4.2 h1:rBqtDvweso4nNsCsw1G5Yiu12anLaC0dant8tl//gDA=
 github.com/contiamo/go-base/v2 v2.4.2/go.mod h1:SU3nkAtieXvhZl/4RdrgQIhzddAkKAYr6fNPthE5Je0=
 github.com/contiamo/goserver v0.5.0 h1:7im/VlqY3IyKW2z/vVPKuk+i9U4/nWoK2CnVN8yE6ZU=
 github.com/contiamo/goserver v0.5.0/go.mod h1:OyvuGbzBny2rw3LUT5x3TZojag6+euu1CbhwG63+0rQ=

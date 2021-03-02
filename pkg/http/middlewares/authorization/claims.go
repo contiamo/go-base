@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/contiamo/jwt"
 	uuid "github.com/satori/go.uuid"
+	"github.com/sirupsen/logrus"
 )
 
 // authContextKey is an unexported type for keys defined in middleware.
@@ -28,51 +30,85 @@ var (
 	}
 )
 
-// Claims represents the expected claims that should be in a JWT sent to labs
-//
-// The IDP defined the token as
-// type RequestToken struct {
-// 	ID               string   `protobuf:"bytes,1,opt,name=ID,json=id,proto3" json:"ID,omitempty"`
-// 	IssuedAt         float64  `protobuf:"fixed64,2,opt,name=IssuedAt,json=iat,proto3" json:"IssuedAt,omitempty"`
-// 	NotBefore        float64  `protobuf:"fixed64,3,opt,name=NotBefore,json=nbf,proto3" json:"NotBefore,omitempty"`
-// 	Expires          float64  `protobuf:"fixed64,4,opt,name=Expires,json=exp,proto3" json:"Expires,omitempty"`
-// 	Issuer           string   `protobuf:"bytes,5,opt,name=Issuer,json=iss,proto3" json:"Issuer,omitempty"`
-// 	UserID           string   `protobuf:"bytes,6,opt,name=UserID,json=sub,proto3" json:"UserID,omitempty"`
-// 	UserName         string   `protobuf:"bytes,7,opt,name=UserName,json=name,proto3" json:"UserName,omitempty"`
-// 	TenantID         string   `protobuf:"bytes,8,opt,name=TenantID,json=tenantID,proto3" json:"TenantID,omitempty"`
-// 	Email            string   `protobuf:"bytes,9,opt,name=Email,json=email,proto3" json:"Email,omitempty"`
-// 	RealmIDs         []string `protobuf:"bytes,10,rep,name=RealmIDs,json=realmIDs,proto3" json:"RealmIDs,omitempty"`
-// 	GroupIDs         []string `protobuf:"bytes,11,rep,name=GroupIDs,json=groupIDs,proto3" json:"GroupIDs,omitempty"`
-// 	ResourceTokenIDs []string `protobuf:"bytes,12,rep,name=ResourceTokenIDs,json=resourceTokenIDs,proto3" json:"ResourceTokenIDs,omitempty"`
-// 	AllowedIPs       []string `protobuf:"bytes,13,rep,name=AllowedIPs,json=allowedIPs,proto3" json:"AllowedIPs,omitempty"`
-// 	IsTenantAdmin    bool     `protobuf:"varint,14,opt,name=IsTenantAdmin,json=isTenantAdmin,proto3" json:"IsTenantAdmin,omitempty"`
-// 	AdminRealmIDs    []string `protobuf:"bytes,15,rep,name=AdminRealmIDs,json=adminRealmIDs,proto3" json:"AdminRealmIDs,omitempty"`
-// 	AuthenticationMethodReferences []string `protobuf:"bytes,16,rep,name=AuthenticationMethodReferences,json=amr,proto3" json:"AuthenticationMethodReferences,omitempty"`
-// }
+// Claims represents the expected claims that should be in JWT claims of an X-Request-Token
 type Claims struct {
-	ID                             string    `json:"id"`
-	IssuedAt                       Timestamp `json:"iat"`
-	NotBefore                      Timestamp `json:"nbf"`
-	Expires                        Timestamp `json:"exp"`
-	Issuer                         string    `json:"iss"`
-	UserID                         string    `json:"sub"`
-	UserName                       string    `json:"name"`
-	TenantID                       string    `json:"tenantID"`
-	Email                          string    `json:"email"`
-	RealmIDs                       []string  `json:"realmIDs"`
-	GroupIDs                       []string  `json:"groupIDs"`
-	ResourceTokenIDs               []string  `json:"resourceTokenIDs"`
-	AllowedIPs                     []string  `json:"allowedIPs"`
-	IsTenantAdmin                  bool      `json:"isTenantAdmin"`
-	AdminRealmIDs                  []string  `json:"adminRealmIDs"`
-	SourceToken                    string    `json:"-"`
-	AuthenticationMethodReferences []string  `json:"amr"`
+	// standard oidc claims
+	ID        string    `json:"id"`
+	Issuer    string    `json:"iss"`
+	IssuedAt  Timestamp `json:"iat"`
+	NotBefore Timestamp `json:"nbf"`
+	Expires   Timestamp `json:"exp"`
+	Audience  string    `json:"aud,omitempty"`
+
+	UserID   string `json:"sub"`
+	UserName string `json:"name"`
+	Email    string `json:"email"`
+
+	// Contiamo specific claims
+	TenantID      string   `json:"tenantID"`
+	RealmIDs      []string `json:"realmIDs"`
+	GroupIDs      []string `json:"groupIDs"`
+	AllowedIPs    []string `json:"allowedIPs"`
+	IsTenantAdmin bool     `json:"isTenantAdmin"`
+	AdminRealmIDs []string `json:"adminRealmIDs"`
+
+	AuthenticationMethodReferences []string `json:"amr"`
+	// AuthorizedParty is used to indicate that the request is authorizing as a
+	// service request, giving it super-admin privileges to completely any request.
+	// This replaces the "project admin" behavior of the current tokens.
+	AuthorizedParty string `json:"azp,omitempty"`
+
+	// SourceToken is for internal usage only
+	SourceToken string `json:"-"`
 }
 
 // Valid tests if the Claims object contains the minimal required information
 // to be used for authorization checks.
+//
+// Deprecated: Use the Validate method to get a precise error message. This
+// method remains for backward compatibility.
 func (a *Claims) Valid() bool {
-	return a.UserID != "" || len(a.ResourceTokenIDs) > 0
+
+	return a.Validate() == nil
+}
+
+// Validate verifies the token claims.
+func (a Claims) Validate() (err error) {
+	defer func() {
+		logrus.WithError(err).Error("claims validation error")
+	}()
+
+	now := TimeFunc()
+
+	// this validation is specific to contiamo
+	if a.UserID == "" {
+		return ErrMissingSub
+	}
+
+	// the middleware parsing will generally run this validation, but
+	// adding it here marks the exp as a required claim
+	if !a.VerifyExpiresAt(now, true) {
+		return ErrExpiration
+	}
+
+	// the middleware parsing will generally run this validation, but
+	// adding it here marks the nbf as a required claim
+	if !a.VerifyNotBefore(now, true) {
+		return ErrTooEarly
+	}
+
+	// the middleware parsing will generally run this validation, but
+	// adding it here marks the iat as a required claim
+	if !a.VerifyIssuedAt(now, true) {
+		return ErrTooSoon
+	}
+
+	// this validation is specific to contiamo
+	if !a.VerifyAuthorizedParty() {
+		return ErrInvalidParty
+	}
+
+	return nil
 }
 
 // FromClaimsMap loads the claim information from a jwt.Claims object, this is a simple
@@ -112,8 +148,60 @@ func (a *Claims) ToJWT(privateKey interface{}) (string, error) {
 func (a *Claims) Entities() (entities []string) {
 	entities = append(entities, a.UserID)
 	entities = append(entities, a.GroupIDs...)
-	entities = append(entities, a.ResourceTokenIDs...)
 	return entities
+}
+
+// VerifyAudience compares the aud claim against cmp.
+func (a Claims) VerifyAudience(cmp string, required bool) bool {
+	if a.Audience == "" {
+		return !required
+	}
+
+	return a.Audience == cmp
+}
+
+// VerifyExpiresAt compares the exp claim against the cmp time.
+func (a Claims) VerifyExpiresAt(cmp time.Time, required bool) bool {
+	if a.Expires.time.IsZero() {
+		return !required
+	}
+
+	return cmp.Before(a.Expires.time)
+}
+
+// VerifyNotBefore compares the nbf claim against the cmp time.
+func (a Claims) VerifyNotBefore(cmp time.Time, required bool) bool {
+	if a.NotBefore.time.IsZero() {
+		return !required
+	}
+
+	return cmp.After(a.NotBefore.time) || cmp.Equal(a.NotBefore.time)
+}
+
+// VerifyIssuedAt compares the iat claim against the cmp time.
+func (a Claims) VerifyIssuedAt(cmp time.Time, required bool) bool {
+	if a.IssuedAt.time.IsZero() {
+		return !required
+	}
+
+	return cmp.After(a.IssuedAt.time) || cmp.Equal(a.IssuedAt.time)
+}
+
+// VerifyIssuer compares the iss claim against cmp.
+func (a Claims) VerifyIssuer(cmp string, required bool) bool {
+	if a.Issuer == "" {
+		return !required
+	}
+
+	return a.Issuer == cmp
+}
+
+// VerifyAuthorizedParty verify that azp matches the iss value, if set.
+func (a Claims) VerifyAuthorizedParty() bool {
+	if a.AuthorizedParty == "" {
+		return true
+	}
+	return a.VerifyIssuer(a.AuthorizedParty, true)
 }
 
 // GetClaims retrieves the Claims object from the request context

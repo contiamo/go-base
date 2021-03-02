@@ -5,7 +5,8 @@ import (
 	"errors"
 	"time"
 
-	jwt "github.com/dgrijalva/jwt-go"
+	authz "github.com/contiamo/go-base/v3/pkg/http/middlewares/authorization"
+	"github.com/dgrijalva/jwt-go"
 
 	uuid "github.com/satori/go.uuid"
 )
@@ -16,33 +17,11 @@ var (
 	ErrNoPrivateKeySpecified = errors.New("private key is nil")
 )
 
-type token struct {
-	ID        string  `json:"id"`
-	Issuer    string  `json:"iss"`
-	IssuedAt  float64 `json:"iat"`
-	NotBefore float64 `json:"nbf"`
-	Expires   float64 `json:"exp"`
-	Audience  string  `json:"aud,omitempty"`
+type token authz.Claims
 
-	UserID   string `json:"sub"`
-	UserName string `json:"name"`
-	Email    string `json:"email"`
-
-	TenantID                       string   `json:"tenantID"`
-	RealmIDs                       []string `json:"realmIDs"`
-	GroupIDs                       []string `json:"groupIDs"`
-	AllowedIPs                     []string `json:"allowedIPs,omitempty"`
-	IsTenantAdmin                  bool     `json:"isTenantAdmin"`
-	AdminRealmIDs                  []string `json:"adminRealmIDs"`
-	AuthenticationMethodReferences []string `json:"amr"`
-	// AuthorizedParty is used to indicate that the request is authorizing as a
-	// service request, giving it super-admin privileges to completely any request.
-	// This replaces the "project admin" behavior of the current tokens.
-	AuthorizedParty string `json:"azp,omitempty"`
-}
-
-func (token) Valid() error {
-	return nil
+// Valid implements jwt.Claims interface.
+func (t token) Valid() error {
+	return authz.Claims(t).Validate()
 }
 
 // Options control the value or the generation of the claims in the resulting token.
@@ -91,9 +70,9 @@ func (t *tokenCreator) Create(reference string, opts Options) (string, error) {
 	requestToken := token{
 		ID:                             uuid.NewV4().String(),
 		Issuer:                         t.issuer,
-		IssuedAt:                       float64(now.Unix()),
-		NotBefore:                      float64(now.Add(-1 * maxSkew).Unix()),
-		Expires:                        float64(now.Add(t.lifetime).Unix()),
+		IssuedAt:                       authz.FromTime(now),
+		NotBefore:                      authz.FromTime(now.Add(-1 * maxSkew)),
+		Expires:                        authz.FromTime(now.Add(t.lifetime)),
 		UserID:                         uuid.Nil.String(),
 		UserName:                       "@" + t.issuer,
 		Email:                          t.issuer + "@contiamo.com",
@@ -111,6 +90,13 @@ func (t *tokenCreator) Create(reference string, opts Options) (string, error) {
 		requestToken.RealmIDs = append(requestToken.RealmIDs, opts.ProjectID)
 	}
 
+	// alternatively we could have use `claims.ToJWT`
+	// because t.jwtKey is an rsa.PrivateKey, we will get the same
+	// token signed using jwt.SigningMethodRS512
+	// return requestToken.ToJWT(t.jwtKey)
+
+	// wrapping authz.Claims as a jwt.Claims allows us to avoid a json.Marshal -> json.Unmarshal
+	// that authz.Claims.ToJWT uses internally
 	token := jwt.NewWithClaims(jwt.SigningMethodRS512, requestToken)
 	return token.SignedString(t.jwtKey)
 }
