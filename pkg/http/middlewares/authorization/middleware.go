@@ -33,6 +33,13 @@ func (a *middleware) WrapHandler(next http.Handler) http.Handler {
 	if a.headerName == "" {
 		return next
 	}
+	parser := new(jwt.Parser)
+	// To only allow specific singing methods uncomment below
+	// *Note* that jwt.SigningMethodNone will only be accepted if`publichKey`
+	// is set to `jwt.UnsafeAllowNoneSignatureType`, otherwise the jwt package
+	// will reject the token. in particular, we want to disallow the None method:
+	// parser.ValidMethods = []string{jwt.SigningMethodRS512.Alg()}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var err error
 		span, ctx := a.StartSpan(r.Context(), "HandlerFunc")
@@ -65,7 +72,10 @@ func (a *middleware) WrapHandler(next http.Handler) http.Handler {
 		span.SetTag("header.value", sanitizeHeaderValue(headerValue))
 
 		// If auth fails or there was an error, do not call next.
-		token, err := jwt.Parse(headerValue, getKeyFunction(a.publicKey))
+
+		// will parse claims into a jwt.MapClaims and run the default validation
+		// this will verify exp, iat, and nbf (if they exist)
+		token, err := parser.Parse(headerValue, getKeyFunction(a.publicKey))
 		if err != nil {
 			err = errors.Wrap(err, "could not parse and verify auth claims")
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
@@ -79,8 +89,8 @@ func (a *middleware) WrapHandler(next http.Handler) http.Handler {
 			return
 		}
 
-		if !claims.Valid() {
-			err = errors.New("auth claims missing required user information")
+		err = claims.Validate()
+		if err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
