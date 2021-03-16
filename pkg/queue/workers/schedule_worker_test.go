@@ -78,8 +78,18 @@ func TestScheduleTask(t *testing.T) {
 		w := newScheduleWorker(db, qm, time.Second)
 		err = w.scheduleTask(ctx)
 		require.NoError(t, err)
+
+		time.Sleep(time.Second)
 		err = w.scheduleTask(ctx)
 		require.NoError(t, err)
+
+		time.Sleep(time.Second)
+		err = w.scheduleTask(ctx)
+		require.Equal(t, err, ErrScheduleQueueIsEmpty)
+
+		time.Sleep(time.Second)
+		err = w.scheduleTask(ctx)
+		require.Equal(t, err, ErrScheduleQueueIsEmpty)
 
 		require.Len(t, qm.q, 2)
 
@@ -94,8 +104,17 @@ func TestScheduleTask(t *testing.T) {
 		require.Equal(t, string(taskSpec2), string(task2.Spec))
 
 		// checking that the execution time has changed
-		dbtest.EqualCount(t, db, 0, "schedules", squirrel.Eq{
+		dbtest.EqualCount(t, db, 0, "schedules", squirrel.LtOrEq{
 			"next_execution_time": now,
+		})
+
+		dbtest.EqualCount(t, db, 1, "schedules", squirrel.And{
+			squirrel.Gt{"next_execution_time": now},
+			squirrel.Eq{"schedule_id": scheduleID1},
+		})
+
+		dbtest.EqualCount(t, db, 1, "schedules", squirrel.Eq{
+			"next_execution_time": nil,
 		})
 
 		// these should stay zero because they are not incremented in the scheduleTask function
