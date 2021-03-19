@@ -100,7 +100,7 @@ func (w *scheduleWorker) iteration(ctx context.Context, tracer opentracing.Trace
 	queue.ScheduleWorkerMetrics.WorkingGauge.Inc()
 	defer queue.ScheduleWorkerMetrics.WorkingGauge.Dec()
 
-	logrus.Debug("starting task scheduling iteration...")
+	logrus.Debug("starting task scheduling iteration")
 	for {
 		// check if the iteration was cancelled
 		err = ctx.Err()
@@ -109,7 +109,7 @@ func (w *scheduleWorker) iteration(ctx context.Context, tracer opentracing.Trace
 			return err
 		}
 
-		logrus.Debug("trying to find a task to schedule...")
+		logrus.Debug("trying to find a task to schedule")
 		err = w.scheduleTask(ctx)
 		if err == ErrScheduleQueueIsEmpty {
 			return nil
@@ -133,6 +133,7 @@ func (w *scheduleWorker) scheduleTask(ctx context.Context) (err error) {
 		}
 	}()
 
+	logrus.Debug("looking for ready schedules")
 	tx, err := w.db.BeginTx(ctx, nil)
 	builder := squirrel.StatementBuilder.
 		PlaceholderFormat(squirrel.Dollar).
@@ -212,9 +213,12 @@ func (w *scheduleWorker) scheduleTask(ctx context.Context) (err error) {
 	span.SetTag("task.queue", taskQueue)
 	span.SetTag("task.spec", string(specBytes))
 
-	logrus := logrus.WithField("type", taskType).WithField("queue", taskQueue)
+	logrus := logrus.WithField("type", taskType).
+		WithField("queue", taskQueue).
+		WithField("schedule_id", scheduleID).
+		WithField("schedule_cron", cronSchedule)
 
-	logrus.Debug("adding the task to the queue...")
+	logrus.Debug("adding the task to the queue")
 	task := queue.TaskEnqueueRequest{
 		TaskBase: queue.TaskBase{
 			Queue: taskQueue,
@@ -232,7 +236,7 @@ func (w *scheduleWorker) scheduleTask(ctx context.Context) (err error) {
 
 	logrus.Debug("task has been scheduled successfully")
 
-	logrus.Debug("calculating and updating the next execution time...")
+	logrus.Debug("calculating and updating the next execution time")
 
 	var nextExecution *time.Time
 	if cronSchedule != "" {
@@ -245,7 +249,7 @@ func (w *scheduleWorker) scheduleTask(ctx context.Context) (err error) {
 		nextExecution = &t
 	}
 
-	_, err = builder.
+	res, err := builder.
 		Update("schedules").
 		Set("next_execution_time", nextExecution).
 		Where(squirrel.Eq{
@@ -255,7 +259,15 @@ func (w *scheduleWorker) scheduleTask(ctx context.Context) (err error) {
 	if err != nil {
 		return err
 	}
-	logrus.Debug("the new execution time is set")
+
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	logrus.WithField("affected", affected).
+		WithField("next_execution_time", nextExecution).
+		Debug("the new execution time is set")
 
 	queue.ScheduleWorkerMetrics.ProcessedCounter.With(labels).Inc()
 	return nil
