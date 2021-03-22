@@ -52,8 +52,8 @@ func (d traceableDB) ExecContext(ctx context.Context, query string, args ...inte
 	defer func() {
 		d.FinishSpan(span, err)
 	}()
-	span.SetTag("sql", query)
-	logrus.WithTime(time.Now()).WithField("sql.method", "ExecContext").Debug(query)
+	span.LogKV("sql", query)
+	logrus.WithTime(time.Now()).WithField("sql_method", "ExecContext").Debug(query)
 
 	result, err = d.SQLDB.ExecContext(ctx, query, args...)
 	return result, err
@@ -67,9 +67,9 @@ func (d traceableDB) QueryContext(ctx context.Context, query string, args ...int
 	defer func() {
 		d.FinishSpan(span, err)
 	}()
-	span.SetTag("sql", query)
+	span.LogKV("sql", query)
 
-	logrus.WithTime(time.Now()).WithField("sql.method", "QueryContext").Debug(query)
+	logrus.WithTime(time.Now()).WithField("sql_method", "QueryContext").Debug(query)
 	rows, err = d.SQLDB.QueryContext(ctx, query, args...)
 	return rows, err
 }
@@ -81,9 +81,9 @@ func (d traceableDB) QueryRowContext(ctx context.Context, query string, args ...
 	span, ctx := d.StartSpan(ctx, "QueryRowContext")
 	defer d.FinishSpan(span, nil)
 
-	span.SetTag("sql", query)
+	span.LogKV("sql", query)
 
-	logrus.WithTime(time.Now()).WithField("sql.method", "QueryRowContext").Debug(query)
+	logrus.WithTime(time.Now()).WithField("sql_method", "QueryRowContext").Debug(query)
 	return d.SQLDB.QueryRowContext(ctx, query, args...)
 }
 
