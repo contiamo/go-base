@@ -11,6 +11,7 @@ require (
 	github.com/getkin/kin-openapi v0.14.0
 	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible
+	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/golang/protobuf v1.5.1
 	github.com/gorilla/websocket v1.4.2
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0

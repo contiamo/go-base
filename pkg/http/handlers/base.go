@@ -10,6 +10,7 @@ import (
 
 	cerrors "github.com/contiamo/go-base/v3/pkg/errors"
 	"github.com/contiamo/go-base/v3/pkg/tracing"
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/pkg/errors"
 )
 
@@ -106,22 +107,30 @@ func (h *baseHandler) Error(ctx context.Context, w http.ResponseWriter, err erro
 		return
 	}
 
-	validationErrs, ok := err.(cerrors.ValidationErrors)
-	if ok {
+	switch e := err.(type) {
+	// covers ozzo v1 errors and go-base ValidationErrors
+	case cerrors.ValidationErrors:
 		h.Write(
 			ctx,
 			w,
 			http.StatusUnprocessableEntity,
-			cerrors.ValidationErrorsToFieldErrorResponse(validationErrs),
+			cerrors.ValidationErrorsToFieldErrorResponse(e),
 		)
 		return
+	case validation.Errors:
+		h.Write(
+			ctx,
+			w,
+			http.StatusUnprocessableEntity,
+			cerrors.ValidationErrorsToFieldErrorResponse(cerrors.ValidationErrors(e)),
+		)
+		return
+	default:
+		if !h.debug {
+			genErrResp.Errors[0].Message = cerrors.ErrInternal.Error()
+		}
+		h.Write(ctx, w, http.StatusInternalServerError, genErrResp)
 	}
-
-	if !h.debug {
-		genErrResp.Errors[0].Message = cerrors.ErrInternal.Error()
-	}
-
-	h.Write(ctx, w, http.StatusInternalServerError, genErrResp)
 }
 
 func (h *baseHandler) Write(ctx context.Context, w http.ResponseWriter, status int, obj interface{}) {

@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	validationV1 "github.com/go-ozzo/ozzo-validation"
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/pkg/errors"
 
 	cerrors "github.com/contiamo/go-base/v3/pkg/errors"
@@ -118,6 +120,27 @@ func TestError(t *testing.T) {
 		{
 			name:      "Returns 422 and field errors when validation errors",
 			err:       cerrors.ValidationErrors{"field": errors.New("terrible")},
+			expStatus: http.StatusUnprocessableEntity,
+			expBody: `{"errors":[{"type":"FieldError","message":"terrible","key":"field"}]}
+`,
+		},
+		{
+			name:      "Returns 422 and field errors when validation errors",
+			err:       validation.Errors{"field": errors.New("terrible")},
+			expStatus: http.StatusUnprocessableEntity,
+			expBody: `{"errors":[{"type":"FieldError","message":"terrible","key":"field"}]}
+`,
+		},
+		{
+			name:      "Returns 422 and field errors when validation errors",
+			err:       validation.Errors{"field": errors.New("terrible")},
+			expStatus: http.StatusUnprocessableEntity,
+			expBody: `{"errors":[{"type":"FieldError","message":"terrible","key":"field"}]}
+`,
+		},
+		{
+			name:      "Returns 422 and field errors when validation errors",
+			err:       validationV1.Errors{"field": errors.New("terrible")},
 			expStatus: http.StatusUnprocessableEntity,
 			expBody: `{"errors":[{"type":"FieldError","message":"terrible","key":"field"}]}
 `,
