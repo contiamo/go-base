@@ -26,6 +26,44 @@ var (
 	ErrNotImplemented = errors.New("Method is not implemented")
 )
 
+// ValidationErrors contains errors organized by validated fields
+// for now it's just an alias to the validation library we use
+type ValidationErrors = validation.Errors
+
+// ValidationErrorsToFieldErrorResponse converts validation errors to the format that is
+// served by HTTP handlers
+func ValidationErrorsToFieldErrorResponse(errs ValidationErrors) (resp ErrorResponse) {
+	resp.Errors = make([]APIErrorMessenger, 0, len(errs))
+	for key, fieldErr := range errs {
+		if fieldErr == nil {
+			continue
+		}
+
+		var e APIErrorMessenger
+		e = GeneralError{
+			Type:    GeneralErrorType,
+			Message: fieldErr.Error(),
+		}
+
+		if key != "" {
+			e = FieldError{
+				GeneralError: GeneralError{
+					Type:    FieldErrorType,
+					Message: fieldErr.Error(),
+				},
+				Key: key,
+			}
+		}
+		resp.Errors = append(resp.Errors, e)
+	}
+
+	// to always have deterministic results
+	sort.Slice(resp.Errors, func(i, j int) bool {
+		return resp.Errors[i].GetMessage() < resp.Errors[j].GetMessage()
+	})
+	return resp
+}
+
 // UserError is an error wrapper that represents a GeneralError caused by some
 // user data or request. The  error message is considered safe to show to end users.
 // The HTTP handler can recognize this error type and automatically parse it into a 400
@@ -48,41 +86,4 @@ func (e UserError) Unwrap() error {
 // handling by the BaseHandler
 func AsUserError(err error) error {
 	return UserError{cause: err}
-}
-
-// ValidationErrors contains errors organized by validated fields
-// for now it's just an alias to the validation library we use
-type ValidationErrors = validation.Errors
-
-// ValidationErrorsToFieldErrorResponse converts validation errors to the format that is
-// served by HTTP handlers
-func ValidationErrorsToFieldErrorResponse(errs ValidationErrors) (fieldErrResp FieldErrorResponse) {
-	fieldErrResp.Errors = make([]FieldError, 0, len(errs))
-	for key, fieldErr := range errs {
-		if fieldErr == nil {
-			continue
-		}
-
-		errorType := FieldErrorType
-		if key == "" {
-			// in some rare edge cases we have "validation errors"
-			// that do not have a key value, in this case, we mark them
-			// as generic so that clients do not try to use the empty
-			// key field
-			errorType = GeneralErrorType
-		}
-		fieldErrResp.Errors = append(fieldErrResp.Errors, FieldError{
-			GeneralError: GeneralError{
-				Type:    errorType,
-				Message: fieldErr.Error(),
-			},
-			Key: key,
-		})
-	}
-
-	// to always have deterministic results
-	sort.Slice(fieldErrResp.Errors, func(i, j int) bool {
-		return fieldErrResp.Errors[i].Message < fieldErrResp.Errors[j].Message
-	})
-	return fieldErrResp
 }

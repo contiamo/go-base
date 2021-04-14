@@ -76,11 +76,12 @@ func (h *baseHandler) Error(ctx context.Context, w http.ResponseWriter, err erro
 		return
 	}
 
-	genErrResp := cerrors.GeneralErrorResponse{
-		Errors: []cerrors.GeneralError{{
-			Type:    cerrors.GeneralErrorType,
-			Message: err.Error(),
-		}},
+	genErrResp := cerrors.ErrorResponse{
+		Errors: []cerrors.APIErrorMessenger{
+			&cerrors.GeneralError{
+				Type:    cerrors.GeneralErrorType,
+				Message: err.Error(),
+			}},
 	}
 
 	// Handler concrete errors:
@@ -138,7 +139,9 @@ func (h *baseHandler) Error(ctx context.Context, w http.ResponseWriter, err erro
 		return
 	default:
 		if !h.debug {
-			genErrResp.Errors[0].Message = cerrors.ErrInternal.Error()
+			for idx, e := range genErrResp.Errors {
+				genErrResp.Errors[idx] = e.Scrubbed(cerrors.ErrInternal.Error())
+			}
 		}
 		h.Write(ctx, w, http.StatusInternalServerError, genErrResp)
 	}
