@@ -76,13 +76,15 @@ func (h *baseHandler) Error(ctx context.Context, w http.ResponseWriter, err erro
 		return
 	}
 
-	genErrResp := cerrors.GeneralErrorResponse{
-		Errors: []cerrors.GeneralError{{
-			Type:    cerrors.GeneralErrorType,
-			Message: err.Error(),
-		}},
+	genErrResp := cerrors.ErrorResponse{
+		Errors: []cerrors.APIErrorMessenger{
+			&cerrors.GeneralError{
+				Type:    cerrors.GeneralErrorType,
+				Message: err.Error(),
+			}},
 	}
 
+	// Handler concrete errors:
 	// we can extend this error list in the future if needed
 	switch err {
 	case cerrors.ErrNotImplemented:
@@ -100,6 +102,12 @@ func (h *baseHandler) Error(ctx context.Context, w http.ResponseWriter, err erro
 	case sql.ErrNoRows, cerrors.ErrNotFound:
 		h.Write(ctx, w, http.StatusNotFound, genErrResp)
 		return
+	case cerrors.ErrInvalidParameters:
+		h.Write(ctx, w, http.StatusBadRequest, genErrResp)
+		return
+	case cerrors.ErrNotImplemented:
+		h.Write(ctx, w, http.StatusNotImplemented, genErrResp)
+		return
 	}
 
 	if strings.HasPrefix(err.Error(), cerrors.ErrUnmarshalling.Error()) {
@@ -107,6 +115,7 @@ func (h *baseHandler) Error(ctx context.Context, w http.ResponseWriter, err erro
 		return
 	}
 
+	// Handle error types that wrap other errors
 	switch e := err.(type) {
 	// covers ozzo v1 errors and go-base ValidationErrors
 	case cerrors.ValidationErrors:
@@ -125,9 +134,14 @@ func (h *baseHandler) Error(ctx context.Context, w http.ResponseWriter, err erro
 			cerrors.ValidationErrorsToFieldErrorResponse(cerrors.ValidationErrors(e)),
 		)
 		return
+	case cerrors.UserError:
+		h.Write(ctx, w, http.StatusBadRequest, genErrResp)
+		return
 	default:
 		if !h.debug {
-			genErrResp.Errors[0].Message = cerrors.ErrInternal.Error()
+			for idx, e := range genErrResp.Errors {
+				genErrResp.Errors[idx] = e.Scrubbed(cerrors.ErrInternal.Error())
+			}
 		}
 		h.Write(ctx, w, http.StatusInternalServerError, genErrResp)
 	}

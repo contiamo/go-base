@@ -48,7 +48,9 @@ func (a *middleware) WrapHandler(next http.Handler) http.Handler {
 				// don't set the flag to `true` it would expose all
 				// the data sent via the request body
 				prettyRequest, _ := httputil.DumpRequest(r, false)
-				logrus.Debugf("Incoming request:\\n%q", prettyRequest)
+				logrus.WithError(err).
+					WithField("request", prettyRequest).
+					Debugf("incoming request")
 			}
 			a.FinishSpan(span, err)
 		}()

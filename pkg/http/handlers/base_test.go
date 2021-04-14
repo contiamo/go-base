@@ -146,6 +146,20 @@ func TestError(t *testing.T) {
 `,
 		},
 		{
+			name:      "Returns 400 and general error on UserErrors",
+			err:       cerrors.AsUserError(errors.New("terrible")),
+			expStatus: http.StatusBadRequest,
+			expBody: `{"errors":[{"type":"GeneralError","message":"terrible"}]}
+`,
+		},
+		{
+			name:      "Returns 400 and general error on ErrInvalidParameters",
+			err:       cerrors.ErrInvalidParameters,
+			expStatus: http.StatusBadRequest,
+			expBody: `{"errors":[{"type":"GeneralError","message":"Some of the request parameters are not correct"}]}
+`,
+		},
+		{
 			name:      "Returns 500 when unknown error",
 			err:       errors.New("terrible"),
 			expStatus: http.StatusInternalServerError,

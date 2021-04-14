@@ -7,20 +7,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestValidationErrorsToFieldErrorResponse(t *testing.T) {
+func TestValidationErrorsToErrorResponse(t *testing.T) {
 	cases := []struct {
 		name     string
 		errs     ValidationErrors
-		expected FieldErrorResponse
+		expected ErrorResponse
 	}{
 		{
 			name:     "Returns empty response when errors are nil",
-			expected: FieldErrorResponse{Errors: []FieldError{}},
+			expected: ErrorResponse{Errors: []APIErrorMessenger{}},
 		},
 		{
 			name:     "Returns empty response when errors are empty",
 			errs:     ValidationErrors{},
-			expected: FieldErrorResponse{Errors: []FieldError{}},
+			expected: ErrorResponse{Errors: []APIErrorMessenger{}},
 		},
 		{
 			name: "Returns errors in the response when errors are not empty",
@@ -28,16 +28,16 @@ func TestValidationErrorsToFieldErrorResponse(t *testing.T) {
 				"field1": errors.New("bad field1"),
 				"field2": errors.New("bad field2"),
 			},
-			expected: FieldErrorResponse{
-				Errors: []FieldError{
-					{
+			expected: ErrorResponse{
+				Errors: []APIErrorMessenger{
+					FieldError{
 						GeneralError: GeneralError{
 							Type:    FieldErrorType,
 							Message: "bad field1",
 						},
 						Key: "field1",
 					},
-					{
+					FieldError{
 						GeneralError: GeneralError{
 							Type:    FieldErrorType,
 							Message: "bad field2",
@@ -53,14 +53,36 @@ func TestValidationErrorsToFieldErrorResponse(t *testing.T) {
 				"field1": errors.New("bad field1"),
 				"field2": nil,
 			},
-			expected: FieldErrorResponse{
-				Errors: []FieldError{
-					{
+			expected: ErrorResponse{
+				Errors: []APIErrorMessenger{
+					FieldError{
 						GeneralError: GeneralError{
 							Type:    FieldErrorType,
 							Message: "bad field1",
 						},
 						Key: "field1",
+					},
+				},
+			},
+		},
+		{
+			name: "empty string keys are mapped to a GeneralError type",
+			errs: ValidationErrors{
+				"field1": errors.New("bad field1"),
+				"":       errors.New("other generic validation"),
+			},
+			expected: ErrorResponse{
+				Errors: []APIErrorMessenger{
+					FieldError{
+						GeneralError: GeneralError{
+							Type:    FieldErrorType,
+							Message: "bad field1",
+						},
+						Key: "field1",
+					},
+					GeneralError{
+						Type:    GeneralErrorType,
+						Message: "other generic validation",
 					},
 				},
 			},
