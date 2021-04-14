@@ -65,6 +65,31 @@ func TestValidationErrorsToFieldErrorResponse(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "empty string keys are mapped to a GeneralError type",
+			errs: ValidationErrors{
+				"field1": errors.New("bad field1"),
+				"":       errors.New("other generic validation"),
+			},
+			expected: FieldErrorResponse{
+				Errors: []FieldError{
+					{
+						GeneralError: GeneralError{
+							Type:    FieldErrorType,
+							Message: "bad field1",
+						},
+						Key: "field1",
+					},
+					{
+						GeneralError: GeneralError{
+							Type:    GeneralErrorType,
+							Message: "other generic validation",
+						},
+						Key: "",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range cases {

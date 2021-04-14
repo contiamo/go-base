@@ -20,11 +20,35 @@ var (
 	ErrUnmarshalling = errors.New("Failed to read JSON from the request body")
 	// ErrForm is the form parsing error
 	ErrForm = errors.New("Failed to parse the submitted form")
-	// ErrNotFound is the standard entiry not found error
+	// ErrNotFound is the standard entity not found error
 	ErrNotFound = errors.New("The requested object was not found")
 	// ErrNotImplemented is intended to be used when stubbing new endpoints
 	ErrNotImplemented = errors.New("Method is not implemented")
 )
+
+// UserError is an error wrapper that represents a GeneralError caused by some
+// user data or request. The  error message is considered safe to show to end users.
+// The HTTP handler can recognize this error type and automatically parse it into a 400
+// error code.
+type UserError struct {
+	cause error
+}
+
+// Error implements the error interface
+func (e UserError) Error() string {
+	return e.cause.Error()
+}
+
+// Unwrap implements the error wrapping interface to expose the source error
+func (e UserError) Unwrap() error {
+	return e.cause
+}
+
+// AsUserError wraps the error as a UserError type, this allows automatic
+// handling by the BaseHandler
+func AsUserError(err error) error {
+	return UserError{cause: err}
+}
 
 // ValidationErrors contains errors organized by validated fields
 // for now it's just an alias to the validation library we use
@@ -38,9 +62,18 @@ func ValidationErrorsToFieldErrorResponse(errs ValidationErrors) (fieldErrResp F
 		if fieldErr == nil {
 			continue
 		}
+
+		errorType := FieldErrorType
+		if key == "" {
+			// in some rare edge cases we have "validation errors"
+			// that do not have a key value, in this case, we mark them
+			// as generic so that clients do not try to use the empty
+			// key field
+			errorType = GeneralErrorType
+		}
 		fieldErrResp.Errors = append(fieldErrResp.Errors, FieldError{
 			GeneralError: GeneralError{
-				Type:    FieldErrorType,
+				Type:    errorType,
 				Message: fieldErr.Error(),
 			},
 			Key: key,
