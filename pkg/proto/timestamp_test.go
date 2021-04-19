@@ -4,21 +4,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/ptypes"
-
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func Test_NullTimstamp_Scan(t *testing.T) {
 	now := time.Now()
-	var myTimestamp *timestamp.Timestamp
-	emptyTimestamp := &timestamp.Timestamp{}
-	nowTimestamp := ptypes.TimestampNow()
+	var myTimestamp *timestamppb.Timestamp
+	emptyTimestamp := &timestamppb.Timestamp{}
+	nowTimestamp := timestamppb.Now()
 
 	scenarios := []struct {
 		name  string
 		value time.Time
-		ts    *timestamp.Timestamp
+		ts    *timestamppb.Timestamp
 	}{
 		{"uninitilized timestamp", now, myTimestamp},
 		{"empty timestamp", now, emptyTimestamp},
@@ -38,11 +36,7 @@ func Test_NullTimstamp_Scan(t *testing.T) {
 				t.Fatal("expected scan to initialize the timestamp")
 			}
 
-			converted, err := ptypes.Timestamp(s.ts)
-			if err != nil {
-				t.Fatalf("unexpected error %s", err.Error())
-			}
-
+			converted := s.ts.AsTime()
 			if !now.Equal(converted) {
 				t.Fatalf(
 					"expected scan to set value to %s, got %s",
@@ -55,7 +49,7 @@ func Test_NullTimstamp_Scan(t *testing.T) {
 }
 
 func Test_NullTimstamp_ScanNil(t *testing.T) {
-	var myTimestamp *timestamp.Timestamp
+	var myTimestamp *timestamppb.Timestamp
 
 	scanner := NullTimestamp(&myTimestamp)
 
