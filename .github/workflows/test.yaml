@@ -1,0 +1,53 @@
+name: test
+on: push
+
+jobs:
+  # Label of the container job
+  runner-job:
+    # Containers must run in Linux based operating systems
+    runs-on: ubuntu-latest
+
+    # Service containers to run with `container-job`
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres:alpine
+        # Provide the password for postgres
+        env:
+          POSTGRES_PASSWORD: localdev
+          POSTGRES_USER: contiamo_test
+          POSTGRES_DB: postgres
+        ports:
+        # will assign a random free host port
+        - 5432:5432
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      # Downloads a copy of the code in your repository before running CI tests
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.16'
+      - name: Install go tools
+        run: make setup-env
+      - name: Print env
+        run: make env
+      - name: Format
+        run: make fmt
+      - name: Lint echo
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.31
+      - name: Tests
+        run: make .test-ci
+        env:
+          POSTGRES_PASSWORD: localdev
+          POSTGRES_USER: contiamo_test
+          POSTGRES_DB: postgres
