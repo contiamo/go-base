@@ -5,15 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/protobuf/ptypes"
-
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // NullProtoTimestamp wraps a timestamp.Timestamp into a Scanner/Valuer
 // interface
 type NullProtoTimestamp struct {
-	Timestamp **timestamp.Timestamp
+	Timestamp **timestamppb.Timestamp
 }
 
 // Scan implements the Scanner interface.
@@ -23,17 +21,15 @@ func (nt *NullProtoTimestamp) Scan(value interface{}) error {
 	}
 
 	if *nt.Timestamp == nil {
-		*nt.Timestamp = &timestamp.Timestamp{}
+		*nt.Timestamp = &timestamppb.Timestamp{}
 	}
 
 	switch v := value.(type) {
 	case time.Time:
-		ts, err := ptypes.TimestampProto(v)
-		if err != nil {
-			return err
-		}
+		ts := timestamppb.New(v)
+
 		*nt.Timestamp = ts
-		return nil
+		return ts.CheckValid()
 	default:
 		return fmt.Errorf("unknown value type")
 	}
@@ -41,11 +37,16 @@ func (nt *NullProtoTimestamp) Scan(value interface{}) error {
 
 // Value implements the driver Valuer interface.
 func (nt NullProtoTimestamp) Value() (driver.Value, error) {
-	return ptypes.Timestamp(*nt.Timestamp)
+	if nt.Timestamp == nil {
+		return nil, nil
+	}
+
+	ts := (*nt.Timestamp)
+	return ts.AsTime(), ts.CheckValid()
 }
 
-// NullTimestamp converts a timestamp.Timestamp into a wrapped NullProtoTimestamp
-func NullTimestamp(t **timestamp.Timestamp) *NullProtoTimestamp {
+// NullTimestamp converts a timestamppb.Timestamp into a wrapped NullProtoTimestamp
+func NullTimestamp(t **timestamppb.Timestamp) *NullProtoTimestamp {
 	return &NullProtoTimestamp{
 		Timestamp: t,
 	}
