@@ -14,6 +14,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -93,6 +94,9 @@ func TestTaskWorkerWork(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
+	testCounter := queue.TaskWorkerMetrics.ProcessingErrorsCounter.With(prometheus.Labels{"queue": "testQueue", "type": "testType"})
+	require.Equal(t, float64(0), testutil.ToFloat64(testCounter))
+
 	t.Run("worker handles multiple tasks without stopping", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(ctx)
 		qCh := make(chan *queue.Task, 2)
@@ -102,12 +106,14 @@ func TestTaskWorkerWork(t *testing.T) {
 		testTaskOne := &queue.Task{
 			TaskBase: queue.TaskBase{
 				Queue: "testQueue",
+				Type:  "testType",
 			},
 			ID: "testTask1",
 		}
 		testTaskTwo := &queue.Task{
 			TaskBase: queue.TaskBase{
 				Queue: "testQueue",
+				Type:  "testType",
 			},
 			ID: "testTask2",
 		}
@@ -141,6 +147,7 @@ func TestTaskWorkerWork(t *testing.T) {
 		testTask := &queue.Task{
 			TaskBase: queue.TaskBase{
 				Queue: "testQueue",
+				Type:  "testType",
 			},
 			ID: "testTask",
 		}
@@ -167,6 +174,8 @@ func TestTaskWorkerWork(t *testing.T) {
 
 		expStatus := `{"error":"some serious error"}`
 		require.Equal(t, []queue.Progress{queue.Progress(expStatus)}, q.fails)
+
+		require.Equal(t, float64(1), testutil.ToFloat64(testCounter))
 	})
 
 	t.Run("worker sets the error to the latest progress if handler returns an error", func(t *testing.T) {
@@ -177,6 +186,7 @@ func TestTaskWorkerWork(t *testing.T) {
 		testTask := &queue.Task{
 			TaskBase: queue.TaskBase{
 				Queue: "testQueue",
+				Type:  "testType",
 			},
 			ID: "testTask",
 		}
@@ -204,6 +214,7 @@ func TestTaskWorkerWork(t *testing.T) {
 
 		expStatus := `{"error":"some serious error","some":"text"}`
 		require.Equal(t, []queue.Progress{queue.Progress(expStatus)}, q.fails)
+		require.Equal(t, float64(2), testutil.ToFloat64(testCounter))
 	})
 
 	t.Run("worker does not stop and logs the error when queue returns a dequeue error", func(t *testing.T) {
@@ -220,6 +231,7 @@ func TestTaskWorkerWork(t *testing.T) {
 		testTask := &queue.Task{
 			TaskBase: queue.TaskBase{
 				Queue: "testQueue",
+				Type:  "testType",
 			},
 			ID: "testTask",
 		}
@@ -257,6 +269,10 @@ func TestTaskWorkerWork(t *testing.T) {
 		// is not a fatal error, but we should see the dequeue error in the logs
 		require.EqualError(t, err, "context canceled")
 		require.Contains(t, logs.String(), "can not dequeue")
+
+		t.Run("should not increment worker error during queue errors", func(t *testing.T) {
+			require.Equal(t, float64(2), testutil.ToFloat64(testCounter))
+		})
 	})
 
 	t.Run("worker logs the error when heartbeat returns a non-terminal error", func(t *testing.T) {
@@ -313,6 +329,10 @@ func TestTaskWorkerWork(t *testing.T) {
 				require.Contains(t, logs.String(), err.Error())
 			})
 		}
+
+		t.Run("should not increment worker error during heartbeat errors", func(t *testing.T) {
+			require.Equal(t, float64(2), testutil.ToFloat64(testCounter))
+		})
 	})
 }
 
