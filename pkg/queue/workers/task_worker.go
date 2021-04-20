@@ -151,9 +151,6 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 	defer func() {
 		cancel()
 		w.FinishSpan(span, err)
-		if err != nil {
-			queue.TaskWorkerMetrics.ProcessingErrorsCounter.With(labels).Inc()
-		}
 	}()
 
 	timer := prometheus.NewTimer(queue.TaskWorkerMetrics.ProcessingDuration)
@@ -196,6 +193,9 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 	if workErr != nil {
 		// we must try to put the error message in the latest version of progress
 		// empty progress (no heartbeats) is also fine
+		span.SetTag("workErr", workErr)
+		queue.TaskWorkerMetrics.ProcessingErrorsCounter.With(labels).Inc()
+
 		progress = w.setError(progress, workErr)
 		return w.dequeuer.Fail(ctx, task.ID, progress)
 	}
