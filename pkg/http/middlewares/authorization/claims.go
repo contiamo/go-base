@@ -75,7 +75,9 @@ func (a *Claims) Valid() bool {
 // Validate verifies the token claims.
 func (a Claims) Validate() (err error) {
 	defer func() {
-		logrus.WithError(err).Error("claims validation error")
+		if err != nil {
+			logrus.WithError(err).Error("claims validation error")
+		}
 	}()
 
 	now := TimeFunc()
