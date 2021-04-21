@@ -49,7 +49,7 @@ func (a *middleware) WrapHandler(next http.Handler) http.Handler {
 				// the data sent via the request body
 				prettyRequest, _ := httputil.DumpRequest(r, false)
 				logrus.WithError(err).
-					WithField("request", prettyRequest).
+					WithField("request", string(prettyRequest)).
 					Debugf("incoming request")
 			}
 			a.FinishSpan(span, err)
