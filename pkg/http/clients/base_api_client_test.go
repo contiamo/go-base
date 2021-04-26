@@ -251,7 +251,7 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 				}
 				w.Header().Add("date", "fixed value")
 				w.WriteHeader(tc.serverStatus)
-				w.Write(tc.serverResponse)
+				_, _ = w.Write(tc.serverResponse)
 			}))
 			defer s.Close()
 

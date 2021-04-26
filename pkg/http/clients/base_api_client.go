@@ -105,9 +105,9 @@ func (t baseAPIClient) DoRequest(ctx context.Context, method, path string, query
 		go func() {
 			mErr := encoder.Encode(payload)
 			if mErr != nil {
-				w.CloseWithError(mErr)
+				_ = w.CloseWithError(mErr)
 			} else {
-				w.Close()
+				_ = w.Close()
 			}
 		}()
 	}
