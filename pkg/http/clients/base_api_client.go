@@ -131,6 +131,8 @@ func (t baseAPIClient) DoRequest(ctx context.Context, method, path string, query
 	req.Header.Add("Content-Type", "application/json")
 	if token != "" {
 		req.Header.Add(t.tokenHeaderName, token)
+	} else {
+		span.LogKV("token", "token value is empty, header was not set")
 	}
 
 	// set tracing headers so we can connect spans in different services
