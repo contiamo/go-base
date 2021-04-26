@@ -36,7 +36,7 @@ func (e APIError) Error() string {
 // TokenProvider is a function that gets the token string for each request
 type TokenProvider func() (token string, err error)
 
-// TokenProviderFromCreator create a token provider out of token creator.
+// TokenProviderFromCreator creates a token provider out of token creator.
 func TokenProviderFromCreator(tc tokens.Creator, reference string, opts tokens.Options) TokenProvider {
 	return func() (token string, err error) {
 		return tc.Create(reference, opts)
