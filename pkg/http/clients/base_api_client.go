@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	cerrors "github.com/contiamo/go-base/v3/pkg/errors"
-	"github.com/contiamo/go-base/v3/pkg/tokens"
 	"github.com/contiamo/go-base/v3/pkg/tracing"
 	"github.com/opentracing/opentracing-go"
 	otext "github.com/opentracing/opentracing-go/ext"
@@ -33,7 +32,15 @@ func (e APIError) Error() string {
 	return http.StatusText(e.Status)
 }
 
-// BaseAPIClient describes all basic HTTP client operations required to work with an API
+// TokenProvider is a function that gets the token string for each request
+type TokenProvider func() (token string, err error)
+
+var (
+	// NoopTokenProvider is a token provider that returns an empty string which is ignored by `DoRequest`.
+	NoopTokenProvider = TokenProvider(func() (token string, err error) { return "", nil })
+)
+
+// BaseAPIClient describes all basic HTTP client operations required to work with a JSON API
 type BaseAPIClient interface {
 	// GetBaseURL returns the base URL of the service which can be used in HTTP request tasks.
 	GetBaseURL() string
@@ -44,12 +51,12 @@ type BaseAPIClient interface {
 
 // NewBaseAPIClient creates a new instance of the base API client implementation.
 // Never use `debug=true` in production environments, it will leak sensitive data
-func NewBaseAPIClient(basePath, tokenHeaderName string, tokenCreator tokens.Creator, client *http.Client, debug bool) BaseAPIClient {
+func NewBaseAPIClient(basePath, tokenHeaderName string, tokenProvider TokenProvider, client *http.Client, debug bool) BaseAPIClient {
 	return &baseAPIClient{
 		Tracer:          tracing.NewTracer("clients", "BaseAPIClient"),
 		basePath:        basePath,
 		tokenHeaderName: tokenHeaderName,
-		tokenCreator:    tokenCreator,
+		tokenProvider:   tokenProvider,
 		client:          client,
 		debug:           debug,
 	}
@@ -60,7 +67,7 @@ type baseAPIClient struct {
 
 	basePath        string
 	tokenHeaderName string
-	tokenCreator    tokens.Creator
+	tokenProvider   TokenProvider
 	client          *http.Client
 	debug           bool
 }
@@ -90,7 +97,7 @@ func (t baseAPIClient) DoRequest(ctx context.Context, method, path string, query
 		WithField("url", url)
 
 	logrus.Debug("creating the request token...")
-	token, err := t.tokenCreator.Create("tenjinManager", tokens.Options{Audience: "tenjin"})
+	token, err := t.tokenProvider()
 	if err != nil {
 		return errors.Wrap(err, "failed to create request token")
 	}
@@ -122,7 +129,9 @@ func (t baseAPIClient) DoRequest(ctx context.Context, method, path string, query
 	req = req.WithContext(ctx)
 
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add(t.tokenHeaderName, token)
+	if token != "" {
+		req.Header.Add(t.tokenHeaderName, token)
+	}
 
 	// set tracing headers so we can connect spans in different services
 	err = opentracing.GlobalTracer().Inject(

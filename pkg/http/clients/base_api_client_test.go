@@ -64,6 +64,7 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 		serverStatus   int
 		serverResponse []byte
 
+		token    string
 		tokenErr error
 
 		expResponse interface{}
@@ -84,6 +85,8 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 			},
 			out: &out,
 
+			token: "tokenSample",
+
 			serverStatus:   http.StatusOK,
 			serverResponse: ctesting.ToJSONBytes(t, resp),
 
@@ -96,6 +99,8 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 			method: http.MethodPost,
 			path:   "/some/path",
 			out:    &out,
+
+			token: "tokenSample",
 
 			serverStatus:   http.StatusOK,
 			serverResponse: ctesting.ToJSONBytes(t, resp),
@@ -110,12 +115,29 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 			path:   "/some/path",
 			out:    &out,
 
+			token: "tokenSample",
+
 			serverStatus: http.StatusNoContent,
 
 			expResponse: &response{},
 		},
 		{
 			name:   "Gets response with 200",
+			method: http.MethodGet,
+			path:   "/some/path",
+			out:    &out,
+
+			token: "tokenSample",
+
+			serverStatus:   http.StatusOK,
+			serverResponse: ctesting.ToJSONBytes(t, resp),
+
+			expResponse: &response{
+				Answer: resp.Answer,
+			},
+		},
+		{
+			name:   "Gets response with 200 without token",
 			method: http.MethodGet,
 			path:   "/some/path",
 			out:    &out,
@@ -133,6 +155,7 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 			path:   "/some/path",
 			out:    &out,
 
+			token:        "tokenSample",
 			serverStatus: http.StatusUnauthorized,
 
 			expError: cerrors.ErrAuthorization,
@@ -143,6 +166,7 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 			path:   "/some/path",
 			out:    &out,
 
+			token:        "tokenSample",
 			serverStatus: http.StatusForbidden,
 
 			expError: cerrors.ErrPermission,
@@ -153,6 +177,7 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 			path:   "/some/path",
 			out:    &out,
 
+			token:        "tokenSample",
 			serverStatus: http.StatusNotFound,
 
 			expError: cerrors.ErrNotFound,
@@ -163,6 +188,7 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 			path:   "/some/path",
 			out:    &out,
 
+			token:        "tokenSample",
 			serverStatus: http.StatusNotImplemented,
 
 			expError: cerrors.ErrNotImplemented,
@@ -172,6 +198,8 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 			method: http.MethodGet,
 			path:   "/some/path",
 			out:    &out,
+
+			token: "tokenSample",
 
 			serverStatus:   http.StatusInternalServerError,
 			serverResponse: []byte("some crazy internal stuff"),
@@ -193,6 +221,7 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 			out:    &out,
 
 			serverStatus: http.StatusOK,
+			token:        "tokenSample",
 			tokenErr:     tokenError,
 
 			expError: tokenError,
@@ -204,6 +233,7 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 			payload: invalidPayload{},
 			out:     &out,
 
+			token:          "tokenSample",
 			serverStatus:   http.StatusOK,
 			serverResponse: ctesting.ToJSONBytes(t, resp),
 
@@ -215,6 +245,7 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 			path:   "/some/path",
 			out:    &out,
 
+			token:          "tokenSample",
 			serverStatus:   http.StatusOK,
 			serverResponse: []byte("invalid"),
 
@@ -222,7 +253,6 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 		},
 	}
 
-	token := "tokenSample"
 	basePath := "/base"
 
 	for _, tc := range cases {
@@ -232,7 +262,7 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 			s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				require.Equal(t, basePath+tc.path, r.URL.Path)
 				require.Equal(t, tc.query.Encode(), r.URL.Query().Encode())
-				require.Equal(t, token, r.Header.Get("X-Request-Token"))
+				require.Equal(t, tc.token, r.Header.Get("X-Request-Token"))
 				require.Equal(t, "application/json", r.Header.Get("Content-Type"))
 
 				// ignore all the payload errors, we just need to compare bytes
@@ -255,11 +285,15 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 			}))
 			defer s.Close()
 
-			cm := &tokens.CreatorMock{
+			tm := &tokens.CreatorMock{
 				Err:   tc.tokenErr,
-				Token: token,
+				Token: tc.token,
 			}
-			c := NewBaseAPIClient(s.URL+basePath, "X-Request-Token", cm, http.DefaultClient, true)
+			tp := TokenProvider(func() (string, error) {
+				return tm.Create("test", tokens.Options{})
+			})
+
+			c := NewBaseAPIClient(s.URL+basePath, "X-Request-Token", tp, http.DefaultClient, true)
 			err := c.DoRequest(ctx, tc.method, tc.path, tc.query, tc.payload, tc.out)
 			if tc.expError != nil {
 				require.Error(t, err)
