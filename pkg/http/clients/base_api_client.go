@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	cerrors "github.com/contiamo/go-base/v3/pkg/errors"
+	"github.com/contiamo/go-base/v3/pkg/tokens"
 	"github.com/contiamo/go-base/v3/pkg/tracing"
 	"github.com/opentracing/opentracing-go"
 	otext "github.com/opentracing/opentracing-go/ext"
@@ -34,6 +35,13 @@ func (e APIError) Error() string {
 
 // TokenProvider is a function that gets the token string for each request
 type TokenProvider func() (token string, err error)
+
+// TokenProviderFromCreator create a token provider out of token creator.
+func TokenProviderFromCreator(tc tokens.Creator, reference string, opts tokens.Options) TokenProvider {
+	return func() (token string, err error) {
+		return tc.Create(reference, opts)
+	}
+}
 
 var (
 	// NoopTokenProvider is a token provider that returns an empty string which is ignored by `DoRequest`.

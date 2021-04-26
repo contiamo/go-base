@@ -289,9 +289,7 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 				Err:   tc.tokenErr,
 				Token: tc.token,
 			}
-			tp := TokenProvider(func() (string, error) {
-				return tm.Create("test", tokens.Options{})
-			})
+			tp := TokenProviderFromCreator(tm, "test", tokens.Options{})
 
 			c := NewBaseAPIClient(s.URL+basePath, "X-Request-Token", tp, http.DefaultClient, true)
 			err := c.DoRequest(ctx, tc.method, tc.path, tc.query, tc.payload, tc.out)
