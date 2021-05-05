@@ -25,34 +25,43 @@ func migrate(ctx context.Context, db *sql.DB, list []string, assets http.FileSys
 		return err
 	}
 
+	logger := logrus.WithField("method", "migrate")
+
 	defer func() {
 		if err == nil {
 			err = tx.Commit()
+			if err != nil {
+				logger.WithError(err).Error("can not commit migrations transaction")
+			}
 			return
 		}
+
+		logger.WithError(err).Error("migration transaction requires rollback")
 
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {
 			err = errors.Wrap(err, rollbackErr.Error())
-		}
+			logger.WithError(err).Error("migration rollback failed")
 
-		logrus.Error(err)
+		}
 	}()
 
 	for _, stmtName := range list {
-		logger := logrus.WithField("stmt", stmtName)
+		logger := logrus.
+			WithField("method", "migrate").
+			WithField("stmt", stmtName)
 		logger.Debug("migration started")
 
 		stmt, err := getSQL(stmtName, migrations, assets)
 		if err != nil {
-			logger.Errorf("migration failed: %v", err)
+			logger.WithError(err).Error("migration failed")
 			return fmt.Errorf("migration failed: %w", err)
 		}
 
 		hash, err := crypto.HashToString(stmt)
 		if err != nil {
-			logger.Errorf("init stmt failed: %v", err)
-			return fmt.Errorf("init stmt failed: %w", err)
+			logger.WithError(err).Error("can not hash sql statement")
+			return errors.Wrap(err, "can not hash sql statement")
 		}
 
 		sqlVersion := fmt.Sprintf("%s_%s", stmtName, hash)
@@ -64,8 +73,8 @@ func migrate(ctx context.Context, db *sql.DB, list []string, assets http.FileSys
 		var version string
 		err = row.Scan(&version)
 		if err != nil && err != sql.ErrNoRows {
-			logger.Errorf("version hash scan err: %s", err.Error())
-			return err
+			logger.WithError(err).Errorf("version hash scan err")
+			return errors.Wrap(err, "version hash scan err")
 		}
 
 		if version == sqlVersion {
@@ -75,9 +84,10 @@ func migrate(ctx context.Context, db *sql.DB, list []string, assets http.FileSys
 
 		_, err = tx.ExecContext(ctx, stmt)
 		if err != nil {
-			logger.Errorf("migration failed: %v", err)
-			return fmt.Errorf("migration failed: %w", err)
+			logger.WithError(err).Error("migration failed")
+			return errors.Wrap(err, "migration failed")
 		}
+		logger.Info("migration finished")
 	}
 
 	return err
