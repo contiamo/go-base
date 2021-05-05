@@ -82,12 +82,17 @@ func migrate(ctx context.Context, db *sql.DB, list []string, assets http.FileSys
 			continue
 		}
 
-		_, err = tx.ExecContext(ctx, stmt)
+		res, err := tx.ExecContext(ctx, stmt)
 		if err != nil {
 			logger.WithError(err).Error("migration failed")
 			return errors.Wrap(err, "migration failed")
 		}
-		logger.Info("migration finished")
+		affected, err := res.RowsAffected()
+		if err != nil {
+			logger.WithError(err).Error("can't count affected rows")
+			return errors.Wrap(err, "can't count affected rows")
+		}
+		logger.WithField("affected", affected).Info("migration finished")
 	}
 
 	return err
