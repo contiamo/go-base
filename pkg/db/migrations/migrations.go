@@ -18,7 +18,7 @@ func NewMigrater(stmts []string, assets http.FileSystem) func(context.Context, *
 	}
 }
 
-func migrate(ctx context.Context, db *sql.DB, list []string, assets http.FileSystem) error {
+func migrate(ctx context.Context, db *sql.DB, list []string, assets http.FileSystem) (err error) {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		logrus.Errorf("failed to start migration transaction: %v", err)
