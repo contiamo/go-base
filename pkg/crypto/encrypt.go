@@ -43,6 +43,7 @@ func Encrypt(plainText, key []byte) (cipherText []byte, err error) {
 		return nil, err
 	}
 
+	// nolint: makezero // this is a legit use of a slice with a predefined length
 	cipherText = make([]byte, aes.BlockSize+len(plainText))
 	iv := cipherText[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
@@ -80,6 +81,7 @@ func Decrypt(cipherText, key []byte) (plainText []byte, err error) {
 
 	stream := cipher.NewCFBDecrypter(block, iv)
 
+	// nolint: makezero // this is a legit use of a slice with a predefined length
 	plainText = make([]byte, len(cipherText))
 	stream.XORKeyStream(plainText, cipherText)
 

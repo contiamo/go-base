@@ -11,3 +11,7 @@ and uuid.NullUUID.  These types are provide more complete interfaces for our exp
 in Labs.
 */
 package null
+
+const (
+	nullString = "null"
+)

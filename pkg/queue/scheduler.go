@@ -8,7 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// ErrNoteSchedule indicates the current scheduled task is has not been created yet. This should
+// ErrNotScheduled indicates the current scheduled task is has not been created yet. This should
 // be returned from the EnsureSchedule method
 var ErrNotScheduled = errors.New("Task not currently scheduled")
 

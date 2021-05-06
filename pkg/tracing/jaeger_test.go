@@ -1,14 +1,17 @@
 package tracing
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	jaeger "github.com/uber/jaeger-client-go"
 )
 
-func Test_getConfig(t *testing.T) {
+var testJaegerServer = fmt.Sprintf("%s:%d", jaeger.DefaultUDPSpanServerHost, jaeger.DefaultUDPSpanServerPort)
 
+func Test_getConfig(t *testing.T) {
 	cases := []struct {
 		name           string
 		server         string
@@ -17,7 +20,7 @@ func Test_getConfig(t *testing.T) {
 	}{
 		{"set local agent server from ENV", "example.com", "JAEGER_AGENT_HOST", "example.com:6831"},
 		{"set remote agent server from ENV", "http://example.com", "JAEGER_ENDPOINT", "http://example.com"},
-		{"use default local agent from env", "", "", defaultJaegerServer},
+		{"use default local agent from env", "", "", testJaegerServer},
 	}
 
 	currentEnvEndpoint := os.Getenv("JAEGER_ENDPOINT")

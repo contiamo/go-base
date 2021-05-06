@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 
@@ -14,15 +15,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func init() {
-	logrus.SetOutput(ioutil.Discard)
-}
-
 func Test_Sqlizer(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	_, db := dbtest.GetDatabase(t)
 	defer db.Close()
+
+	logrus.SetOutput(ioutil.Discard)
+	defer logrus.SetOutput(os.Stdout)
 
 	r := NewIDResolver("test", "id", "name")
 	manager := NewBaseManager(db, "id_resolver_test")
@@ -40,6 +40,9 @@ func Test_Sqlizer(t *testing.T) {
 func Test_Resolve(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+
+	logrus.SetOutput(ioutil.Discard)
+	defer logrus.SetOutput(os.Stdout)
 
 	_, db := dbtest.GetDatabase(t, func(ctx context.Context, db *sql.DB) error {
 		_, err := db.ExecContext(ctx, `CREATE TABLE test(

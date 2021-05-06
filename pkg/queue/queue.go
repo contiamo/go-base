@@ -9,8 +9,8 @@ import (
 
 var (
 	// ErrTaskCancelled is used to notify the worker from the Heartbeat that the task
-	// was cancelled by the user and it needs to stop working on it.
-	ErrTaskCancelled = errors.New("task has been cancelled")
+	// was canceled by the user and it needs to stop working on it.
+	ErrTaskCancelled = errors.New("task has been canceled")
 	// ErrTaskFinished is used to notify the worker from the Heartbeat that the task has
 	// already finished and can't be worked on
 	ErrTaskFinished = errors.New("task has finished")

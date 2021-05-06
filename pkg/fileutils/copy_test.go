@@ -42,6 +42,7 @@ func TestCopyFolderWithFolderRename(t *testing.T) {
 	defer cleanup2()
 
 	f1 := filepath.Join(src, "f1")
+	// nolint: gosec // it's a test, no security impact
 	err := ioutil.WriteFile(f1, []byte("foobar"), 0644)
 	assert.NoError(t, err)
 

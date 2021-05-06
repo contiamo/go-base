@@ -1,6 +1,7 @@
 package authorization
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
@@ -38,6 +39,8 @@ var (
 )
 
 func Test_middleware(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
 	// Freeze time
 	TimeFunc = func() time.Time {
@@ -56,6 +59,7 @@ func Test_middleware(t *testing.T) {
 		defer ts.Close()
 
 		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
+		req = req.WithContext(ctx)
 		require.NoError(t, err)
 		req.Header.Add("X-Auth-Token", token)
 
@@ -78,6 +82,7 @@ func Test_middleware(t *testing.T) {
 		defer ts.Close()
 
 		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
+		req = req.WithContext(ctx)
 		require.NoError(t, err)
 		req.Header.Add("X-Auth-Token", token)
 
@@ -97,6 +102,7 @@ func Test_middleware(t *testing.T) {
 		defer ts.Close()
 
 		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
+		req = req.WithContext(ctx)
 		require.NoError(t, err)
 
 		res, err := client.Do(req)
@@ -115,6 +121,7 @@ func Test_middleware(t *testing.T) {
 		defer ts.Close()
 
 		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
+		req = req.WithContext(ctx)
 		require.NoError(t, err)
 		req.Header.Add("X-Auth-Token", "abcs.123")
 
@@ -134,6 +141,7 @@ func Test_middleware(t *testing.T) {
 		defer ts.Close()
 
 		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
+		req = req.WithContext(ctx)
 		require.NoError(t, err)
 		req.Header.Add("X-Auth-Token", "abcs.123.efg")
 
@@ -162,6 +170,7 @@ func Test_middleware(t *testing.T) {
 		defer ts.Close()
 
 		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
+		req = req.WithContext(ctx)
 		require.NoError(t, err)
 		req.Header.Add("X-Auth-Token", claims.SourceToken)
 
@@ -191,6 +200,7 @@ func Test_middleware(t *testing.T) {
 		defer ts.Close()
 
 		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
+		req = req.WithContext(ctx)
 		require.NoError(t, err)
 		req.Header.Add("X-Auth-Token", getToken(claimsMap))
 
@@ -223,6 +233,7 @@ func Test_middleware(t *testing.T) {
 		defer ts.Close()
 
 		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
+		req = req.WithContext(ctx)
 		require.NoError(t, err)
 		req.Header.Add("X-Auth-Token", getToken(claimsMap))
 
@@ -240,7 +251,6 @@ func Test_middleware(t *testing.T) {
 }
 
 func Test_sanitizeHeaderValue(t *testing.T) {
-
 	cases := [][2]string{
 		{"   ", ""},
 		{"a", "****"},
@@ -264,7 +274,7 @@ func Test_sanitizeHeaderValue(t *testing.T) {
 }
 
 func generatekeys() (privateKey *rsa.PrivateKey, publicKey *rsa.PublicKey) {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 1024)
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		panic(err)
 	}

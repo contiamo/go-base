@@ -55,11 +55,12 @@ func testWebsocketEcho(server string) error {
 	u := "ws" + strings.TrimPrefix(server, "http")
 
 	// Connect to the server
-	ws, _, err := websocket.DefaultDialer.Dial(u+"/ws/echo", nil)
+	ws, resp, err := websocket.DefaultDialer.Dial(u+"/ws/echo", nil)
 	if err != nil {
 		return err
 	}
 	defer ws.Close()
+	defer resp.Body.Close()
 
 	// Send message to server, read response and check to see if it's what we expect.
 	err = ws.WriteMessage(websocket.TextMessage, []byte("hello"))

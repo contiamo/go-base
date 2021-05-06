@@ -68,7 +68,6 @@ type Claims struct {
 // Deprecated: Use the Validate method to get a precise error message. This
 // method remains for backward compatibility.
 func (a *Claims) Valid() bool {
-
 	return a.Validate() == nil
 }
 

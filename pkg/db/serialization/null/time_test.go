@@ -71,7 +71,6 @@ func Test_Time_MarshalText(t *testing.T) {
 }
 
 func Test_Time_UnmarshalText(t *testing.T) {
-
 	happyPath := []struct {
 		Name     string
 		rawValue []byte

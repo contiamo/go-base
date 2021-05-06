@@ -41,7 +41,6 @@ func (q *QueueMock) Dequeue(ctx context.Context, queue ...string) (*Task, error)
 	case t := <-q.Queue:
 		return &t, q.DequeueErr
 	}
-
 }
 
 // Heartbeat implements queue Manager for testing

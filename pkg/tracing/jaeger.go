@@ -1,15 +1,12 @@
 package tracing
 
 import (
-	"fmt"
 	"time"
 
 	opentracing "github.com/opentracing/opentracing-go"
 	jaeger "github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/config"
 )
-
-var defaultJaegerServer = fmt.Sprintf("%s:%d", jaeger.DefaultUDPSpanServerHost, jaeger.DefaultUDPSpanServerPort)
 
 // InitJaeger asserts that the global tracer is initialized.
 //
@@ -20,7 +17,6 @@ var defaultJaegerServer = fmt.Sprintf("%s:%d", jaeger.DefaultUDPSpanServerHost, 
 func InitJaeger(app string) error {
 	global := opentracing.GlobalTracer()
 	if _, ok := global.(opentracing.NoopTracer); ok {
-
 		cfg, err := getConfig(app)
 		if err != nil {
 			return err

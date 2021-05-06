@@ -11,7 +11,7 @@ import (
 )
 
 // SpanHook is a logrus Hook to send write logs and their fields to the current span.
-type SpanHook struct {}
+type SpanHook struct{}
 
 // Fire implements the Hook interface
 func (hook *SpanHook) Fire(entry *logrus.Entry) error {
@@ -44,8 +44,8 @@ func (hook *SpanHook) Fire(entry *logrus.Entry) error {
 		entry.Data["traceId"] = sc.TraceID().String()
 		entry.Data["spanId"] = sc.SpanID().String()
 	case mocktracer.MockSpanContext:
-		entry.Data["traceId"] = fmt.Sprintf("%v",  sc.TraceID)
-		entry.Data["spanId"] = fmt.Sprintf("%v",  sc.SpanID)
+		entry.Data["traceId"] = fmt.Sprintf("%v", sc.TraceID)
+		entry.Data["spanId"] = fmt.Sprintf("%v", sc.SpanID)
 	}
 	return nil
 }
@@ -54,4 +54,3 @@ func (hook *SpanHook) Fire(entry *logrus.Entry) error {
 func (hook *SpanHook) Levels() []logrus.Level {
 	return logrus.AllLevels
 }
-

@@ -40,7 +40,6 @@ func ToUnderscoreCase(value string) string {
 	var previousUnderscore, previousUppercase bool
 
 	for _, rune := range value {
-
 		// if it's not allowed character we replace it with underscore without
 		// duplication of underscores
 		if !unicode.IsLetter(rune) && !unicode.IsDigit(rune) {

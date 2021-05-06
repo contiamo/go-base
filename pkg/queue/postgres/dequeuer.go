@@ -8,7 +8,6 @@ import (
 
 	"github.com/Masterminds/squirrel"
 	"github.com/contiamo/go-base/v3/pkg/data/managers"
-	cdb "github.com/contiamo/go-base/v3/pkg/db"
 	"github.com/contiamo/go-base/v3/pkg/queue"
 	"github.com/lib/pq"
 
@@ -126,7 +125,7 @@ func (q *dequeuer) attemptDequeue(ctx context.Context, queues ...string) (task *
 
 	// if zero length q is passed in, get a list of all queues with unfinished tasks
 	if len(queues) == 0 {
-		queues, err = q.generateUnfinishedQueueList(ctx, builder)
+		queues, err = q.generateUnfinishedQueueList(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -148,6 +147,7 @@ func (q *dequeuer) attemptDequeue(ctx context.Context, queues ...string) (task *
 	}
 
 	// choose a random queue
+	// nolint: gosec // this random value is not involved in any security related logic
 	n := rand.Intn(len(processableQs))
 	queueName := processableQs[n]
 	logrus.Debugf("choosing random queue `%s`", queueName)
@@ -369,7 +369,7 @@ func (q *dequeuer) scan(row squirrel.RowScanner) (task *queue.Task, err error) {
 }
 
 // generateUnfinishedQueueList returns a distinct list of queues with unfinished tasks
-func (q *dequeuer) generateUnfinishedQueueList(ctx context.Context, builder cdb.SQLBuilder) (queueList []string, err error) {
+func (q *dequeuer) generateUnfinishedQueueList(ctx context.Context) (queueList []string, err error) {
 	span, ctx := q.StartSpan(ctx, "generateUnfinishedQueueList")
 	defer func() {
 		q.FinishSpan(span, err)
@@ -423,6 +423,10 @@ func (q *dequeuer) generateQueueList(ctx context.Context, where squirrel.Sqlizer
 		}
 
 		queueList = append(queueList, q)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
 	}
 
 	span.SetTag("queue.list", queueList)

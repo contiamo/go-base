@@ -16,7 +16,6 @@ var (
 	spec     = []byte(`{"field": "value"}`)
 )
 
-
 func verifyLeak(t *testing.T) {
 	_, exists := os.LookupEnv("CI")
 	if exists {

@@ -98,7 +98,6 @@ func Test_UUID_MarshalText(t *testing.T) {
 }
 
 func Test_UUID_UnmarshalText(t *testing.T) {
-
 	happyPath := []struct {
 		Name     string
 		rawValue []byte

@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,6 +14,8 @@ import (
 )
 
 func Test_LoggingMiddleware(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
 	t.Run("should be possible to configure logging", func(t *testing.T) {
 		buf, restore := utils.SetupLoggingBuffer()
@@ -24,8 +27,13 @@ func Test_LoggingMiddleware(t *testing.T) {
 		ts := httptest.NewServer(srv.Handler)
 		defer ts.Close()
 
-		_, err = http.Get(ts.URL + "/logging")
+		req, err := http.NewRequest(http.MethodGet, ts.URL+"/logging", nil)
 		require.NoError(t, err)
+		req = req.WithContext(ctx)
+
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
 
 		require.Contains(t, buf.String(), "successfully handled request")
 	})

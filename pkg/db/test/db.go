@@ -115,11 +115,11 @@ func connectDB(name string) (db *sql.DB, err error) {
 }
 
 // cleanupDB attempts to remove the test container created by EnsureDBReady
-func cleanupDB() {
+func cleanupDB(t *testing.T) {
 	cmd := exec.Command("docker", "rm", "-v", "-f", "go-base-postgres")
 	err := cmd.Run()
 	if err != nil {
-		fmt.Println("error during db cleanupdb: ", err)
+		t.Logf("error during db cleanupdb: %s", err)
 	}
 }
 
@@ -137,15 +137,15 @@ func cleanupDB() {
 // While the code is somewhat robust to having existing dbs running, this is not intended to be left in the test code.
 // The goal is that you can run individual tests via your IDE integrations or using the CLI, e.g.
 //   go test -run ^TestRetentionHandler$`
-func EnsureDBReady(ctx context.Context) (error, func()) {
+func EnsureDBReady(ctx context.Context) (func(*testing.T), error) {
 	check := exec.CommandContext(ctx, "docker", "container", "inspect", "go-base-postgres", "-f", "{{.ID}}").Run()
 	if check == nil {
 		// container is already running
-		return nil, func() {}
+		return func(*testing.T) {}, nil
 	}
 
 	if exitError, ok := check.(*exec.ExitError); ok && exitError.ExitCode() != 1 {
-		return fmt.Errorf("unexpected exit code when checking for running db: %w", check), func() {}
+		return func(*testing.T) {}, fmt.Errorf("unexpected exit code when checking for running db: %w", check)
 	}
 
 	db := exec.CommandContext(ctx,
@@ -167,5 +167,5 @@ func EnsureDBReady(ctx context.Context) (error, func()) {
 	err := db.Run()
 
 	time.Sleep(3 * time.Second)
-	return err, cleanupDB
+	return cleanupDB, err
 }

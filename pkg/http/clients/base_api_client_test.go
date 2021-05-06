@@ -215,7 +215,7 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 			},
 		},
 		{
-			name:   "Propogates the token creator error",
+			name:   "Propagates the token creator error",
 			method: http.MethodGet,
 			path:   "/some/path",
 			out:    &out,
@@ -308,5 +308,4 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 			require.EqualValues(t, tc.expResponse, tc.out)
 		})
 	}
-
 }

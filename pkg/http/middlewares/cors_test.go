@@ -1,15 +1,20 @@
 package middlewares
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	server "github.com/contiamo/go-base/v3/pkg/http"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_CORSMiddleware(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	t.Run("should be possible to configure custom CORS rules", func(t *testing.T) {
 		allowedOrigins := []string{"foo.bar"}
 		allowedMethods := []string{"HEAD"}
@@ -22,11 +27,13 @@ func Test_CORSMiddleware(t *testing.T) {
 		defer ts.Close()
 
 		req, _ := http.NewRequest(http.MethodOptions, ts.URL+"/cors", nil)
+		req = req.WithContext(ctx)
 		req.Header.Set("Access-Control-Request-Method", "HEAD")
 		req.Header.Set("Origin", "foo.bar")
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
+		defer resp.Body.Close()
 
 		require.Equal(t, "true", resp.Header.Get("Access-Control-Allow-Credentials"))
 		require.Equal(t, "foo.bar", resp.Header.Get("Access-Control-Allow-Origin"))
