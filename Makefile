@@ -57,7 +57,7 @@ setup-env: $(GIT_SEMVER) $(GOLANGCI_LINT) ## Setup dev environment
 
 .PHONY: .test-ci
 .test-ci:
-	go test -v -cover ./...
+	go test -cover ./...
 
 .PHONY: changelog
 changelog: ## Print git hitstory based changelog

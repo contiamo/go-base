@@ -30,6 +30,18 @@ func migrate(ctx context.Context, db *sql.DB, list []string, assets http.FileSys
 	defer func() {
 		if err == nil {
 			err = tx.Commit()
+			// dirty ugly no-good hack!
+			// we have not seen this in the wild yet, _but_ during our unit tests
+			// we sometimes get this error, which indicates that the transaction  was
+			// started (ie `BEGIN;`) but nothing has happened yet. For example:
+			//    https://www.postgresql.org/message-id/20080617133250.GA68434@commandprompt.com
+			//    https://github.com/lib/pq/issues/225
+			// Initial experiments have only produced this during unit tests, but actual
+			// application environments run without any transaction issues.
+			if err != nil && err.Error() == "pq: unexpected transaction status idle" {
+				logger.WithError(err).Warn("idle transaction at Commit")
+				err = nil
+			}
 			if err != nil {
 				logger.WithError(err).Error("can not commit migrations transaction")
 			}
