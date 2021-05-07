@@ -67,6 +67,7 @@ func AssertRetentionScheduleWithSpec(ctx context.Context, db *sql.DB, spec Reten
 	}
 
 	// randomly distribute the retention tasks throughout the hour
+	// nolint: gosec // this random value is not involved in any security related logic
 	when := rand.Intn(60)
 	retentionSchedule := queue.TaskScheduleRequest{
 		TaskBase: queue.TaskBase{
@@ -141,7 +142,7 @@ func createRetentionSpec(queueName string, taskType queue.TaskType, status queue
 	deletionSQL := squirrel.Delete(TasksTable).
 		Where(squirrel.Eq{"status": status}).
 		Where(
-			// note that using this comparision allows us to use the index on
+			// note that using this comparison allows us to use the index on
 			// finished_at, if yo use `age(now(), finished_at)`, this can not use the index
 			fmt.Sprintf("finished_at <= now() - interval '%f minutes'", age.Minutes()),
 		)

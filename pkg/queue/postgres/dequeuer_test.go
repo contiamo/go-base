@@ -202,7 +202,7 @@ func TestHeartbeat(t *testing.T) {
 			expError: queue.ErrTaskFinished.Error(),
 		},
 		{
-			name:     "update cancelled task throws an error",
+			name:     "update canceled task throws an error",
 			taskID:   cancelledUUID,
 			progress: progress,
 			expError: queue.ErrTaskCancelled.Error(),
@@ -659,7 +659,8 @@ func TestQueueList(t *testing.T) {
 					PollFrequency: 50 * time.Millisecond,
 				})
 
-			pd := q.(*dequeuer)
+			pd, ok := q.(*dequeuer)
+			require.True(t, ok)
 
 			for _, queueName := range tt.queues {
 				_, err := pd.GetQueryBuilder().

@@ -52,7 +52,7 @@ func (w *taskWorker) Work(ctx context.Context) (err error) {
 	}
 
 	logrus.Debug("starting task worker loop...")
-	// while ctx is not cancelled or interrupted
+	// while ctx is not canceled or interrupted
 	for {
 		select {
 		case <-ctx.Done():
@@ -88,7 +88,7 @@ func (w *taskWorker) iteration(ctx context.Context, tracer opentracing.Tracer) (
 
 	for {
 		select {
-		// check if the iteration was cancelled
+		// check if the iteration was canceled
 		case <-ctx.Done():
 			logrus.Debug("task processing iteration is interrupted")
 			return ctx.Err()
@@ -99,7 +99,7 @@ func (w *taskWorker) iteration(ctx context.Context, tracer opentracing.Tracer) (
 		default:
 			logrus.Debug("trying to find a task to process...")
 
-			task, err := w.tryDequeueTask(ctx, tracer)
+			task, err := w.tryDequeueTask(ctx)
 			// empty queue is not an error
 			if err == sql.ErrNoRows {
 				return nil
@@ -116,7 +116,7 @@ func (w *taskWorker) iteration(ctx context.Context, tracer opentracing.Tracer) (
 	}
 }
 
-func (w *taskWorker) tryDequeueTask(ctx context.Context, tracer opentracing.Tracer) (task *queue.Task, err error) {
+func (w *taskWorker) tryDequeueTask(ctx context.Context) (task *queue.Task, err error) {
 	span, ctx := w.StartSpan(ctx, "tryDequeueTask")
 	defer func() {
 		// this not really an error that we need to log
@@ -180,7 +180,7 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 				queue.ErrTaskNotFound,
 				queue.ErrTaskNotRunning:
 				log.Error(hrtErr)
-				// finished/cancelled errors are not considered event errors, stop and return nil
+				// finished/canceled errors are not considered event errors, stop and return nil
 				return nil
 			default:
 				return hrtErr

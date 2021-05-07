@@ -29,7 +29,7 @@ func Now() Time {
 // is delegated to the time.Time object, see time.Time.Format for more details
 func (nt Time) Format(layout string) string {
 	if !nt.Valid {
-		return "null"
+		return nullString
 	}
 	return nt.Time.Format(layout)
 }
@@ -37,7 +37,7 @@ func (nt Time) Format(layout string) string {
 // String implements the Stringer interface
 func (nt Time) String() string {
 	if !nt.Valid {
-		return "null"
+		return nullString
 	}
 	return nt.Time.Format("2006-01-02 15:04:05 -0700 MST")
 }
@@ -46,7 +46,7 @@ func (nt Time) String() string {
 // string representation of the time value
 func (nt Time) MarshalJSON() ([]byte, error) {
 	if !nt.Valid {
-		return []byte("null"), nil
+		return []byte(nullString), nil
 	}
 	val := fmt.Sprintf("\"%s\"", nt.Time.Format(time.RFC3339))
 	return []byte(val), nil
@@ -62,7 +62,7 @@ func (nt *Time) UnmarshalJSON(data []byte) error {
 	}
 	switch x := v.(type) {
 	case string:
-		if x == "" || x == "null" {
+		if x == "" || x == nullString {
 			nt.Valid = false
 			return nil
 		}
@@ -80,7 +80,7 @@ func (nt *Time) UnmarshalJSON(data []byte) error {
 // MarshalText implements the encoding.TextMarshaler interface.
 func (nt Time) MarshalText() ([]byte, error) {
 	if !nt.Valid {
-		return []byte(`null`), nil
+		return []byte(nullString), nil
 	}
 	return nt.Time.MarshalText()
 }
@@ -88,7 +88,7 @@ func (nt Time) MarshalText() ([]byte, error) {
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (nt *Time) UnmarshalText(text []byte) error {
 	str := string(text)
-	if str == "" || str == "null" {
+	if str == "" || str == nullString {
 		nt.Valid = false
 		return nil
 	}

@@ -213,7 +213,7 @@ func TestAssertRetentionSchedule(t *testing.T) {
 		expectedSQL string
 	}{
 		{
-			name:        "retention wtih all filter values specified is successful",
+			name:        "retention with all filter values specified is successful",
 			queueName:   "basic",
 			taskType:    queue.TaskType("throw-away"),
 			status:      queue.Finished,
@@ -260,7 +260,6 @@ func TestAssertRetentionSchedule(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			err := AssertRetentionSchedule(ctx, db, tc.queueName, tc.taskType, tc.status, tc.age)
 			require.NoError(t, err, "unexpected assert error")
 

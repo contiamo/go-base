@@ -75,7 +75,7 @@ func NewPrepareDatabase(config MigrationConfig, queueConfig *QueueDBConfig, appV
 		}
 
 		logger.Debug("start migration transaction")
-		// open a transaction to aquire the lock, so several migrations can't run at the same time
+		// open a transaction to acquire the lock, so several migrations can't run at the same time
 		tx, err := database.BeginTx(ctx, nil)
 		if err != nil {
 			return err
@@ -225,9 +225,12 @@ func saveVersionHash(ctx context.Context, name string, assets http.FileSystem, t
 
 // GetJitter returns a duration within [0.05*interval, interval]
 func GetJitter(interval time.Duration) time.Duration {
-	var random = rand.Float64()
-	var minJitter = 0.05 * float64(interval)
-	var maxJitter = float64(interval)
+	var (
+		// nolint: gosec // this random value is not involved in any security related logic
+		random    = rand.Float64()
+		minJitter = 0.05 * float64(interval)
+		maxJitter = float64(interval)
+	)
 
 	return time.Duration(minJitter + (random * (maxJitter - minJitter)))
 }

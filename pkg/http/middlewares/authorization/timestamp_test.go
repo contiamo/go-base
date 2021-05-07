@@ -22,7 +22,6 @@ var (
 )
 
 func Test_Timestamp_Unmarshal(t *testing.T) {
-
 	scenarios := []struct {
 		name  string
 		input []byte
@@ -45,7 +44,6 @@ func Test_Timestamp_Unmarshal(t *testing.T) {
 }
 
 func Test_Timestamp_Unmarshal_Errors(t *testing.T) {
-
 	scenarios := []struct {
 		name  string
 		input []byte

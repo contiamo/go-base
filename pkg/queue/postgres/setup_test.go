@@ -81,7 +81,6 @@ func TestSetupTables(t *testing.T) {
 		_, err = db.ExecContext(ctx, "DELETE FROM some_entity;")
 		require.NoError(t, err)
 		dbtest.EqualCount(t, db, 0, "tasks", nil)
-
 	})
 
 	t.Run("returns error when try to override a system column with a reference", func(t *testing.T) {
@@ -169,6 +168,5 @@ func TestSetupTables(t *testing.T) {
 		_, err = db.ExecContext(ctx, "DELETE FROM second;")
 		require.NoError(t, err)
 		dbtest.EqualCount(t, db, 0, "tasks", nil)
-
 	})
 }

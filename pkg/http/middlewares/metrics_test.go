@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +14,9 @@ import (
 )
 
 func Test_MetricsMiddleware(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	t.Run("should be possible to configure metrics collection", func(t *testing.T) {
 		srv, err := createServer([]server.Option{WithMetrics("test", nil)})
 		require.NoError(t, err)
@@ -20,13 +24,20 @@ func Test_MetricsMiddleware(t *testing.T) {
 		ts := httptest.NewServer(srv.Handler)
 		defer ts.Close()
 
-		_, err = http.Get(ts.URL + "/metrics_test")
+		req, err := http.NewRequest(http.MethodGet, ts.URL+"/metrics_test", nil)
 		require.NoError(t, err)
+		req = req.WithContext(ctx)
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
 
 		// it takes some time to run the server, can't be accessed immediately
 		time.Sleep(200 * time.Millisecond)
 
-		resp, err := http.Get(ts.URL + "/metrics")
+		req, err = http.NewRequest(http.MethodGet, ts.URL+"/metrics", nil)
+		require.NoError(t, err)
+		req = req.WithContext(ctx)
+		resp, err = http.DefaultClient.Do(req)
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
@@ -51,9 +62,13 @@ func Test_MetricsMiddleware(t *testing.T) {
 		err = testWebsocketEcho(ts.URL)
 		require.NoError(t, err)
 
-		resp, err := http.Get(ts.URL + "/metrics")
+		req, err := http.NewRequest(http.MethodGet, ts.URL+"/metrics", nil)
+		require.NoError(t, err)
+		req = req.WithContext(ctx)
+		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 		defer resp.Body.Close()
+
 		bs, _ := ioutil.ReadAll(resp.Body)
 
 		countMetric := `http_request_duration_ms_bucket{code="0",instance="` + getHostname() + `",method="get",path="/ws/echo",service="test",le="+Inf"} 1`

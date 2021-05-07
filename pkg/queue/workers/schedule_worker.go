@@ -63,7 +63,7 @@ func (w *scheduleWorker) Work(ctx context.Context) (err error) {
 	}
 
 	logrus.Debug("starting task scheduling loop...")
-	// while ctx is not cancelled or interrupted
+	// while ctx is not canceled or interrupted
 	for {
 		queue.ScheduleWorkerMetrics.WaitingGauge.Inc()
 
@@ -102,7 +102,7 @@ func (w *scheduleWorker) iteration(ctx context.Context, tracer opentracing.Trace
 
 	logrus.Debug("starting task scheduling iteration")
 	for {
-		// check if the iteration was cancelled
+		// check if the iteration was canceled
 		err = ctx.Err()
 		if err != nil {
 			logrus.Debug("task scheduling iteration is interrupted")

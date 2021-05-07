@@ -50,7 +50,8 @@ const (
 	Waiting TaskStatus = "waiting"
 	// Running task is currently running
 	Running TaskStatus = "running"
-	// Cancelled task is cancelled by the user
+	// Cancelled task is canceled by the user
+	// nolint: misspell // the initial spelling was with double 'l' now we have to stick with it
 	Cancelled TaskStatus = "cancelled"
 	// Finished task is successfully finished
 	Finished TaskStatus = "finished"

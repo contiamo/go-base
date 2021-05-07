@@ -50,7 +50,7 @@ func TestAPIRequestHandlerProcess(t *testing.T) {
 	var headers []string
 
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		<-time.After(100 * time.Millisecond) // immitate the network lag
+		<-time.After(100 * time.Millisecond) // imitate the network lag
 
 		buf, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -353,7 +353,6 @@ func TestAPIRequestHandlerProcess(t *testing.T) {
 		require.Equal(t, "unexpected response content type, expected JSON, got `text/plain; charset=utf-8`", err.Error())
 
 		<-ready
-
 	})
 
 	t.Run("returns error if response content type is JSON but response is invalid JSON", func(t *testing.T) {
@@ -405,7 +404,6 @@ func TestAPIRequestHandlerProcess(t *testing.T) {
 		require.Equal(t, "invalid character 'i' looking for beginning of value", err.Error())
 
 		<-ready
-
 	})
 
 	t.Run("returns no error if response content type is JSON but response is empty", func(t *testing.T) {
@@ -455,7 +453,6 @@ func TestAPIRequestHandlerProcess(t *testing.T) {
 		require.NoError(t, err)
 
 		<-ready
-
 	})
 
 	t.Run("supports partial results as multiple JSON objects and sends progres for them", func(t *testing.T) {
@@ -466,13 +463,12 @@ func TestAPIRequestHandlerProcess(t *testing.T) {
 		}
 
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			<-time.After(100 * time.Millisecond) // immitate the network lag
+			<-time.After(100 * time.Millisecond) // imitate the network lag
 			w.Header().Set("content-type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			for _, resp := range responses {
 				_, _ = w.Write([]byte(resp))
 			}
-
 		}))
 		defer s.Close()
 

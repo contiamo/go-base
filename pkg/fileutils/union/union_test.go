@@ -17,6 +17,7 @@ func walk(path string, fi os.FileInfo, err error) error {
 		log.Printf("can't stat file %s: %v\n", path, err)
 		return nil
 	}
+	// nolint: forbidigo // legit use in examples
 	fmt.Println(path)
 	return nil
 }

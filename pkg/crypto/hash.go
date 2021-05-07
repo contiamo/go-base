@@ -35,7 +35,7 @@ func HashToString(data ...interface{}) (string, error) {
 	return hex.EncodeToString(hash), nil
 }
 
-// Hasher provides a method for hashing arbitary data types
+// Hasher provides a method for hashing arbitrary data types
 type Hasher interface {
 	Hash(data ...interface{}) ([]byte, error)
 }
@@ -83,7 +83,6 @@ func (h basicHasher) Hash(args ...interface{}) ([]byte, error) {
 		if encoderError != nil {
 			return nil, encoderError
 		}
-
 	}
 
 	return h.hash.Sum(nil), nil

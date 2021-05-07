@@ -86,7 +86,6 @@ func GetTraceID(span opentracing.Span) string {
 	default:
 		return ""
 	}
-
 }
 
 // GetSpanID extracts the span ID from the opentracing Span.
@@ -100,5 +99,4 @@ func GetSpanID(span opentracing.Span) string {
 	default:
 		return ""
 	}
-
 }

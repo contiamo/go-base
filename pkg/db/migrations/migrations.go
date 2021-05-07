@@ -42,7 +42,6 @@ func migrate(ctx context.Context, db *sql.DB, list []string, assets http.FileSys
 		if rollbackErr != nil {
 			err = errors.Wrap(err, rollbackErr.Error())
 			logger.WithError(err).Error("migration rollback failed")
-
 		}
 	}()
 

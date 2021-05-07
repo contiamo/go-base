@@ -133,7 +133,7 @@ func (t baseAPIClient) DoRequest(ctx context.Context, method, path string, query
 		return errors.Wrap(err, "failed to create a new request")
 	}
 
-	// so, the HTTP request can be cancelled
+	// so, the HTTP request can be canceled
 	req = req.WithContext(ctx)
 
 	req.Header.Add("Content-Type", "application/json")
@@ -163,6 +163,7 @@ func (t baseAPIClient) DoRequest(ctx context.Context, method, path string, query
 	if err != nil {
 		return errors.Wrap(err, "failed to do request")
 	}
+	defer resp.Body.Close()
 	logrus.Debug("request is done.")
 
 	span.SetTag("response.status", resp.StatusCode)

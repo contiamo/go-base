@@ -339,5 +339,4 @@ func TestAssertSchedule(t *testing.T) {
 			"task_spec":     []byte(schedule.Spec),
 		})
 	})
-
 }

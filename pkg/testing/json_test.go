@@ -7,7 +7,6 @@ import (
 )
 
 func TestJSONEq(t *testing.T) {
-
 	validCases := []struct {
 		name     string
 		expected string

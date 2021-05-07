@@ -28,6 +28,8 @@ func GenerateRandomString(length int) (string, error) {
 	if size%2 != 0 {
 		size++
 	}
+
+	// nolint: makezero // this is a legit use of a slice with a predefined length
 	bytes := make([]byte, size)
 	if _, err := io.ReadFull(rand.Reader, bytes); err != nil {
 		return "", err

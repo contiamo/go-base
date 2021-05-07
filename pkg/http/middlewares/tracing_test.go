@@ -1,9 +1,11 @@
 package middlewares
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -14,6 +16,9 @@ import (
 )
 
 func Test_TracingMiddleware(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	tracer := mocktracer.New()
 	opentracing.SetGlobalTracer(tracer)
 
@@ -24,8 +29,12 @@ func Test_TracingMiddleware(t *testing.T) {
 		ts := httptest.NewServer(srv.Handler)
 		defer ts.Close()
 
-		_, err = http.Get(ts.URL + "/tracing/")
+		req, err := http.NewRequest(http.MethodGet, ts.URL+"/tracing", nil)
 		require.NoError(t, err)
+		req = req.WithContext(ctx)
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
 
 		require.Len(t, tracer.FinishedSpans(), 1)
 		tracer.Reset()
@@ -40,8 +49,12 @@ func Test_TracingMiddleware(t *testing.T) {
 		ts := httptest.NewServer(srv.Handler)
 		defer ts.Close()
 
-		_, err = http.Get(ts.URL + "/tracing/")
+		req, err := http.NewRequest(http.MethodGet, ts.URL+"/tracing", nil)
 		require.NoError(t, err)
+		req = req.WithContext(ctx)
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
 
 		require.Len(t, tracer.FinishedSpans(), 1)
 
@@ -57,8 +70,12 @@ func Test_TracingMiddleware(t *testing.T) {
 		ts := httptest.NewServer(srv.Handler)
 		defer ts.Close()
 
-		_, err = http.Get(ts.URL + "/tracing/2f6f97f2-5f44-476d-bc0c-180b2eaa36ca/2f6f97f2-5f44-476d-bc0c-180b2eaa36cb")
+		req, err := http.NewRequest(http.MethodGet, ts.URL+"/tracing/2f6f97f2-5f44-476d-bc0c-180b2eaa36ca/2f6f97f2-5f44-476d-bc0c-180b2eaa36cb", nil)
 		require.NoError(t, err)
+		req = req.WithContext(ctx)
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
 
 		require.Len(t, tracer.FinishedSpans(), 1)
 

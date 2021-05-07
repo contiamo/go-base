@@ -250,7 +250,6 @@ func syncTable(ctx context.Context, db db.SQLDB, tableName string, initColumns t
 			ref.ReferencedTable,
 			ref.ReferencedColumn,
 		)
-
 	}
 
 	logrus.Debug("getting the current list of columns...")

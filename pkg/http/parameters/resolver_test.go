@@ -1,15 +1,20 @@
 package parameters
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_Resolve(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	cases := []struct {
 		name,
 		route,
@@ -50,8 +55,14 @@ func Test_Resolve(t *testing.T) {
 				triggered = true
 			})
 			server := httptest.NewServer(r)
-			_, err := http.Get(server.URL + tc.url)
+
+			req, err := http.NewRequest(http.MethodGet, server.URL+tc.url, nil)
 			require.NoError(t, err)
+			req = req.WithContext(ctx)
+			resp, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
+			defer resp.Body.Close()
+
 			require.True(t, triggered)
 		})
 	}
