@@ -29,15 +29,7 @@ func (hook *SpanHook) Fire(entry *logrus.Entry) error {
 		return nil
 	}
 
-	fields := []log.Field{
-		log.String("log.msg", entry.Message),
-	}
-
-	for name, data := range entry.Data {
-		fields = append(fields, log.Object(name, data))
-	}
-
-	span.LogFields(fields...)
+	span.LogFields(log.String("log.msg", entry.Message))
 
 	switch sc := span.Context().(type) {
 	case jaeger.SpanContext:

@@ -80,9 +80,8 @@ func TestSpanHook(t *testing.T) {
 
 				entryFields := map[string]string{
 					"log.msg": tc.entry.Message,
-				}
-				for name, value := range tc.entry.Data {
-					entryFields[name] = fmt.Sprintf("%v", value)
+					"traceId": fmt.Sprintf("%v", tc.entry.Data["traceId"]),
+					"spanId":  fmt.Sprintf("%v", tc.entry.Data["spanId"]),
 				}
 
 				require.Equal(t, entryFields, spanFields, "log fields mismatch")
