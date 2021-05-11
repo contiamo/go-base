@@ -21,17 +21,23 @@ func (opt *loggingOption) WrapHandler(handler http.Handler) http.Handler {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		handler.ServeHTTP(w, r)
-		resp := w.(negroni.ResponseWriter)
+		logger := logrus.WithFields(logrus.Fields{
+			"app":  opt.app,
+			"path": r.URL.EscapedPath(),
+		})
+		resp, ok := w.(negroni.ResponseWriter)
+		if !ok {
+			logger.Warn("wrong request type")
+			return
+		}
 		duration := time.Since(start)
 		status := resp.Status()
 		if status == 0 {
 			status = 200
 		}
-		logger := logrus.WithFields(logrus.Fields{
-			"app":             opt.app,
+		logger = logrus.WithFields(logrus.Fields{
 			"duration_millis": duration.Nanoseconds() / 1000000,
 			"status_code":     status,
-			"path":            r.URL.EscapedPath(),
 		})
 		if status >= 200 && status < 400 {
 			logger.Info("successfully handled request")

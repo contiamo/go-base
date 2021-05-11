@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/contiamo/go-base/v3/pkg/queue/postgres"
 	qpostgres "github.com/contiamo/go-base/v3/pkg/queue/postgres"
 	"github.com/sirupsen/logrus"
 )
@@ -16,7 +15,7 @@ import (
 // the db tables for the queue. Specifically, it holds the definitions for
 // any required foreign keys.
 type QueueDBConfig struct {
-	References []postgres.ForeignReference
+	References []qpostgres.ForeignReference
 }
 
 // NewIniter creates a db init command that will execute the 000_init.sql

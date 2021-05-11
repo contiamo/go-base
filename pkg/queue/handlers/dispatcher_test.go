@@ -55,6 +55,5 @@ func TestDispatcherProcess(t *testing.T) {
 		})
 		require.Error(t, err)
 		require.Equal(t, ErrNoHandlerFound.Error(), err.Error())
-
 	})
 }

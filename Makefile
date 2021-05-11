@@ -57,7 +57,7 @@ setup-env: $(GIT_SEMVER) $(GOLANGCI_LINT) ## Setup dev environment
 
 .PHONY: .test-ci
 .test-ci:
-	go test -v -cover ./...
+	go test -cover ./...
 
 .PHONY: changelog
 changelog: ## Print git hitstory based changelog
@@ -76,13 +76,18 @@ staticcheck: ## Verifies `staticcheck` passes
 
 
 .PHONY: test
-test: ## Runs the go tests
+test: lint ## Runs the go tests
 	@$(MAKE) .run-test-db
 	@echo "+ $@"
 	-@$(MAKE) .test-ci
 	@$(MAKE) .stop-test-db
 
 .PHONY: lint
-lint: setup-env ## Verifies `golangci-lint` passes
+lint: setup-env $(GOLANGCI_LINT) ## Verifies `golangci-lint` passes
 	@echo "+ $@"
-	@$(GOLANGCI_LINT) run  ./...
+	@$(GOLANGCI_LINT) run ./...
+
+.PHONY: lint-fix
+lint-fix: setup-env $(GOLANGCI_LINT) ## Verifies `golangci-lint` passes
+	@echo "+ $@"
+	@$(GOLANGCI_LINT) run --fix ./...

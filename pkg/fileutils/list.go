@@ -9,5 +9,5 @@ func ListFiles(path string) (fileNames []string) {
 	for _, file := range fileInfo {
 		fileNames = append(fileNames, file.Name())
 	}
-	return
+	return fileNames
 }

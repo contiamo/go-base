@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 )
 
 // UUID represents a uuid.UUID that may be null. UUID implements the
@@ -19,14 +19,14 @@ type UUID uuid.NullUUID
 // It will return error if the slice isn't 16 bytes long.
 func UUIDFromBytes(input []byte) (u UUID, err error) {
 	err = u.UnmarshalBinary(input)
-	return
+	return u, err
 }
 
 // UUIDFromString returns UUID parsed from string input.
 // Input is expected in a form accepted by UnmarshalText.
 func UUIDFromString(input string) (u UUID, err error) {
 	err = u.UnmarshalText([]byte(input))
-	return
+	return u, err
 }
 
 // UUIDFrom returns UUID from a uuid.UUID
@@ -43,7 +43,7 @@ func (nu UUID) String() string {
 // string representation of the time value
 func (nu UUID) MarshalJSON() ([]byte, error) {
 	if !nu.Valid {
-		return []byte("null"), nil
+		return []byte(nullString), nil
 	}
 	return []byte(`"` + nu.String() + `"`), nil
 }
@@ -58,7 +58,7 @@ func (nu *UUID) UnmarshalJSON(data []byte) error {
 	}
 	switch x := v.(type) {
 	case string:
-		if x == "" || x == "null" {
+		if x == "" || x == nullString {
 			nu.Valid = false
 			return nil
 		}
@@ -76,7 +76,7 @@ func (nu *UUID) UnmarshalJSON(data []byte) error {
 // MarshalText implements the encoding.TextMarshaler interface.
 func (nu UUID) MarshalText() ([]byte, error) {
 	if !nu.Valid {
-		return []byte("null"), nil
+		return []byte(nullString), nil
 	}
 	return nu.UUID.MarshalText()
 }
@@ -84,7 +84,7 @@ func (nu UUID) MarshalText() ([]byte, error) {
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (nu *UUID) UnmarshalText(text []byte) error {
 	str := string(text)
-	if str == "" || str == "null" {
+	if str == "" || str == nullString {
 		nu.Valid = false
 		return nil
 	}
@@ -98,7 +98,7 @@ func (nu *UUID) UnmarshalText(text []byte) error {
 // MarshalBinary implements the encoding.BinaryMarshaler interface.
 func (nu UUID) MarshalBinary() ([]byte, error) {
 	if !nu.Valid {
-		return []byte("null"), nil
+		return []byte(nullString), nil
 	}
 	return nu.UUID.MarshalBinary()
 }
@@ -107,7 +107,7 @@ func (nu UUID) MarshalBinary() ([]byte, error) {
 // It will return error if the slice isn't 16 bytes long.
 func (nu *UUID) UnmarshalBinary(data []byte) (err error) {
 	str := string(data)
-	if str == "" || str == "null" {
+	if str == "" || str == nullString {
 		nu.Valid = false
 		return nil
 	}

@@ -9,20 +9,28 @@ import (
 
 var (
 	// ErrPermission is the standard "Permission Denied" error
+	// nolint: stylecheck // this a special error that is displayed to the user as it is.
 	ErrPermission = errors.New("You don't have required permission to perform this action")
 	// ErrAuthorization is the standard "Unauthorized" error
+	// nolint: stylecheck // this a special error that is displayed to the user as it is.
 	ErrAuthorization = errors.New("User is unauthorized, make sure you've logged in")
 	// ErrInternal is the standard "Internal Server" error
+	// nolint: stylecheck // this a special error that is displayed to the user as it is.
 	ErrInternal = errors.New("Internal server error, please try again later")
 	// ErrInvalidParameters is the standard "Bad Request" error
+	// nolint: stylecheck // this a special error that is displayed to the user as it is.
 	ErrInvalidParameters = errors.New("Some of the request parameters are not correct")
 	// ErrUnmarshalling is the JSON deserialization error
+	// nolint: stylecheck // this a special error that is displayed to the user as it is.
 	ErrUnmarshalling = errors.New("Failed to read JSON from the request body")
 	// ErrForm is the form parsing error
+	// nolint: stylecheck // this a special error that is displayed to the user as it is.
 	ErrForm = errors.New("Failed to parse the submitted form")
 	// ErrNotFound is the standard entity not found error
+	// nolint: stylecheck // this a special error that is displayed to the user as it is.
 	ErrNotFound = errors.New("The requested object was not found")
 	// ErrNotImplemented is intended to be used when stubbing new endpoints
+	// nolint: stylecheck // this a special error that is displayed to the user as it is.
 	ErrNotImplemented = errors.New("Method is not implemented")
 )
 

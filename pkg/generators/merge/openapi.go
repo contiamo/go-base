@@ -75,7 +75,6 @@ func OpenAPI(baseSpec io.Reader, path string) (*OpenAPISpec, error) {
 }
 
 func walkerMergeSpec(dst *OpenAPISpec) filepath.WalkFunc {
-
 	if dst.Paths == nil {
 		dst.Paths = map[string]interface{}{}
 	}
@@ -117,11 +116,9 @@ func walkerMergeSpec(dst *OpenAPISpec) filepath.WalkFunc {
 
 		return nil
 	}
-
 }
 
 func mergeComponents(dst *components, spec OpenAPISpec) error {
-
 	if spec.Components.Schemas != nil && dst.Schemas == nil {
 		dst.Schemas = map[string]interface{}{}
 	}

@@ -1,10 +1,12 @@
 package middlewares
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -12,6 +14,9 @@ import (
 )
 
 func Test_RecoveryMiddleware(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	t.Run("should be possible to configure panic recovery", func(t *testing.T) {
 		srv, err := createServer([]server.Option{WithRecovery(ioutil.Discard, true)})
 		require.NoError(t, err)
@@ -19,8 +24,13 @@ func Test_RecoveryMiddleware(t *testing.T) {
 		ts := httptest.NewServer(srv.Handler)
 		defer ts.Close()
 
-		resp, err := http.Get(ts.URL + "/panic")
+		req, err := http.NewRequest(http.MethodGet, ts.URL+"/panic", nil)
 		require.NoError(t, err)
+		req = req.WithContext(ctx)
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
 		require.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 	})
 

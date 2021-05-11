@@ -73,7 +73,6 @@ type metricsOption struct {
 }
 
 func (opt *metricsOption) WrapHandler(handler http.Handler) http.Handler {
-
 	mw := http.HandlerFunc(func(writer http.ResponseWriter, r *http.Request) {
 		instrumentedWriter := negroni.NewResponseWriter(writer)
 
@@ -85,7 +84,7 @@ func (opt *metricsOption) WrapHandler(handler http.Handler) http.Handler {
 			}
 
 			opt.requestCounter.With(l).Inc()
-			opt.requestDuration.With(l).Observe(float64(time.Since(begun).Seconds() * 1000))
+			opt.requestDuration.With(l).Observe(time.Since(begun).Seconds() * 1000)
 			opt.responseSize.With(l).Observe(float64(instrumentedWriter.Size()))
 		}(time.Now())
 

@@ -70,6 +70,8 @@ func (d traceableDB) QueryContext(ctx context.Context, query string, args ...int
 	span.LogKV("sql", query)
 
 	logrus.WithTime(time.Now()).WithField("sql_method", "QueryContext").Debug(query)
+
+	// nolint: sqlclosecheck // rows are supposed to be not closed because it's a wrapper
 	rows, err = d.SQLDB.QueryContext(ctx, query, args...)
 	return rows, err
 }

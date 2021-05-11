@@ -20,7 +20,6 @@ func PathWithCleanID(r *http.Request) string {
 		if _, err := strconv.Atoi(part); err == nil {
 			pathParts[i] = "*"
 		}
-
 	}
 	return strings.Join(pathParts, "/")
 }
@@ -37,7 +36,6 @@ func MethodAndPathCleanID(r *http.Request) string {
 		if _, err := strconv.Atoi(part); err == nil {
 			pathParts[i] = "*"
 		}
-
 	}
 	return "HTTP " + r.Method + " " + strings.Join(pathParts, "/")
 }

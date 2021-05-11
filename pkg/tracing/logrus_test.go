@@ -13,7 +13,6 @@ import (
 )
 
 func TestSpanHook(t *testing.T) {
-
 	opentracing.SetGlobalTracer(mocktracer.New())
 
 	hook := &SpanHook{}
@@ -23,17 +22,16 @@ func TestSpanHook(t *testing.T) {
 	mockspan, ok := span.(*mocktracer.MockSpan)
 	require.True(t, ok, "must have mock span for a valid test case")
 
-
 	fields := logrus.Fields{
-		"count": 2,
+		"count":   2,
 		"welcome": "hi there",
 	}
 
-	cases := []struct{
-		name string
+	cases := []struct {
+		name  string
 		entry *logrus.Entry
-		span *mocktracer.MockSpan
-		err string
+		span  *mocktracer.MockSpan
+		err   string
 	}{
 		{
 			name: "handles missing context",
@@ -53,13 +51,13 @@ func TestSpanHook(t *testing.T) {
 			entry: &logrus.Entry{
 				Message: "test message with tracing",
 				Context: ctxWithSpan,
-				Data: fields,
+				Data:    fields,
 			},
 			span: mockspan,
 		},
 	}
 
-	for _, tc := range cases{
+	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			err := hook.Fire(tc.entry)
 			if tc.err != "" {
@@ -70,8 +68,8 @@ func TestSpanHook(t *testing.T) {
 			require.NoError(t, err)
 			if tc.span != nil {
 				spanFields := map[string]string{
-					"traceId": fmt.Sprintf("%v",  tc.span.SpanContext.TraceID),
-					"spanId": fmt.Sprintf("%v",  tc.span.SpanContext.SpanID),
+					"traceId": fmt.Sprintf("%v", tc.span.SpanContext.TraceID),
+					"spanId":  fmt.Sprintf("%v", tc.span.SpanContext.SpanID),
 				}
 				logs := tc.span.Logs()
 				for _, record := range logs {
@@ -89,7 +87,6 @@ func TestSpanHook(t *testing.T) {
 
 				require.Equal(t, entryFields, spanFields, "log fields mismatch")
 			}
-
 		})
 	}
 }

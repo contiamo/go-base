@@ -22,7 +22,7 @@ func TestHash(t *testing.T) {
 			expectedOutput: "09234807e4af85f17c66b48ee3bca89dffd1f1233659f9f940a2b17b0b8c6bc5",
 		},
 		{
-			name:           "reproducable results",
+			name:           "reproducible results",
 			input:          []interface{}{"foobar"},
 			expectedOutput: "09234807e4af85f17c66b48ee3bca89dffd1f1233659f9f940a2b17b0b8c6bc5",
 		},

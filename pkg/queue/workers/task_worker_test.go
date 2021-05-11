@@ -45,7 +45,7 @@ func TestTaskWorkerMetrics(t *testing.T) {
 		case <-ctx.Done():
 			return nil
 		case <-time.NewTimer(time.Second).C:
-			// mimic a successfull processing
+			// mimic a successful processing
 			heartbeats <- queue.Progress{}
 		}
 
@@ -79,10 +79,9 @@ func TestTaskWorkerMetrics(t *testing.T) {
 
 	cancel()
 	time.Sleep(metricSleep)
-	t.Run("worker count returns to 0 when worker is cancelled", func(t *testing.T) {
+	t.Run("worker count returns to 0 when worker is canceled", func(t *testing.T) {
 		require.Equal(t, float64(0), testutil.ToFloat64(queue.TaskWorkerMetrics.WorkingGauge))
 	})
-
 }
 
 func TestTaskWorkerWork(t *testing.T) {
@@ -248,7 +247,7 @@ func TestTaskWorkerWork(t *testing.T) {
 			case <-ctx.Done():
 				return nil
 			case <-time.NewTimer(time.Second).C:
-				// mimic a successfull processing
+				// mimic a successful processing
 				heartbeats <- queue.Progress{}
 			}
 
@@ -292,7 +291,7 @@ func TestTaskWorkerWork(t *testing.T) {
 			case <-ctx.Done():
 				return nil
 			case <-time.NewTimer(2 * time.Millisecond).C:
-				// mimic a successfull processing
+				// mimic a successful processing
 				heartbeats <- queue.Progress{}
 			}
 
@@ -363,7 +362,6 @@ func (q *mockQueue) Dequeue(ctx context.Context, queue ...string) (*queue.Task, 
 	case t := <-q.queue:
 		return t, nil
 	}
-
 }
 
 func (q *mockQueue) Heartbeat(ctx context.Context, taskID string, metadata queue.Progress) error {

@@ -32,7 +32,6 @@ components:
 `
 
 func TestGenerate(t *testing.T) {
-
 	dname, err := ioutil.TempDir("", "enumedir")
 	require.NoError(t, err)
 

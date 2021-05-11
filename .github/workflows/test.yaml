@@ -43,7 +43,7 @@ jobs:
       - name: Lint
         uses: golangci/golangci-lint-action@v2
         with:
-          version: v1.35
+          version: v1.39
       - name: Tests
         run: make .test-ci
         env:

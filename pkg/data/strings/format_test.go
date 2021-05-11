@@ -50,5 +50,4 @@ func TestHumanReadableByteCount(t *testing.T) {
 			require.Equal(t, tc.expected, HumanReadableByteCount(tc.bytes))
 		})
 	}
-
 }
