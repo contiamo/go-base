@@ -105,6 +105,9 @@ func (h *baseHandler) Error(ctx context.Context, w http.ResponseWriter, err erro
 	case cerrors.ErrInvalidParameters:
 		h.Write(ctx, w, http.StatusBadRequest, genErrResp)
 		return
+	case cerrors.ErrUnsupportedMediaType:
+		h.Write(ctx, w, http.StatusUnsupportedMediaType, genErrResp)
+		return
 	case cerrors.ErrNotImplemented:
 		h.Write(ctx, w, http.StatusNotImplemented, genErrResp)
 		return

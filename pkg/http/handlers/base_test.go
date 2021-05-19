@@ -5,6 +5,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	validationV1 "github.com/go-ozzo/ozzo-validation"
@@ -83,22 +84,19 @@ func TestError(t *testing.T) {
 			name:      "Returns 501 when ErrNotImplemented",
 			err:       cerrors.ErrNotImplemented,
 			expStatus: http.StatusNotImplemented,
-			expBody: `{"errors":[{"type":"GeneralError","message":"Method is not implemented"}]}
-`,
+			expBody:   `{"errors":[{"type":"GeneralError","message":"Method is not implemented"}]}`,
 		},
 		{
 			name:      "Returns 401 when ErrAuthorization",
 			err:       cerrors.ErrAuthorization,
 			expStatus: http.StatusUnauthorized,
-			expBody: `{"errors":[{"type":"GeneralError","message":"User is unauthorized, make sure you've logged in"}]}
-`,
+			expBody:   `{"errors":[{"type":"GeneralError","message":"User is unauthorized, make sure you've logged in"}]}`,
 		},
 		{
 			name:      "Returns 403 when ErrPermission",
 			err:       cerrors.ErrPermission,
 			expStatus: http.StatusForbidden,
-			expBody: `{"errors":[{"type":"GeneralError","message":"You don't have required permission to perform this action"}]}
-`,
+			expBody:   `{"errors":[{"type":"GeneralError","message":"You don't have required permission to perform this action"}]}`,
 		},
 		{
 			name: "Returns 422 when ErrUnmarshalling",
@@ -107,72 +105,68 @@ func TestError(t *testing.T) {
 				cerrors.ErrUnmarshalling.Error(),
 			),
 			expStatus: http.StatusUnprocessableEntity,
-			expBody: `{"errors":[{"type":"GeneralError","message":"Failed to read JSON from the request body: unexpected end of file"}]}
-`,
+			expBody:   `{"errors":[{"type":"GeneralError","message":"Failed to read JSON from the request body: unexpected end of file"}]}`,
 		},
 		{
 			name:      "Returns 404 when ErrNotFound",
 			err:       cerrors.ErrNotFound,
 			expStatus: http.StatusNotFound,
-			expBody: `{"errors":[{"type":"GeneralError","message":"The requested object was not found"}]}
-`,
+			expBody:   `{"errors":[{"type":"GeneralError","message":"The requested object was not found"}]}`,
+		},
+		{
+			name:      "Returns 415 when ErrUnsupportedMediaType",
+			err:       cerrors.ErrUnsupportedMediaType,
+			expStatus: http.StatusUnsupportedMediaType,
+			expBody:   `{"errors":[{"type":"GeneralError","message":"Unsupported Media Type"}]}`,
 		},
 		{
 			name:      "Returns 422 and field errors when validation errors",
 			err:       cerrors.ValidationErrors{"field": errors.New("terrible")},
 			expStatus: http.StatusUnprocessableEntity,
-			expBody: `{"errors":[{"type":"FieldError","message":"terrible","key":"field"}]}
-`,
+			expBody:   `{"errors":[{"type":"FieldError","message":"terrible","key":"field"}]}`,
 		},
 		{
 			name:      "Returns 422 and field errors when validation errors",
 			err:       validation.Errors{"field": errors.New("terrible")},
 			expStatus: http.StatusUnprocessableEntity,
-			expBody: `{"errors":[{"type":"FieldError","message":"terrible","key":"field"}]}
-`,
+			expBody:   `{"errors":[{"type":"FieldError","message":"terrible","key":"field"}]}`,
 		},
 		{
 			name:      "Returns 422 and field errors when validation errors",
 			err:       validation.Errors{"field": errors.New("terrible")},
 			expStatus: http.StatusUnprocessableEntity,
-			expBody: `{"errors":[{"type":"FieldError","message":"terrible","key":"field"}]}
-`,
+			expBody:   `{"errors":[{"type":"FieldError","message":"terrible","key":"field"}]}`,
 		},
 		{
 			name:      "Returns 422 and field errors when validation errors",
 			err:       validationV1.Errors{"field": errors.New("terrible")},
 			expStatus: http.StatusUnprocessableEntity,
-			expBody: `{"errors":[{"type":"FieldError","message":"terrible","key":"field"}]}
-`,
+			expBody:   `{"errors":[{"type":"FieldError","message":"terrible","key":"field"}]}`,
 		},
 		{
 			name:      "Returns 400 and general error on UserErrors",
 			err:       cerrors.AsUserError(errors.New("terrible")),
 			expStatus: http.StatusBadRequest,
-			expBody: `{"errors":[{"type":"GeneralError","message":"terrible"}]}
-`,
+			expBody:   `{"errors":[{"type":"GeneralError","message":"terrible"}]}`,
 		},
 		{
 			name:      "Returns 400 and general error on ErrInvalidParameters",
 			err:       cerrors.ErrInvalidParameters,
 			expStatus: http.StatusBadRequest,
-			expBody: `{"errors":[{"type":"GeneralError","message":"Some of the request parameters are not correct"}]}
-`,
+			expBody:   `{"errors":[{"type":"GeneralError","message":"Some of the request parameters are not correct"}]}`,
 		},
 		{
 			name:      "Returns 500 when unknown error",
 			err:       errors.New("terrible"),
 			expStatus: http.StatusInternalServerError,
-			expBody: `{"errors":[{"type":"GeneralError","message":"Internal server error, please try again later"}]}
-`,
+			expBody:   `{"errors":[{"type":"GeneralError","message":"Internal server error, please try again later"}]}`,
 		},
 		{
 			name:      "Returns 500 and error details when unknown error and debug mode",
 			err:       errors.New("terrible"),
 			debug:     true,
 			expStatus: http.StatusInternalServerError,
-			expBody: `{"errors":[{"type":"GeneralError","message":"terrible"}]}
-`,
+			expBody:   `{"errors":[{"type":"GeneralError","message":"terrible"}]}`,
 		},
 		{
 			name:      "Returns 200 and empty body when error is nil",
@@ -187,7 +181,7 @@ func TestError(t *testing.T) {
 			resp := httptest.NewRecorder()
 			h.Error(context.Background(), resp, tc.err)
 			require.Equal(t, tc.expStatus, resp.Code)
-			require.Equal(t, tc.expBody, resp.Body.String())
+			require.Equal(t, tc.expBody, strings.TrimSpace(resp.Body.String()))
 		})
 	}
 }
