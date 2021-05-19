@@ -32,6 +32,10 @@ var (
 	// ErrNotImplemented is intended to be used when stubbing new endpoints
 	// nolint: stylecheck // this a special error that is displayed to the user as it is.
 	ErrNotImplemented = errors.New("Method is not implemented")
+	// ErrUnsupportedMediaType is intended to be used for endpoints that accepts multiple
+	// media types and need to return the standard "415 Unsupported Media Type" response
+	// nolint: stylecheck // this a special error that is displayed to the user as it is.
+	ErrUnsupportedMediaType = errors.New("Unsupported Media Type")
 )
 
 // ValidationErrors contains errors organized by validated fields
