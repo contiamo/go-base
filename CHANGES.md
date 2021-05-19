@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.0](https://www.github.com/contiamo/go-base/compare/v3.5.0...v3.6.0) (2021-05-19)
+
+
+### Features
+
+* Add error handling for Unsupported Media Type ([#126](https://www.github.com/contiamo/go-base/issues/126)) ([a6670c6](https://www.github.com/contiamo/go-base/commit/a6670c638c67c35327b9c214b1faeccc52b4061d))
+
 ## [3.5.0](https://www.github.com/contiamo/go-base/compare/v3.4.1...v3.5.0) (2021-05-11)
 
 
