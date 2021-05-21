@@ -16,7 +16,7 @@ jobs:
   publish:
     runs-on: ubuntu-18.04
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2.3.4
       - uses: deepakputhraya/action-pr-title@master
         with:
           # Ensure pull request titles match the Conventional Commits specification https://www.conventionalcommits.org/en/v1.0.0/
