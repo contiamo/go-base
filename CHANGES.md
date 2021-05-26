@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.6.1](https://www.github.com/contiamo/go-base/compare/v3.6.0...v3.6.1) (2021-05-26)
+
+
+### Bug Fixes
+
+* make API errors more informative, no empty strings ([#130](https://www.github.com/contiamo/go-base/issues/130)) ([1b7e53d](https://www.github.com/contiamo/go-base/commit/1b7e53d5678a2211a1b1b7453726948243f05179))
+
 ## [3.6.0](https://www.github.com/contiamo/go-base/compare/v3.5.0...v3.6.0) (2021-05-19)
 
 
