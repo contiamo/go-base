@@ -18,21 +18,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// APIError describes an error during unsuccessful HTTP request to an API
-type APIError struct {
-	// Status is the HTTP status of the API response
-	Status int
-	// Header is the set of response headers
-	Header http.Header
-	// Response is the response body
-	Response []byte
-}
-
-// Error implements the error interface
-func (e APIError) Error() string {
-	return http.StatusText(e.Status)
-}
-
 // TokenProvider is a function that gets the token string for each request
 type TokenProvider func() (token string, err error)
 
