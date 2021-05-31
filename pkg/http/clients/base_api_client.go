@@ -159,9 +159,10 @@ func (t baseAPIClient) DoRequest(ctx context.Context, method, path string, query
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		contentType := resp.Header.Get("content-type")
 		contentType = strings.ToLower(contentType)
+		span.SetTag("response_has_output_destination", out != nil)
 		span.SetTag("resp.contentType", contentType)
 
-		if strings.Contains(contentType, "json") {
+		if out != nil && strings.Contains(contentType, "json") {
 			decoder := json.NewDecoder(resp.Body)
 			return errors.Wrap(decoder.Decode(out), "failed to decode JSON response")
 		}
