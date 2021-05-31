@@ -1,11 +1,26 @@
-name: test
-on: push
+name: Test and Publish
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types:
+      - synchronize
+      - opened
+      - reopened
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release Version. Must be an existing tag'
+        required: true
 
 jobs:
   # Label of the container job
   tests:
     # Containers must run in Linux based operating systems
     runs-on: ubuntu-latest
+    env:
+      default_branch: 'refs/heads/master'
 
     # Service containers to run with `container-job`
     services:
@@ -29,6 +44,14 @@ jobs:
           --health-retries 5
 
     steps:
+      # validate workflow_dispatch is for a tag
+      - uses: mukunku/tag-exists-action@v1.0.0
+        id: checkTag
+        if: ${{ github.event.inputs.release_tag }}
+        with:
+          tag: ${{ github.event.inputs.release_tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Downloads a copy of the code in your repository before running CI tests
       - name: Check out repository code
         uses: actions/checkout@v2.3.4
@@ -50,3 +73,24 @@ jobs:
           POSTGRES_PASSWORD: localdev
           POSTGRES_USER: contiamo_test
           POSTGRES_DB: postgres
+
+  # we can use a separate job here because we don't have any post-release Docker steps
+  release:
+    needs: tests
+    runs-on: ubuntu-latest
+    env:
+      default_branch: 'refs/heads/master'
+    steps:
+      #####################
+      # Release and Publish
+      #####################
+      - uses: GoogleCloudPlatform/release-please-action@v2
+        id: release
+        if: ${{ github.ref == env.default_branch || github.event.inputs.release_tag }}
+        with:
+          # use the CI token to pretend not to be a action?
+          # if this works then the resulting PRs will trigger
+          # the test-build-publish
+          token: ${{ secrets.CONTIAMO_CI_TOKEN }}
+          release-type: go-yoshi
+          package-name: ""
