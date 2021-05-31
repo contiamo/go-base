@@ -4,7 +4,7 @@ require (
 	github.com/HdrHistogram/hdrhistogram-go v1.0.1 // indirect
 	github.com/Masterminds/squirrel v1.5.0
 	github.com/bakins/net-http-recover v0.0.0-20141007104922-6cba69d01459
-	github.com/cenkalti/backoff/v4 v4.1.0
+	github.com/cenkalti/backoff/v4 v4.1.1
 	github.com/contiamo/goserver v0.5.2
 	github.com/contiamo/jwt v0.2.2
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
