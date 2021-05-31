@@ -110,16 +110,29 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 			},
 		},
 		{
-			name:   "Posts nothing, gets nothing with 204",
+			name:   "Ignores response body when the out value is nil",
 			method: http.MethodPost,
 			path:   "/some/path",
-			out:    &out,
+			out:    nil,
+
+			token: "tokenSample",
+
+			serverStatus:   http.StatusOK,
+			serverResponse: ctesting.ToJSONBytes(t, resp),
+
+			expResponse: nil,
+		},
+		{
+			name:   "Posts nothing, gets nothing with 204 and parsing nothing into nil",
+			method: http.MethodPost,
+			path:   "/some/path",
+			out:    nil,
 
 			token: "tokenSample",
 
 			serverStatus: http.StatusNoContent,
 
-			expResponse: &response{},
+			expResponse: nil,
 		},
 		{
 			name:   "Gets response with 200",
