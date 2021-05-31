@@ -1,5 +1,13 @@
 # Changelog
 
+### [3.6.1](https://www.github.com/contiamo/go-base/compare/v3.6.0...v3.6.1) (2021-05-31)
+
+
+### Bug Fixes
+
+* do not parse body if ouput dest is nil ([#135](https://www.github.com/contiamo/go-base/issues/135)) ([d001321](https://www.github.com/contiamo/go-base/commit/d001321d4ec967af97bf27843bff462c2474d7ca))
+* make API errors more informative, no empty strings ([#130](https://www.github.com/contiamo/go-base/issues/130)) ([1b7e53d](https://www.github.com/contiamo/go-base/commit/1b7e53d5678a2211a1b1b7453726948243f05179))
+
 ## [3.6.0](https://www.github.com/contiamo/go-base/compare/v3.5.0...v3.6.0) (2021-05-19)
 
 
