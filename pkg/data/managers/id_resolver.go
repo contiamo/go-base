@@ -68,16 +68,22 @@ func (r *idResolver) Resolve(ctx context.Context, sql db.SQLBuilder, value strin
 		}.Filter()
 	}
 
-	uuidVal, err := uuid.FromString(strings.TrimSpace(value))
+	// by default lookup the given value on the secondary column to retrieve the id
+	lookupColumn := r.secondaryColumn
+
+	_, err := uuid.FromString(strings.TrimSpace(value))
 	if err == nil {
-		return uuidVal.String(), nil
+		// given value is already an id!
+		// -> lookup value on the id column together with the additional filter
+		//    to validate that the id exists under the given filter
+		lookupColumn = r.idColumn
 	}
 
 	rows, err := sql.
 		Select(r.idColumn).
 		From(r.table).
 		Where(filter).
-		Where(squirrel.Eq{r.secondaryColumn: value}).
+		Where(squirrel.Eq{lookupColumn: value}).
 		Limit(2).
 		QueryContext(ctx)
 
