@@ -18,8 +18,20 @@ import (
 func Test_Sqlizer(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	_, db := dbtest.GetDatabase(t)
+	_, db := dbtest.GetDatabase(t, func(ctx context.Context, db *sql.DB) error {
+		_, err := db.ExecContext(ctx, `CREATE TABLE test(
+		id UUID PRIMARY KEY,
+    	parent_id UUID,
+		name text,
+		UNIQUE(name, parent_id)
+	);`)
+		return err
+	})
 	defer db.Close()
+	id := uuid.NewV4()
+	parentID := uuid.NewV4()
+	_, err := db.ExecContext(ctx, `INSERT INTO test (id, parent_id, name) VALUES ($1,$2, 'unique')`, id, parentID)
+	require.NoError(t, err)
 
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
@@ -27,14 +39,13 @@ func Test_Sqlizer(t *testing.T) {
 	r := NewIDResolver("test", "id", "name")
 	manager := NewBaseManager(db, "id_resolver_test")
 	builder := manager.GetQueryBuilder()
-	id := uuid.NewV4().String()
-	where, err := r.Sqlizer(ctx, builder, id, squirrel.Eq{
-		"some": "cool",
+	where, err := r.Sqlizer(ctx, builder, id.String(), squirrel.Eq{
+		"parent_id": parentID,
 	})
 	require.NoError(t, err)
 	sql, _, err := where.ToSql()
 	require.NoError(t, err)
-	require.Equal(t, "(some = ? AND id = ?)", sql)
+	require.Equal(t, "(parent_id = ? AND id = ?)", sql)
 }
 
 func Test_Resolve(t *testing.T) {
