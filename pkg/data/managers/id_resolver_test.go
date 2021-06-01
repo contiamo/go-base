@@ -119,6 +119,14 @@ func Test_Resolve(t *testing.T) {
 			expErr: true,
 		},
 		{
+			name:  "Triggers error when resolve a id with a wrong parent_id filter",
+			value: ids[1].String(),
+			where: squirrel.Eq{
+				"parent_id": secIDs[1],
+			},
+			expErr: true,
+		},
+		{
 			name:       "Triggers error when there are more than one result",
 			value:      "regular",
 			expectedID: "",
