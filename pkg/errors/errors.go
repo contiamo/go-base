@@ -73,8 +73,8 @@ func ValidationErrorsToFieldErrorResponse(errs ValidationErrors) (resp ErrorResp
 	sort.Slice(resp.Errors, func(i, j int) bool {
 		e1, ok1 := resp.Errors[i].(interface{ GetKey() string })
 		e2, ok2 := resp.Errors[j].(interface{ GetKey() string })
-		if ok1 && ok2 && e1.GetKey() < e2.GetKey() {
-			return true
+		if ok1 && ok2 {
+			return e1.GetKey() < e2.GetKey()
 		}
 		return resp.Errors[i].GetMessage() < resp.Errors[j].GetMessage()
 	})

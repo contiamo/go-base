@@ -66,6 +66,31 @@ func TestValidationErrorsToErrorResponse(t *testing.T) {
 			},
 		},
 		{
+			name: "Does sort by key",
+			errs: ValidationErrors{
+				"b": errors.New("bad field b"),
+				"a": errors.New("bad field a"),
+			},
+			expected: ErrorResponse{
+				Errors: []APIErrorMessenger{
+					FieldError{
+						GeneralError: GeneralError{
+							Type:    FieldErrorType,
+							Message: "bad field a",
+						},
+						Key: "a",
+					},
+					FieldError{
+						GeneralError: GeneralError{
+							Type:    FieldErrorType,
+							Message: "bad field b",
+						},
+						Key: "b",
+					},
+				},
+			},
+		},
+		{
 			name: "empty string keys are mapped to a GeneralError type",
 			errs: ValidationErrors{
 				"field1": errors.New("bad field1"),
