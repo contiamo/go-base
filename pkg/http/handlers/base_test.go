@@ -12,7 +12,7 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/pkg/errors"
 
-	cerrors "github.com/contiamo/go-base/v3/pkg/errors"
+	cerrors "github.com/contiamo/go-base/v4/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 

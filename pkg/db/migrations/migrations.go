@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/contiamo/go-base/v3/pkg/crypto"
+	"github.com/contiamo/go-base/v4/pkg/crypto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )

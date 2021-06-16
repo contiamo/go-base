@@ -9,8 +9,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	server "github.com/contiamo/go-base/v3/pkg/http"
-	utils "github.com/contiamo/go-base/v3/pkg/testing"
+	server "github.com/contiamo/go-base/v4/pkg/http"
+	utils "github.com/contiamo/go-base/v4/pkg/testing"
 )
 
 func Test_LoggingMiddleware(t *testing.T) {

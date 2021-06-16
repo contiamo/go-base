@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/cenkalti/backoff/v4"
-	qpostgres "github.com/contiamo/go-base/v3/pkg/queue/postgres"
+	qpostgres "github.com/contiamo/go-base/v4/pkg/queue/postgres"
 	"github.com/sirupsen/logrus"
 )
 

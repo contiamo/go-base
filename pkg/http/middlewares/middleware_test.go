@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	server "github.com/contiamo/go-base/v3/pkg/http"
+	server "github.com/contiamo/go-base/v4/pkg/http"
 )
 
 var upgrader = websocket.Upgrader{}

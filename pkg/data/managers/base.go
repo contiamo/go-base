@@ -5,9 +5,9 @@ import (
 	"database/sql"
 
 	"github.com/Masterminds/squirrel"
-	"github.com/contiamo/go-base/v3/pkg/db"
-	"github.com/contiamo/go-base/v3/pkg/http/parameters"
-	"github.com/contiamo/go-base/v3/pkg/tracing"
+	"github.com/contiamo/go-base/v4/pkg/db"
+	"github.com/contiamo/go-base/v4/pkg/http/parameters"
+	"github.com/contiamo/go-base/v4/pkg/tracing"
 	"github.com/lann/builder"
 )
 
