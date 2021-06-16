@@ -10,7 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	server "github.com/contiamo/go-base/v3/pkg/http"
+	server "github.com/contiamo/go-base/v4/pkg/http"
 )
 
 func Test_MetricsMiddleware(t *testing.T) {

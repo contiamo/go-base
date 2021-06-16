@@ -1,4 +1,4 @@
-module github.com/contiamo/go-base/v3
+module github.com/contiamo/go-base/v4
 
 require (
 	github.com/HdrHistogram/hdrhistogram-go v1.0.1 // indirect
@@ -8,7 +8,6 @@ require (
 	github.com/contiamo/goserver v0.5.2
 	github.com/contiamo/jwt v0.2.2
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/getkin/kin-openapi v0.14.0
 	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
@@ -39,8 +38,8 @@ require (
 	golang.org/x/tools v0.0.0-20200103221440-774c71fcf114
 	google.golang.org/grpc v1.26.0 // indirect
 	google.golang.org/protobuf v1.26.0
-	gopkg.in/yaml.v2 v2.4.0
-	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
+	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
 )
 
 go 1.14

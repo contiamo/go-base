@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	cerrors "github.com/contiamo/go-base/v3/pkg/errors"
-	ctesting "github.com/contiamo/go-base/v3/pkg/testing"
-	"github.com/contiamo/go-base/v3/pkg/tokens"
+	cerrors "github.com/contiamo/go-base/v4/pkg/errors"
+	ctesting "github.com/contiamo/go-base/v4/pkg/testing"
+	"github.com/contiamo/go-base/v4/pkg/tokens"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"

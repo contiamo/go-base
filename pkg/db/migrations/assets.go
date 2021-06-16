@@ -3,7 +3,7 @@ package migrations
 import (
 	"net/http"
 
-	"github.com/contiamo/go-base/v3/pkg/fileutils/union"
+	"github.com/contiamo/go-base/v4/pkg/fileutils/union"
 )
 
 // SQLAssets determines which filesystem object is used

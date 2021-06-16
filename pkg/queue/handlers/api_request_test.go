@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/contiamo/go-base/v3/pkg/queue"
-	test "github.com/contiamo/go-base/v3/pkg/testing"
-	"github.com/contiamo/go-base/v3/pkg/tokens"
+	"github.com/contiamo/go-base/v4/pkg/queue"
+	test "github.com/contiamo/go-base/v4/pkg/testing"
+	"github.com/contiamo/go-base/v4/pkg/tokens"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"

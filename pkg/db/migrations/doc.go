@@ -38,7 +38,7 @@ Additionally, you will need to setup the assets_dev.go and migrations.go files.
 	import (
 		"net/http"
 
-		"github.com/contiamo/go-base/v3/pkg/fileutils/union"
+		"github.com/contiamo/go-base/v4/pkg/fileutils/union"
 	)
 
 	// Assets contains the static SQL file assets for setup and migrations
@@ -54,8 +54,8 @@ and then
 	package db
 
 	import (
-		"github.com/contiamo/go-base/v3/pkg/db/migrations"
-		"github.com/contiamo/go-base/v3/pkg/queue/postgres"
+		"github.com/contiamo/go-base/v4/pkg/db/migrations"
+		"github.com/contiamo/go-base/v4/pkg/queue/postgres"
 		"github.com/contiamo/app/pkg/config"
 	)
 

@@ -12,7 +12,7 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/mocktracer"
 
-	server "github.com/contiamo/go-base/v3/pkg/http"
+	server "github.com/contiamo/go-base/v4/pkg/http"
 )
 
 func Test_TracingMiddleware(t *testing.T) {

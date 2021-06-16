@@ -3,7 +3,7 @@ package tokens
 import (
 	"testing"
 
-	"github.com/contiamo/go-base/v3/pkg/config"
+	"github.com/contiamo/go-base/v4/pkg/config"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/stretchr/testify/require"
 )

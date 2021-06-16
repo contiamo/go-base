@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	ctesting "github.com/contiamo/go-base/v3/pkg/testing"
+	ctesting "github.com/contiamo/go-base/v4/pkg/testing"
 	"github.com/stretchr/testify/require"
 )
 

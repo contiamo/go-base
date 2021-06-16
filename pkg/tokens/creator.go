@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	authz "github.com/contiamo/go-base/v3/pkg/http/middlewares/authorization"
+	authz "github.com/contiamo/go-base/v4/pkg/http/middlewares/authorization"
 	"github.com/dgrijalva/jwt-go"
 
 	uuid "github.com/satori/go.uuid"

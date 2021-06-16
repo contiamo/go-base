@@ -7,9 +7,9 @@ import (
 
 	"github.com/Masterminds/squirrel"
 
-	dbtest "github.com/contiamo/go-base/v3/pkg/db/test"
-	"github.com/contiamo/go-base/v3/pkg/queue"
-	"github.com/contiamo/go-base/v3/pkg/queue/postgres"
+	dbtest "github.com/contiamo/go-base/v4/pkg/db/test"
+	"github.com/contiamo/go-base/v4/pkg/queue"
+	"github.com/contiamo/go-base/v4/pkg/queue/postgres"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	uuid "github.com/satori/go.uuid"

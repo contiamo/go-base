@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	cerrors "github.com/contiamo/go-base/v3/pkg/errors"
+	cerrors "github.com/contiamo/go-base/v4/pkg/errors"
 )
 
 type errorResponse struct {

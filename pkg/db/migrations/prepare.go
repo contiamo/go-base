@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/contiamo/go-base/v3/pkg/crypto"
+	"github.com/contiamo/go-base/v4/pkg/crypto"
 	"github.com/sirupsen/logrus"
 )
 

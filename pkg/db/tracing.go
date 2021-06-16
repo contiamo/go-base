@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/contiamo/go-base/v3/pkg/tracing"
+	"github.com/contiamo/go-base/v4/pkg/tracing"
 	"github.com/sirupsen/logrus"
 )
 

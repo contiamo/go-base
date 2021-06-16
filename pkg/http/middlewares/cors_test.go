@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	server "github.com/contiamo/go-base/v3/pkg/http"
+	server "github.com/contiamo/go-base/v4/pkg/http"
 	"github.com/stretchr/testify/require"
 )
 

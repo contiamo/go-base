@@ -3,7 +3,7 @@ package queue
 import (
 	"context"
 
-	cdb "github.com/contiamo/go-base/v3/pkg/db"
+	cdb "github.com/contiamo/go-base/v4/pkg/db"
 )
 
 // SchedulerMock implement scheduler with very simple counters for testing

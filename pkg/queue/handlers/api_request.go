@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/contiamo/go-base/v3/pkg/queue"
-	"github.com/contiamo/go-base/v3/pkg/tokens"
-	"github.com/contiamo/go-base/v3/pkg/tracing"
+	"github.com/contiamo/go-base/v4/pkg/queue"
+	"github.com/contiamo/go-base/v4/pkg/tokens"
+	"github.com/contiamo/go-base/v4/pkg/tracing"
 	"github.com/opentracing/opentracing-go"
 	otext "github.com/opentracing/opentracing-go/ext"
 	"github.com/sirupsen/logrus"

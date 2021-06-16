@@ -9,9 +9,9 @@ import (
 	"net/url"
 	"strings"
 
-	cerrors "github.com/contiamo/go-base/v3/pkg/errors"
-	"github.com/contiamo/go-base/v3/pkg/tokens"
-	"github.com/contiamo/go-base/v3/pkg/tracing"
+	cerrors "github.com/contiamo/go-base/v4/pkg/errors"
+	"github.com/contiamo/go-base/v4/pkg/tokens"
+	"github.com/contiamo/go-base/v4/pkg/tracing"
 	"github.com/opentracing/opentracing-go"
 	otext "github.com/opentracing/opentracing-go/ext"
 	"github.com/pkg/errors"
