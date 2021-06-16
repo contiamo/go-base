@@ -1,5 +1,27 @@
 # Changelog
 
+## [4.0.0](https://www.github.com/contiamo/go-base/compare/v3.6.1...v4.0.0) (2021-06-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove generators package (#140)
+
+### Features
+
+* check that ids exist under a filter when resolving. ([a2c1173](https://www.github.com/contiamo/go-base/commit/a2c1173ca9bade6efbf9fc4806369bf84d75db08))
+* **CON-3568:** check that ids exist under a filter when resolving. ([#136](https://www.github.com/contiamo/go-base/issues/136)) ([a2c1173](https://www.github.com/contiamo/go-base/commit/a2c1173ca9bade6efbf9fc4806369bf84d75db08))
+
+
+### Bug Fixes
+
+* sort field errors not only by message, but by key (if any) and then by message ([#138](https://www.github.com/contiamo/go-base/issues/138)) ([515dc65](https://www.github.com/contiamo/go-base/commit/515dc65a91d015cc0a71c30f893e16a39b451568))
+
+
+### Miscellaneous Chores
+
+* remove generators package ([#140](https://www.github.com/contiamo/go-base/issues/140)) ([d7a47a1](https://www.github.com/contiamo/go-base/commit/d7a47a1dab7e58d44a57f0c8d1dd1d4ea5b4e6ca))
+
 ### [3.6.1](https://www.github.com/contiamo/go-base/compare/v3.6.0...v3.6.1) (2021-05-31)
 
 
