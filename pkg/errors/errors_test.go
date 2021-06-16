@@ -25,22 +25,22 @@ func TestValidationErrorsToErrorResponse(t *testing.T) {
 		{
 			name: "Returns errors in the response when errors are not empty",
 			errs: ValidationErrors{
-				"field1": errors.New("bad field1"),
-				"field2": errors.New("bad field2"),
+				"field1": errors.New("error message"),
+				"field2": errors.New("error message"),
 			},
 			expected: ErrorResponse{
 				Errors: []APIErrorMessenger{
 					FieldError{
 						GeneralError: GeneralError{
 							Type:    FieldErrorType,
-							Message: "bad field1",
+							Message: "error message",
 						},
 						Key: "field1",
 					},
 					FieldError{
 						GeneralError: GeneralError{
 							Type:    FieldErrorType,
-							Message: "bad field2",
+							Message: "error message",
 						},
 						Key: "field2",
 					},
