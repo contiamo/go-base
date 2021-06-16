@@ -40,6 +40,10 @@ func (e FieldError) GetMessage() string {
 	return e.Message
 }
 
+func (e FieldError) GetKey() string {
+	return e.Key
+}
+
 // Scrubbed implemented the APIErrorMessanger, the scrubbing
 // is a noop because FieldError is safe for users by default.
 func (e FieldError) Scrubbed(_ string) APIErrorMessenger {
