@@ -40,6 +40,12 @@ type BaseAPIClient interface {
 	// DoRequest performs the HTTP request with the given parameters, marshals the payload and
 	// unmarshals the response into the given output if the status code is successful
 	DoRequest(ctx context.Context, method, path string, query url.Values, payload, out interface{}) error
+
+	// DoRequestWithResponse performs the HTTP request with the given parameters, marshals the payload, parses the standard error cases
+	// and returns the http.Response for success cases. This allows standard request object for advanced use-cases.
+	//
+	// Callers should generally prefer DoRequest.
+	DoRequestWithResponse(ctx context.Context, method, path string, query url.Values, payload interface{}) (*http.Response, error)
 }
 
 // NewBaseAPIClient creates a new instance of the base API client implementation.
@@ -74,6 +80,32 @@ func (t baseAPIClient) DoRequest(ctx context.Context, method, path string, query
 	defer func() {
 		t.FinishSpan(span, err)
 	}()
+
+	// non-2** status codes will be errors already
+	resp, err := t.DoRequestWithResponse(ctx, method, path, query, payload)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	contentType := resp.Header.Get("content-type")
+	contentType = strings.ToLower(contentType)
+	span.SetTag("response_has_output_destination", out != nil)
+	span.SetTag("resp.contentType", contentType)
+
+	if out != nil && strings.Contains(contentType, "json") {
+		decoder := json.NewDecoder(resp.Body)
+		return errors.Wrap(decoder.Decode(out), "failed to decode JSON response")
+	}
+
+	return nil
+}
+
+func (t baseAPIClient) DoRequestWithResponse(ctx context.Context, method, path string, query url.Values, payload interface{}) (body *http.Response, err error) {
+	span, ctx := t.StartSpan(ctx, "DoRequestWithResponse")
+	defer func() {
+		t.FinishSpan(span, err)
+	}()
 	span.SetTag("method", method)
 	span.SetTag("path", path)
 
@@ -92,7 +124,7 @@ func (t baseAPIClient) DoRequest(ctx context.Context, method, path string, query
 	logrus.Debug("creating the request token...")
 	token, err := t.tokenProvider()
 	if err != nil {
-		return errors.Wrap(err, "failed to create request token")
+		return nil, errors.Wrap(err, "failed to create request token")
 	}
 	logrus.Debug("token created.")
 
@@ -115,7 +147,7 @@ func (t baseAPIClient) DoRequest(ctx context.Context, method, path string, query
 	logrus.Debug("creating the HTTP request...")
 	req, err := http.NewRequest(method, url, payloadReader)
 	if err != nil {
-		return errors.Wrap(err, "failed to create a new request")
+		return nil, errors.Wrap(err, "failed to create a new request")
 	}
 
 	// so, the HTTP request can be canceled
@@ -146,9 +178,8 @@ func (t baseAPIClient) DoRequest(ctx context.Context, method, path string, query
 	logrus.Debug("doing request...")
 	resp, err := t.client.Do(req)
 	if err != nil {
-		return errors.Wrap(err, "failed to do request")
+		return nil, errors.Wrap(err, "failed to do request")
 	}
-	defer resp.Body.Close()
 	logrus.Debug("request is done.")
 
 	span.SetTag("response.status", resp.StatusCode)
@@ -157,31 +188,23 @@ func (t baseAPIClient) DoRequest(ctx context.Context, method, path string, query
 	defer logrus.Debug("reading the response finished.")
 
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		contentType := resp.Header.Get("content-type")
-		contentType = strings.ToLower(contentType)
-		span.SetTag("response_has_output_destination", out != nil)
-		span.SetTag("resp.contentType", contentType)
-
-		if out != nil && strings.Contains(contentType, "json") {
-			decoder := json.NewDecoder(resp.Body)
-			return errors.Wrap(decoder.Decode(out), "failed to decode JSON response")
-		}
-
-		return nil
+		// caller is now responsible for closing
+		return resp, nil
 	}
+	defer resp.Body.Close()
 
 	// these are the cases we can clearly map validation errors,
 	// should effectively be server errors because they indicate some kind of bug in our implementation,
 	// the Hub http layer validation should be strong enough to capture user fixable errors
 	switch resp.StatusCode {
 	case http.StatusUnauthorized:
-		return cerrors.ErrAuthorization
+		return nil, cerrors.ErrAuthorization
 	case http.StatusForbidden:
-		return cerrors.ErrPermission
+		return nil, cerrors.ErrPermission
 	case http.StatusNotFound:
-		return cerrors.ErrNotFound
+		return nil, cerrors.ErrNotFound
 	case http.StatusNotImplemented:
-		return cerrors.ErrNotImplemented
+		return nil, cerrors.ErrNotImplemented
 	default:
 		if t.debug {
 			// ignore the error on purpose here
@@ -192,7 +215,7 @@ func (t baseAPIClient) DoRequest(ctx context.Context, method, path string, query
 		// general error processing
 		response, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return errors.Wrap(err, "failed to read response body")
+			return nil, errors.Wrap(err, "failed to read response body")
 		}
 		span.LogKV("response.body", string(response))
 		err = APIError{
@@ -202,6 +225,6 @@ func (t baseAPIClient) DoRequest(ctx context.Context, method, path string, query
 		}
 		logrus.Error(errors.Wrap(err, "request failed"))
 		logrus.Error(string(response))
-		return err
+		return nil, err
 	}
 }
