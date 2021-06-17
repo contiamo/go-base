@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.1.0](https://www.github.com/contiamo/go-base/compare/v4.0.0...v4.1.0) (2021-06-17)
+
+
+### Features
+
+* Add request method to BaseAPIClient that expose the response object ([#142](https://www.github.com/contiamo/go-base/issues/142)) ([a1e93eb](https://www.github.com/contiamo/go-base/commit/a1e93eb7d105fa9983f1cb9c6e9e28ae49349fd8))
+
 ## [4.0.0](https://www.github.com/contiamo/go-base/compare/v3.6.1...v4.0.0) (2021-06-16)
 
 
