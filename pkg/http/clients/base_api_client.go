@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	cerrors "github.com/contiamo/go-base/v4/pkg/errors"
+	"github.com/contiamo/go-base/v4/pkg/http/middlewares/authorization"
 	"github.com/contiamo/go-base/v4/pkg/tokens"
 	"github.com/contiamo/go-base/v4/pkg/tracing"
 	"github.com/opentracing/opentracing-go"
@@ -25,6 +26,16 @@ type TokenProvider func() (token string, err error)
 func TokenProviderFromCreator(tc tokens.Creator, reference string, opts tokens.Options) TokenProvider {
 	return func() (token string, err error) {
 		return tc.Create(reference, opts)
+	}
+}
+
+// TokenProviderFromClaims creates a TokenProvider that simply returns the original
+// source token that the claims was created from. This can be used to make a request
+// on behalf of the user/client in the claims, but does not extend the timeout, this
+// is only appropriate for synchronous requests, like HTTP calls.
+func TokenProviderFromClaims(claims authorization.Claims) TokenProvider {
+	return func() (token string, err error) {
+		return claims.SourceToken, nil
 	}
 }
 
@@ -46,6 +57,9 @@ type BaseAPIClient interface {
 	//
 	// Callers should generally prefer DoRequest.
 	DoRequestWithResponse(ctx context.Context, method, path string, query url.Values, payload interface{}) (*http.Response, error)
+
+	// WithTokenProvider returns a new BaseAPIClient, replacing the current TokenProvider with the one provided.
+	WithTokenProvider(tokenProvider TokenProvider) BaseAPIClient
 }
 
 // NewBaseAPIClient creates a new instance of the base API client implementation.
@@ -69,6 +83,13 @@ type baseAPIClient struct {
 	tokenProvider   TokenProvider
 	client          *http.Client
 	debug           bool
+}
+
+func (t baseAPIClient) WithTokenProvider(tokenProvider TokenProvider) BaseAPIClient {
+	newClient := t
+	newClient.tokenProvider = tokenProvider
+
+	return newClient
 }
 
 func (t baseAPIClient) GetBaseURL() string {

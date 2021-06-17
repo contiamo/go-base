@@ -14,6 +14,7 @@ import (
 	"time"
 
 	cerrors "github.com/contiamo/go-base/v4/pkg/errors"
+	"github.com/contiamo/go-base/v4/pkg/http/middlewares/authorization"
 	ctesting "github.com/contiamo/go-base/v4/pkg/testing"
 	"github.com/contiamo/go-base/v4/pkg/tokens"
 	"github.com/pkg/errors"
@@ -321,4 +322,48 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 			require.EqualValues(t, tc.expResponse, tc.out)
 		})
 	}
+}
+
+func TestTokenProviderFromClaims(t *testing.T) {
+	originalClaims := authorization.Claims{
+		ID:          "claim_id",
+		SourceToken: "this.is.a.test",
+	}
+	provider := TokenProviderFromClaims(originalClaims)
+
+	token, err := provider()
+	require.NoError(t, err)
+	require.Equal(t, originalClaims.SourceToken, token)
+}
+
+func TestClientWithProvider(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	originalClaims := authorization.Claims{
+		ID:          "claim_id",
+		SourceToken: "this.is.a.test",
+	}
+	provider := TokenProviderFromClaims(originalClaims)
+
+	newClaims := authorization.Claims{
+		ID:          "claim_id",
+		SourceToken: "this.is.someone.else",
+	}
+	newProvider := TokenProviderFromClaims(newClaims)
+
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, newClaims.SourceToken, r.Header.Get("X-Request-Token"))
+		require.Equal(t, "application/json", r.Header.Get("Content-Type"))
+
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer s.Close()
+
+	c := NewBaseAPIClient(s.URL, "X-Request-Token", provider, http.DefaultClient, true)
+	client := c.WithTokenProvider(newProvider)
+
+	resp, err := client.DoRequestWithResponse(ctx, http.MethodGet, "", nil, nil)
+	require.NoError(t, err)
+	resp.Body.Close()
 }
