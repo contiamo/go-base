@@ -41,11 +41,11 @@ type BaseAPIClient interface {
 	// unmarshals the response into the given output if the status code is successful
 	DoRequest(ctx context.Context, method, path string, query url.Values, payload, out interface{}) error
 
-	// Do performs the HTTP request with the given parameters, marshals the payload, parses the standard error cases
+	// DoRequestWithResponse performs the HTTP request with the given parameters, marshals the payload, parses the standard error cases
 	// and returns the http.Response for success cases. This allows standard request object for advanced use-cases.
 	//
 	// Callers should generally prefer DoRequest.
-	Do(ctx context.Context, method, path string, query url.Values, payload interface{}) (*http.Response, error)
+	DoRequestWithResponse(ctx context.Context, method, path string, query url.Values, payload interface{}) (*http.Response, error)
 }
 
 // NewBaseAPIClient creates a new instance of the base API client implementation.
@@ -82,7 +82,7 @@ func (t baseAPIClient) DoRequest(ctx context.Context, method, path string, query
 	}()
 
 	// non-2** status codes will be errors already
-	resp, err := t.Do(ctx, method, path, query, payload)
+	resp, err := t.DoRequestWithResponse(ctx, method, path, query, payload)
 	if err != nil {
 		return err
 	}
@@ -101,8 +101,8 @@ func (t baseAPIClient) DoRequest(ctx context.Context, method, path string, query
 	return nil
 }
 
-func (t baseAPIClient) Do(ctx context.Context, method, path string, query url.Values, payload interface{}) (body *http.Response, err error) {
-	span, ctx := t.StartSpan(ctx, "Do")
+func (t baseAPIClient) DoRequestWithResponse(ctx context.Context, method, path string, query url.Values, payload interface{}) (body *http.Response, err error) {
+	span, ctx := t.StartSpan(ctx, "DoRequestWithResponse")
 	defer func() {
 		t.FinishSpan(span, err)
 	}()
