@@ -1,5 +1,12 @@
 # Changelog
 
+### [4.2.1](https://www.github.com/contiamo/go-base/compare/v4.2.0...v4.2.1) (2021-07-26)
+
+
+### Bug Fixes
+
+* upgrade JWT library ([#149](https://www.github.com/contiamo/go-base/issues/149)) ([29b4dbc](https://www.github.com/contiamo/go-base/commit/29b4dbcf5a5ce8a33d4a43516a5c13158b8acc20))
+
 ## [4.2.0](https://www.github.com/contiamo/go-base/compare/v4.1.0...v4.2.0) (2021-06-17)
 
 
