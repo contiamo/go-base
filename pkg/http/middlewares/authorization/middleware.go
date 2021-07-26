@@ -9,7 +9,7 @@ import (
 
 	"github.com/contiamo/go-base/v4/pkg/tracing"
 	goserverhttp "github.com/contiamo/goserver/http"
-	jwt "github.com/dgrijalva/jwt-go"
+	jwt "github.com/golang-jwt/jwt"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )

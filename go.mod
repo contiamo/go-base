@@ -7,10 +7,10 @@ require (
 	github.com/cenkalti/backoff/v4 v4.1.1
 	github.com/contiamo/goserver v0.5.2
 	github.com/contiamo/jwt v0.2.2
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
+	github.com/golang-jwt/jwt v3.2.1+incompatible
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.0.0 // indirect
 	github.com/gorilla/websocket v1.4.2
