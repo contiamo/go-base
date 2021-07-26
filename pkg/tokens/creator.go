@@ -6,7 +6,7 @@ import (
 	"time"
 
 	authz "github.com/contiamo/go-base/v4/pkg/http/middlewares/authorization"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt"
 
 	uuid "github.com/satori/go.uuid"
 )
