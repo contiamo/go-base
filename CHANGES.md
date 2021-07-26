@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.0](https://www.github.com/contiamo/go-base/compare/v4.1.0...v4.2.0) (2021-06-17)
+
+
+### Features
+
+* Allow cloning API Clients with new token providers ([#144](https://www.github.com/contiamo/go-base/issues/144)) ([da0adce](https://www.github.com/contiamo/go-base/commit/da0adce8189f83d8a5e9e60ce4520280bcd40474))
+
 ## [4.1.0](https://www.github.com/contiamo/go-base/compare/v4.0.0...v4.1.0) (2021-06-17)
 
 
