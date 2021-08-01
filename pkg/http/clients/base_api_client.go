@@ -60,6 +60,11 @@ type BaseAPIClient interface {
 
 	// WithTokenProvider returns a new BaseAPIClient, replacing the current TokenProvider with the one provided.
 	WithTokenProvider(tokenProvider TokenProvider) BaseAPIClient
+	// WithHeader returns a new BaseAPIClient, replacing the current set of headers with the one provided.
+	// 	"Content-Type" and `tokenHeaderName` headers will be always overridden by the client.
+	// If the TokenProvider returns a non-empty token it will be set as a `tokenHeaderName`-named header
+	// overriding the matching header in the this set.
+	WithHeader(http.Header) BaseAPIClient
 }
 
 // NewBaseAPIClient creates a new instance of the base API client implementation.
@@ -81,6 +86,7 @@ type baseAPIClient struct {
 	basePath        string
 	tokenHeaderName string
 	tokenProvider   TokenProvider
+	header          http.Header
 	client          *http.Client
 	debug           bool
 }
@@ -88,6 +94,13 @@ type baseAPIClient struct {
 func (t baseAPIClient) WithTokenProvider(tokenProvider TokenProvider) BaseAPIClient {
 	newClient := t
 	newClient.tokenProvider = tokenProvider
+
+	return newClient
+}
+
+func (t baseAPIClient) WithHeader(header http.Header) BaseAPIClient {
+	newClient := t
+	newClient.header = header
 
 	return newClient
 }
@@ -174,9 +187,13 @@ func (t baseAPIClient) DoRequestWithResponse(ctx context.Context, method, path s
 	// so, the HTTP request can be canceled
 	req = req.WithContext(ctx)
 
-	req.Header.Add("Content-Type", "application/json")
+	if t.header != nil {
+		req.Header = t.header.Clone()
+	}
+
+	req.Header.Set("Content-Type", "application/json")
 	if token != "" {
-		req.Header.Add(t.tokenHeaderName, token)
+		req.Header.Set(t.tokenHeaderName, token)
 	} else {
 		span.LogKV("token", "token value is empty, header was not set")
 	}

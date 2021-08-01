@@ -367,3 +367,46 @@ func TestClientWithProvider(t *testing.T) {
 	require.NoError(t, err)
 	resp.Body.Close()
 }
+
+func TestClientWithHeader(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	provider := TokenProvider(func() (token string, err error) {
+		return "token", nil
+	})
+
+	expHeader := http.Header{
+		"X-Request-Token": []string{"token"},
+		"Content-Type":    []string{"application/json"},
+		"Accept-Encoding": []string{"gzip"},
+		"User-Agent":      []string{"Go-http-client/1.1"},
+	}
+
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, expHeader, r.Header)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer s.Close()
+
+	c := NewBaseAPIClient(s.URL, "X-Request-Token", provider, http.DefaultClient, true)
+	err := c.DoRequest(ctx, http.MethodGet, "/path", nil, nil, nil)
+	require.NoError(t, err)
+
+	c = c.WithHeader(http.Header{
+		"Some":    []string{"Value1"},
+		"Another": []string{"Value2"},
+	})
+
+	expHeader = http.Header{
+		"X-Request-Token": []string{"token"},
+		"Content-Type":    []string{"application/json"},
+		"Accept-Encoding": []string{"gzip"},
+		"User-Agent":      []string{"Go-http-client/1.1"},
+		"Some":            []string{"Value1"},
+		"Another":         []string{"Value2"},
+	}
+
+	err = c.DoRequest(ctx, http.MethodGet, "/path", nil, nil, nil)
+	require.NoError(t, err)
+}
