@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.3.0](https://www.github.com/contiamo/go-base/compare/v4.2.1...v4.3.0) (2021-08-02)
+
+
+### Features
+
+* add support for setting headers in API client ([#151](https://www.github.com/contiamo/go-base/issues/151)) ([ab297d0](https://www.github.com/contiamo/go-base/commit/ab297d0a92bae67bdb80692d68915ed0f4fb363e))
+
 ### [4.2.1](https://www.github.com/contiamo/go-base/compare/v4.2.0...v4.2.1) (2021-07-26)
 
 
