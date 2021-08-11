@@ -69,6 +69,37 @@ func TestTokenCreatorCreate(t *testing.T) {
 		require.Equal(t, "hub", claims.Audience)
 	})
 
+	t.Run("creates a valid signed JWT token with id and user id", func(t *testing.T) {
+		cfg := config.JWT{
+			PrivateKeyPath: "./testdata/idp.key",
+			PublicKeyPath:  "./testdata/idp.crt",
+		}
+
+		privateKey, err := cfg.GetPrivateKey()
+		require.NoError(t, err)
+		publicKey, err := cfg.GetPublicKey()
+		require.NoError(t, err)
+
+		tc := NewCreator("go-base", privateKey, 0)
+		tokenStr, err := tc.Create("background-task", Options{ID: "foobar", UserID: "user@foobar"})
+		require.NoError(t, err)
+		require.NotEmpty(t, tokenStr)
+
+		keyFunc := func(*jwt.Token) (interface{}, error) { return publicKey, nil }
+		var claims token
+		token, err := jwt.ParseWithClaims(tokenStr, &claims, keyFunc)
+		require.NoError(t, err)
+		require.NotNil(t, token)
+		require.Equal(t, "go-base", claims.Issuer)
+		require.Equal(t, "@go-base", claims.UserName)
+		require.Equal(t, []string{}, claims.RealmIDs)
+		require.Equal(t, []string{}, claims.AdminRealmIDs)
+		require.Equal(t, []string{"background-task"}, claims.AuthenticationMethodReferences)
+		require.Equal(t, "go-base", claims.AuthorizedParty)
+		require.Equal(t, "foobar", claims.ID)
+		require.Equal(t, "user@foobar", claims.UserID)
+	})
+
 	t.Run("fails if the private key is empty", func(t *testing.T) {
 		tc := NewCreator("go-base", nil, 0)
 		tokenStr, err := tc.Create("background-task", Options{ProjectID: "project"})
