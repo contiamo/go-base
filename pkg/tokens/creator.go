@@ -34,6 +34,12 @@ type Options struct {
 	// considered a member and an admin of. This value is deprecated, but
 	// exists for backwards compatibility during the transition to `azp`.
 	ProjectID string
+	// ID is the UUID string to identify this token.
+	// It will be a random UUID if not specified.
+	ID string
+	// UserID is the UUID string to identify the user that the token is
+	// intended for. It will be the null UUID when not specified
+	UserID string
 }
 
 // Creator creates all kinds of signed tokens for the background tasks
@@ -65,15 +71,23 @@ func (t *tokenCreator) Create(reference string, opts Options) (string, error) {
 		return "", ErrNoPrivateKeySpecified
 	}
 
+	if opts.ID == "" {
+		opts.ID = uuid.NewV4().String()
+	}
+
+	if opts.UserID == "" {
+		opts.UserID = uuid.Nil.String()
+	}
+
 	now := time.Now()
 	maxSkew := 5 * time.Second
 	requestToken := token{
-		ID:                             uuid.NewV4().String(),
+		ID:                             opts.ID,
 		Issuer:                         t.issuer,
 		IssuedAt:                       authz.FromTime(now),
 		NotBefore:                      authz.FromTime(now.Add(-1 * maxSkew)),
 		Expires:                        authz.FromTime(now.Add(t.lifetime)),
-		UserID:                         uuid.Nil.String(),
+		UserID:                         opts.UserID,
 		UserName:                       "@" + t.issuer,
 		Email:                          t.issuer + "@contiamo.com",
 		RealmIDs:                       []string{},
