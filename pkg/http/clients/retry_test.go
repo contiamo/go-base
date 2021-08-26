@@ -286,6 +286,8 @@ func TestRetryClient(t *testing.T) {
 			c := NewBaseAPIClient(s.URL+basePath, "X-Request-Token", tp, http.DefaultClient, true)
 			c = WithRetry(c, 2, backoff.NewConstantBackOff(500*time.Millisecond))
 
+			require.Equal(t, s.URL+basePath, c.GetBaseURL())
+
 			err := c.DoRequest(ctx, tc.method, tc.path, tc.query, tc.payload, tc.out)
 			require.Equal(t, tc.expAttempts, totalAttempts)
 

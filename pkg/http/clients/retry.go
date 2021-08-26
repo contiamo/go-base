@@ -12,24 +12,36 @@ import (
 	"github.com/pkg/errors"
 )
 
-func WithRetry(client BaseAPIClient, maxAttempts uint64, plan backoff.BackOff) BaseAPIClient {
-	backoff.WithMaxRetries(plan, maxAttempts)
-	return clientWithRetry{
+// WithRetry returns an implementation of BaseAPIClient that also adds logic to automatically retry
+// requests on specific error cases.
+func WithRetry(client BaseAPIClient, maxAttempts uint64, plan backoff.BackOff) ClientWithRetry {
+	return ClientWithRetry{
 		Tracer:        tracing.NewTracer("clients", "WithRetry"),
 		BaseAPIClient: client,
-		maxAttempts:   maxAttempts,
-		plan:          plan,
+		MaxAttempts:   maxAttempts,
+		Retryable:     IsRetryable,
+		Plan:          plan,
 	}
 }
 
-type clientWithRetry struct {
+// ClientWithRetry is an implementation of BaseAPIClient that also adds logic to automatically retry
+// requests on specific error cases.
+type ClientWithRetry struct {
 	tracing.Tracer
 	BaseAPIClient
-	maxAttempts uint64
-	plan        backoff.BackOff
+	// Retryable is a function that tests if the response can be retried.
+	// The default implementation is
+	Retryable func(*http.Response, error) bool
+	// MaxAttempts determines the maximum request attempts that will be made.
+	MaxAttempts uint64
+	// Plan is the base backoff plan that will be used, it will be wrapped with
+	// context and max attempts plans. In general, you will set this to
+	// either backoff ExponentialBackoff or ConstantBackoff.
+	// The default plan is backoff.NewExponentialBackoff()
+	Plan backoff.BackOff
 }
 
-func (c clientWithRetry) DoRequest(ctx context.Context, method, path string, query url.Values, payload, out interface{}) (err error) {
+func (c ClientWithRetry) DoRequest(ctx context.Context, method, path string, query url.Values, payload, out interface{}) (err error) {
 	span, ctx := c.StartSpan(ctx, "DoRequestWithRetry")
 	defer func() {
 		c.FinishSpan(span, err)
@@ -55,22 +67,33 @@ func (c clientWithRetry) DoRequest(ctx context.Context, method, path string, que
 	return nil
 }
 
-func (c clientWithRetry) DoRequestWithResponse(ctx context.Context, method, path string, query url.Values, payload interface{}) (body *http.Response, err error) {
+func (c ClientWithRetry) DoRequestWithResponse(ctx context.Context, method, path string, query url.Values, payload interface{}) (body *http.Response, err error) {
 	span, ctx := c.StartSpan(ctx, "DoRequestWithResponseWithRetry")
 	defer func() {
 		c.FinishSpan(span, err)
 	}()
 
-	span.SetTag("maxAttempts", c.maxAttempts)
+	span.SetTag("maxAttempts", c.MaxAttempts)
 
 	var lastResp *http.Response
 
+	basePlan := c.Plan
+	if basePlan == nil {
+		basePlan = backoff.NewExponentialBackOff()
+	}
+
 	// let the backoff plan handle the max case and context cancel
+	// WithMaxRetries is not thread-safe, so we initialize it here
 	plan := backoff.WithMaxRetries(
-		backoff.WithContext(c.plan, ctx),
+		backoff.WithContext(basePlan, ctx),
 		// the attempts counter is 0 based
-		c.maxAttempts-1,
+		c.MaxAttempts-1,
 	)
+
+	retryable := c.Retryable
+	if c.Retryable == nil {
+		retryable = IsRetryable
+	}
 
 	// note about the Retry error
 	// 1. Retry will unwrap the Permanent error for us
@@ -79,9 +102,12 @@ func (c clientWithRetry) DoRequestWithResponse(ctx context.Context, method, path
 	err = backoff.Retry(func() error {
 		var attemptErr error
 
+		// we assume that BaseAPIClient implements Tracer, so we don't create
+		// a subspan for each attempt, the DoRequestWithResponse will do that already
+
 		// nolint:bodyclose // caller is now responsible for closing, if there is no error
 		lastResp, attemptErr = c.BaseAPIClient.DoRequestWithResponse(ctx, method, path, query, payload)
-		if !isRetryable(attemptErr) {
+		if !retryable(lastResp, attemptErr) {
 			return backoff.Permanent(attemptErr)
 		}
 
@@ -91,7 +117,8 @@ func (c clientWithRetry) DoRequestWithResponse(ctx context.Context, method, path
 	return lastResp, err
 }
 
-func isRetryable(err error) bool {
+// IsRetryable is the default test to check if the client should retry a request.
+func IsRetryable(_ *http.Response, err error) bool {
 	if err == nil {
 		return false
 	}
