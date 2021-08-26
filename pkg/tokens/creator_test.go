@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/contiamo/go-base/v4/pkg/config"
-	jwt "github.com/golang-jwt/jwt"
+	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/stretchr/testify/require"
 )
 
