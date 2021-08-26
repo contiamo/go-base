@@ -10,17 +10,18 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/contiamo/go-base/v4/pkg/tracing"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // WithRetry returns an implementation of BaseAPIClient that also adds logic to automatically retry
 // requests on specific error cases.
 func WithRetry(client BaseAPIClient, maxAttempts uint64, plan backoff.BackOff) ClientWithRetry {
 	return ClientWithRetry{
-		Tracer:        tracing.NewTracer("clients", "WithRetry"),
-		BaseAPIClient: client,
-		MaxAttempts:   maxAttempts,
-		Retryable:     IsRetryable,
-		Plan:          plan,
+		Tracer:      tracing.NewTracer("clients", "WithRetry"),
+		client:      client,
+		MaxAttempts: maxAttempts,
+		Retryable:   IsRetryable,
+		Plan:        plan,
 	}
 }
 
@@ -28,7 +29,7 @@ func WithRetry(client BaseAPIClient, maxAttempts uint64, plan backoff.BackOff) C
 // requests on specific error cases.
 type ClientWithRetry struct {
 	tracing.Tracer
-	BaseAPIClient
+	client BaseAPIClient
 	// Retryable is a function that tests if the response can be retried.
 	// The default implementation is
 	Retryable func(*http.Response, error) bool
@@ -41,8 +42,32 @@ type ClientWithRetry struct {
 	Plan backoff.BackOff
 }
 
+func (c ClientWithRetry) GetBaseURL() string {
+	return c.client.GetBaseURL()
+}
+
+func (c ClientWithRetry) WithHeader(headers http.Header) BaseAPIClient {
+	return ClientWithRetry{
+		Tracer:      c.Tracer,
+		client:      c.client.WithHeader(headers),
+		Retryable:   c.Retryable,
+		MaxAttempts: c.MaxAttempts,
+		Plan:        c.Plan,
+	}
+}
+
+func (c ClientWithRetry) WithTokenProvider(tokenProvider TokenProvider) BaseAPIClient {
+	return ClientWithRetry{
+		Tracer:      c.Tracer,
+		client:      c.client.WithTokenProvider(tokenProvider),
+		Retryable:   c.Retryable,
+		MaxAttempts: c.MaxAttempts,
+		Plan:        c.Plan,
+	}
+}
+
 func (c ClientWithRetry) DoRequest(ctx context.Context, method, path string, query url.Values, payload, out interface{}) (err error) {
-	span, ctx := c.StartSpan(ctx, "DoRequestWithRetry")
+	span, ctx := c.StartSpan(ctx, "DoRequest")
 	defer func() {
 		c.FinishSpan(span, err)
 	}()
@@ -68,7 +93,7 @@ func (c ClientWithRetry) DoRequest(ctx context.Context, method, path string, que
 }
 
 func (c ClientWithRetry) DoRequestWithResponse(ctx context.Context, method, path string, query url.Values, payload interface{}) (body *http.Response, err error) {
-	span, ctx := c.StartSpan(ctx, "DoRequestWithResponseWithRetry")
+	span, ctx := c.StartSpan(ctx, "DoRequestWithResponse")
 	defer func() {
 		c.FinishSpan(span, err)
 	}()
@@ -95,22 +120,29 @@ func (c ClientWithRetry) DoRequestWithResponse(ctx context.Context, method, path
 		retryable = IsRetryable
 	}
 
+	logger := logrus.WithContext(ctx).
+		WithField("maxAttempts", c.MaxAttempts)
+
+	var attempt int
 	// note about the Retry error
 	// 1. Retry will unwrap the Permanent error for us
 	// 2. when we hit max retries, we will get the last operation error from the Retry
 	// 3. will return the context error, if it is not nil
 	err = backoff.Retry(func() error {
 		var attemptErr error
+		attempt++
 
 		// we assume that BaseAPIClient implements Tracer, so we don't create
 		// a subspan for each attempt, the DoRequestWithResponse will do that already
 
 		// nolint:bodyclose // caller is now responsible for closing, if there is no error
-		lastResp, attemptErr = c.BaseAPIClient.DoRequestWithResponse(ctx, method, path, query, payload)
+		lastResp, attemptErr = c.client.DoRequestWithResponse(ctx, method, path, query, payload)
 		if !retryable(lastResp, attemptErr) {
+			logger.WithField("attempt", attempt).WithError(attemptErr).Error("permanent error")
 			return backoff.Permanent(attemptErr)
 		}
 
+		logger.WithField("attempt", attempt).WithError(attemptErr).Debug("retryable error")
 		return attemptErr
 	}, plan)
 
