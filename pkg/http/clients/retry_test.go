@@ -219,20 +219,6 @@ func TestRetryClient(t *testing.T) {
 			expErrorStr: "failed to decode JSON response: invalid character 'i' looking for beginning of value",
 			expAttempts: 1,
 		},
-		{
-			name:    "Posts payload with invalid JSON and propagates the error",
-			method:  http.MethodPost,
-			path:    "/some/path",
-			payload: invalidPayload{},
-			out:     &out,
-
-			token:          "tokenSample",
-			serverStatus:   http.StatusOK,
-			serverResponse: ctesting.ToJSONBytes(t, resp),
-
-			expErrorStr: "json: error calling MarshalJSON for type clients.invalidPayload: invalid payload",
-			expAttempts: 1,
-		},
 		// cases with no attempts
 		{
 			name:   "Propagates the token creator error",
