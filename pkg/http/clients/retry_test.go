@@ -207,16 +207,17 @@ func TestRetryClient(t *testing.T) {
 			expAttempts: 1,
 		},
 		{
-			name:   "Propagates the token creator error",
-			method: http.MethodGet,
+			name:   "Gets invalid JSON and propagates the error",
+			method: http.MethodPost,
 			path:   "/some/path",
 			out:    &out,
 
-			serverStatus: http.StatusOK,
-			token:        "tokenSample",
-			tokenErr:     tokenError,
+			token:          "tokenSample",
+			serverStatus:   http.StatusOK,
+			serverResponse: []byte("invalid"),
 
-			expError: tokenError,
+			expErrorStr: "failed to decode JSON response: invalid character 'i' looking for beginning of value",
+			expAttempts: 1,
 		},
 		{
 			name:    "Posts payload with invalid JSON and propagates the error",
@@ -232,22 +233,22 @@ func TestRetryClient(t *testing.T) {
 			expErrorStr: "json: error calling MarshalJSON for type clients.invalidPayload: invalid payload",
 			expAttempts: 1,
 		},
+		// cases with no attempts
 		{
-			name:   "Gets invalid JSON and propagates the error",
-			method: http.MethodPost,
+			name:   "Propagates the token creator error",
+			method: http.MethodGet,
 			path:   "/some/path",
 			out:    &out,
 
-			token:          "tokenSample",
-			serverStatus:   http.StatusOK,
-			serverResponse: []byte("invalid"),
+			serverStatus: http.StatusOK,
+			token:        "tokenSample",
+			tokenErr:     tokenError,
 
-			expErrorStr: "failed to decode JSON response: invalid character 'i' looking for beginning of value",
-			expAttempts: 1,
+			expError: tokenError,
 		},
 	}
 
-	basePath := "/base"
+	basePath := "/retry-base"
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
