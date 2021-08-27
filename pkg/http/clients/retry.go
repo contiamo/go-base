@@ -88,6 +88,7 @@ func (c ClientWithRetry) DoRequest(ctx context.Context, method, path string, que
 	span.SetTag("response_has_output_destination", out != nil)
 	span.SetTag("resp.contentType", contentType)
 
+	// handle the success response and parse the json payload into `out`
 	if out != nil && strings.Contains(contentType, "json") {
 		decoder := json.NewDecoder(resp.Body)
 		return errors.Wrap(decoder.Decode(out), "failed to decode JSON response")
