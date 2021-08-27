@@ -89,7 +89,9 @@ type jsonAPIHandler struct {
 
 func (h jsonAPIHandler) Process(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) (err error) {
 	span, ctx := h.StartSpan(ctx, "Process")
+	ctx, cancel := context.WithCancel(ctx)
 	defer func() {
+		cancel()
 		close(heartbeats)
 		h.FinishSpan(span, err)
 	}()
