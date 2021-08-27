@@ -71,11 +71,31 @@ func TestAPIHandlerProcess(t *testing.T) {
 		expProgress APIRequestProgress
 	}{
 		{
+			name: "fails if request body is not a serialized json value",
+			spec: APIRequestTaskSpec{
+				Method:      http.MethodPost,
+				URL:         s.URL,
+				RequestBody: `test task`,
+				RequestHeaders: map[string]string{
+					"X-Some":    "X-Value",
+					"X-Another": "X-Some",
+				},
+				Authorized:     true,
+				ExpectedStatus: http.StatusCreated,
+			},
+			token:    "token value",
+			expError: "can not unmarshal the request body: invalid character 'e' in literal true (expecting 'r')",
+			expProgress: APIRequestProgress{
+				Stage:        RequestPending,
+				ErrorMessage: strP("can not unmarshal the request body: invalid character 'e' in literal true (expecting 'r')"),
+			},
+		},
+		{
 			name: "does the authorized request to a valid endpoint with valid parameters",
 			spec: APIRequestTaskSpec{
 				Method:      http.MethodPost,
 				URL:         s.URL,
-				RequestBody: `task request`,
+				RequestBody: `{"input": "task request"}`,
 				RequestHeaders: map[string]string{
 					"X-Some":    "X-Value",
 					"X-Another": "X-Some",
@@ -95,7 +115,7 @@ func TestAPIHandlerProcess(t *testing.T) {
 			expProgress: APIRequestProgress{
 				Stage:          RequestResponse,
 				ReturnedStatus: intP(http.StatusCreated),
-				ReturnedBody:   strP(`{"incoming":"task request","outcoming":"message"}`),
+				ReturnedBody:   strP(`{"incoming":{"input":"task request"},"outcoming":"message"}`),
 			},
 		},
 		{
@@ -103,7 +123,7 @@ func TestAPIHandlerProcess(t *testing.T) {
 			spec: APIRequestTaskSpec{
 				Method:      http.MethodPost,
 				URL:         s.URL,
-				RequestBody: "task request",
+				RequestBody: "\"task request\"",
 				RequestHeaders: map[string]string{
 					"X-Some":    "X-Value",
 					"X-Another": "X-Some",
@@ -130,7 +150,7 @@ func TestAPIHandlerProcess(t *testing.T) {
 			spec: APIRequestTaskSpec{
 				Method:         http.MethodPost,
 				URL:            s.URL,
-				RequestBody:    "task request",
+				RequestBody:    "\"task request\"",
 				ExpectedStatus: http.StatusCreated,
 			},
 			expHeaders: []string{
