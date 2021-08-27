@@ -42,10 +42,12 @@ type ClientWithRetry struct {
 	Plan backoff.BackOff
 }
 
+// GetBaseURL implements BaseAPIClient
 func (c ClientWithRetry) GetBaseURL() string {
 	return c.client.GetBaseURL()
 }
 
+// WithHeader implements BaseAPIClient
 func (c ClientWithRetry) WithHeader(headers http.Header) BaseAPIClient {
 	return ClientWithRetry{
 		Tracer:      c.Tracer,
@@ -56,6 +58,7 @@ func (c ClientWithRetry) WithHeader(headers http.Header) BaseAPIClient {
 	}
 }
 
+// WithTokenProvider implements BaseAPIClient
 func (c ClientWithRetry) WithTokenProvider(tokenProvider TokenProvider) BaseAPIClient {
 	return ClientWithRetry{
 		Tracer:      c.Tracer,
@@ -66,6 +69,7 @@ func (c ClientWithRetry) WithTokenProvider(tokenProvider TokenProvider) BaseAPIC
 	}
 }
 
+// DoRequest implements BaseAPIClient
 func (c ClientWithRetry) DoRequest(ctx context.Context, method, path string, query url.Values, payload, out interface{}) (err error) {
 	span, ctx := c.StartSpan(ctx, "DoRequest")
 	defer func() {
@@ -92,6 +96,7 @@ func (c ClientWithRetry) DoRequest(ctx context.Context, method, path string, que
 	return nil
 }
 
+// DoRequestWithResponse implements BaseAPIClient
 func (c ClientWithRetry) DoRequestWithResponse(ctx context.Context, method, path string, query url.Values, payload interface{}) (body *http.Response, err error) {
 	span, ctx := c.StartSpan(ctx, "DoRequestWithResponse")
 	defer func() {
