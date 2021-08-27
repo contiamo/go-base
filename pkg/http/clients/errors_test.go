@@ -1,9 +1,11 @@
 package clients
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 
+	"github.com/contiamo/go-base/v4/pkg/errors"
 	ctesting "github.com/contiamo/go-base/v4/pkg/testing"
 	"github.com/stretchr/testify/require"
 )
@@ -108,6 +110,54 @@ func TestAPIErrorError(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			require.Equal(t, tc.expMessage, tc.e.Error())
+
+			t.Run("test GetStatusCode returns correct status code", func(t *testing.T) {
+				require.Equal(t, tc.e.Status, GetStatusCode(tc.e))
+			})
+		})
+	}
+}
+
+func TestGetStatusCode(t *testing.T) {
+	cases := []struct {
+		name     string
+		err      error
+		expected int
+	}{
+		{
+			name:     "empty error returns 200",
+			expected: 200,
+		},
+		{
+			name:     "base error not found returns 404",
+			err:      errors.ErrNotFound,
+			expected: http.StatusNotFound,
+		},
+		{
+			name:     "base ErrAuthorization returns 401",
+			err:      errors.ErrAuthorization,
+			expected: http.StatusUnauthorized,
+		},
+		{
+			name:     "base ErrPermission returns 403",
+			err:      errors.ErrPermission,
+			expected: http.StatusForbidden,
+		},
+		{
+			name:     "base ErrNotImplemented returns 501",
+			err:      errors.ErrNotImplemented,
+			expected: http.StatusNotImplemented,
+		},
+		{
+			name:     "unknown error returns 0",
+			err:      fmt.Errorf("foo"),
+			expected: 0,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.expected, GetStatusCode(tc.err))
 		})
 	}
 }

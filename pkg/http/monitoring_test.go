@@ -14,9 +14,24 @@ func TestListenAndServeMonitoring(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
+	t.Run("test shutdown behavior", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+
+		done := make(chan error)
+		go func() {
+			err := ListenAndServeMonitoring(ctx, ":8080", nil)
+			done <- err
+		}()
+		// it takes some time to run the server, can't be accessed immediately
+		time.Sleep(100 * time.Millisecond)
+		cancel()
+
+		err := <-done
+		require.EqualError(t, err, http.ErrServerClosed.Error())
+	})
+
 	go func() {
-		err := ListenAndServeMonitoring(ctx, ":8080", nil)
-		require.NoError(t, err)
+		_ = ListenAndServeMonitoring(ctx, ":8080", nil)
 	}()
 	// it takes some time to run the server, can't be accessed immediately
 	time.Sleep(100 * time.Millisecond)

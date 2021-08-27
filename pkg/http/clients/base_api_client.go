@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/cenkalti/backoff/v4"
 	cerrors "github.com/contiamo/go-base/v4/pkg/errors"
 	"github.com/contiamo/go-base/v4/pkg/http/middlewares/authorization"
 	"github.com/contiamo/go-base/v4/pkg/tokens"
@@ -65,12 +66,21 @@ type BaseAPIClient interface {
 	// If the TokenProvider returns a non-empty token it will be set as a `tokenHeaderName`-named header
 	// overriding the matching header in the this set.
 	WithHeader(http.Header) BaseAPIClient
+
+	// WithRetry adds logic to automatically retry requests on specific error cases.
+	// The default implementation returns on the first error.
+	//
+	// The typical plans to user are backoff.NewConstantBackoff() or backoff.NewExponentialBackoff().
+	//
+	// Use maxAttempts = 0 to allow unlimited retries.
+	// Use testRetryable = nil for the default implementation implemented in IsRetryable
+	WithRetry(plan backoff.BackOff, maxAttempts uint64, testRetryable func(*http.Response, error) bool) BaseAPIClient
 }
 
 // NewBaseAPIClient creates a new instance of the base API client implementation.
 // Never use `debug=true` in production environments, it will leak sensitive data
 func NewBaseAPIClient(basePath, tokenHeaderName string, tokenProvider TokenProvider, client *http.Client, debug bool) BaseAPIClient {
-	return &baseAPIClient{
+	return baseAPIClient{
 		Tracer:          tracing.NewTracer("clients", "BaseAPIClient"),
 		basePath:        basePath,
 		tokenHeaderName: tokenHeaderName,
@@ -88,35 +98,49 @@ type baseAPIClient struct {
 	tokenProvider   TokenProvider
 	header          http.Header
 	client          *http.Client
-	debug           bool
+	plan            backoff.BackOff
+	maxAttempts     uint64
+	// retryable is a function that tests if the response can be retried.
+	// The default implementation is IsRetryable
+	retryable func(*http.Response, error) bool
+	debug     bool
 }
 
-func (t baseAPIClient) WithTokenProvider(tokenProvider TokenProvider) BaseAPIClient {
-	newClient := t
+func (c baseAPIClient) WithRetry(plan backoff.BackOff, maxAttempts uint64, testRetryable func(*http.Response, error) bool) BaseAPIClient {
+	newClient := c
+	newClient.plan = plan
+	newClient.maxAttempts = maxAttempts
+	newClient.retryable = testRetryable
+
+	return newClient
+}
+
+func (c baseAPIClient) WithTokenProvider(tokenProvider TokenProvider) BaseAPIClient {
+	newClient := c
 	newClient.tokenProvider = tokenProvider
 
 	return newClient
 }
 
-func (t baseAPIClient) WithHeader(header http.Header) BaseAPIClient {
-	newClient := t
+func (c baseAPIClient) WithHeader(header http.Header) BaseAPIClient {
+	newClient := c
 	newClient.header = header
 
 	return newClient
 }
 
-func (t baseAPIClient) GetBaseURL() string {
-	return t.basePath
+func (c baseAPIClient) GetBaseURL() string {
+	return c.basePath
 }
 
-func (t baseAPIClient) DoRequest(ctx context.Context, method, path string, query url.Values, payload, out interface{}) (err error) {
-	span, ctx := t.StartSpan(ctx, "DoRequest")
+func (c baseAPIClient) DoRequest(ctx context.Context, method, path string, query url.Values, payload, out interface{}) (err error) {
+	span, ctx := c.StartSpan(ctx, "DoRequest")
 	defer func() {
-		t.FinishSpan(span, err)
+		c.FinishSpan(span, err)
 	}()
 
 	// non-2** status codes will be errors already
-	resp, err := t.DoRequestWithResponse(ctx, method, path, query, payload)
+	resp, err := c.DoRequestWithResponse(ctx, method, path, query, payload)
 	if err != nil {
 		return err
 	}
@@ -127,6 +151,7 @@ func (t baseAPIClient) DoRequest(ctx context.Context, method, path string, query
 	span.SetTag("response_has_output_destination", out != nil)
 	span.SetTag("resp.contentType", contentType)
 
+	// handle the success response and parse the json payload into `out`
 	if out != nil && strings.Contains(contentType, "json") {
 		decoder := json.NewDecoder(resp.Body)
 		return errors.Wrap(decoder.Decode(out), "failed to decode JSON response")
@@ -135,10 +160,68 @@ func (t baseAPIClient) DoRequest(ctx context.Context, method, path string, query
 	return nil
 }
 
-func (t baseAPIClient) DoRequestWithResponse(ctx context.Context, method, path string, query url.Values, payload interface{}) (body *http.Response, err error) {
-	span, ctx := t.StartSpan(ctx, "DoRequestWithResponse")
+func (c baseAPIClient) DoRequestWithResponse(ctx context.Context, method, path string, query url.Values, payload interface{}) (body *http.Response, err error) {
+	span, ctx := c.StartSpan(ctx, "DoRequestWithResponse")
 	defer func() {
-		t.FinishSpan(span, err)
+		c.FinishSpan(span, err)
+	}()
+
+	span.SetTag("maxAttempts", c.maxAttempts)
+
+	var lastResp *http.Response
+
+	basePlan := c.plan
+	if basePlan == nil {
+		// default to no retries, equivalent to not running inside Retry
+		basePlan = &backoff.StopBackOff{}
+	}
+
+	// let the backoff plan handle the max case and context cancel
+	// WithMaxRetries is not thread-safe, so we initialize it here
+	plan := backoff.WithMaxRetries(
+		backoff.WithContext(basePlan, ctx),
+		// the attempts counter is 0 based
+		c.maxAttempts-1,
+	)
+
+	retryable := c.retryable
+	if c.retryable == nil {
+		retryable = IsRetryable
+	}
+
+	logger := logrus.WithContext(ctx).
+		WithField("maxAttempts", c.maxAttempts)
+
+	var attempt int
+	// note about the Retry error
+	// 1. Retry will unwrap the Permanent error for us
+	// 2. when we hit max retries, we will get the last operation error from the Retry
+	// 3. will return the context error, if it is not nil
+	err = backoff.Retry(func() error {
+		var attemptErr error
+		attempt++
+
+		// we assume that BaseAPIClient implements Tracer, so we don't create
+		// a subspan for each attempt, the DoRequestWithResponse will do that already
+
+		// nolint:bodyclose // caller is now responsible for closing, if there is no error
+		lastResp, attemptErr = c.do(ctx, method, path, query, payload)
+		if !retryable(lastResp, attemptErr) {
+			logger.WithField("attempt", attempt).WithError(attemptErr).Error("permanent error")
+			return backoff.Permanent(attemptErr)
+		}
+
+		logger.WithField("attempt", attempt).WithError(attemptErr).Debug("retryable error")
+		return attemptErr
+	}, plan)
+
+	return lastResp, err
+}
+
+func (c baseAPIClient) do(ctx context.Context, method, path string, query url.Values, payload interface{}) (body *http.Response, err error) {
+	span, ctx := c.StartSpan(ctx, "do")
+	defer func() {
+		c.FinishSpan(span, err)
 	}()
 	span.SetTag("method", method)
 	span.SetTag("path", path)
@@ -146,7 +229,7 @@ func (t baseAPIClient) DoRequestWithResponse(ctx context.Context, method, path s
 	queryString := query.Encode()
 	span.SetTag("query", queryString)
 
-	url := t.GetBaseURL() + path
+	url := c.GetBaseURL() + path
 	if queryString != "" {
 		url += "?" + queryString
 	}
@@ -156,7 +239,7 @@ func (t baseAPIClient) DoRequestWithResponse(ctx context.Context, method, path s
 		WithField("url", url)
 
 	logrus.Debug("creating the request token...")
-	token, err := t.tokenProvider()
+	token, err := c.tokenProvider()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create request token")
 	}
@@ -187,13 +270,13 @@ func (t baseAPIClient) DoRequestWithResponse(ctx context.Context, method, path s
 	// so, the HTTP request can be canceled
 	req = req.WithContext(ctx)
 
-	if t.header != nil {
-		req.Header = t.header.Clone()
+	if c.header != nil {
+		req.Header = c.header.Clone()
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 	if token != "" {
-		req.Header.Set(t.tokenHeaderName, token)
+		req.Header.Set(c.tokenHeaderName, token)
 	} else {
 		span.LogKV("token", "token value is empty, header was not set")
 	}
@@ -214,7 +297,7 @@ func (t baseAPIClient) DoRequestWithResponse(ctx context.Context, method, path s
 	logrus.Debug("HTTP request created.")
 
 	logrus.Debug("doing request...")
-	resp, err := t.client.Do(req)
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to do request")
 	}
@@ -244,7 +327,7 @@ func (t baseAPIClient) DoRequestWithResponse(ctx context.Context, method, path s
 	case http.StatusNotImplemented:
 		return nil, cerrors.ErrNotImplemented
 	default:
-		if t.debug {
+		if c.debug {
 			// ignore the error on purpose here
 			requestBody, _ := json.Marshal(payload)
 			span.LogKV("request.body", string(requestBody))
