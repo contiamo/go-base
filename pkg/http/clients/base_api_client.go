@@ -73,7 +73,8 @@ type BaseAPIClient interface {
 	// The typical plans to user are backoff.NewConstantBackoff() or backoff.NewExponentialBackoff().
 	//
 	// Use maxAttempts = 0 to allow unlimited retries.
-	WithRetry(plan backoff.BackOff, maxAttempts uint64) BaseAPIClient
+	// Use testRetryable = nil for the default implementation implemented in IsRetryable
+	WithRetry(plan backoff.BackOff, maxAttempts uint64, testRetryable func(*http.Response, error) bool) BaseAPIClient
 }
 
 // NewBaseAPIClient creates a new instance of the base API client implementation.
@@ -105,10 +106,11 @@ type baseAPIClient struct {
 	debug     bool
 }
 
-func (c baseAPIClient) WithRetry(plan backoff.BackOff, maxAttempts uint64) BaseAPIClient {
+func (c baseAPIClient) WithRetry(plan backoff.BackOff, maxAttempts uint64, testRetryable func(*http.Response, error) bool) BaseAPIClient {
 	newClient := c
 	newClient.plan = plan
 	newClient.maxAttempts = maxAttempts
+	newClient.retryable = testRetryable
 
 	return newClient
 }

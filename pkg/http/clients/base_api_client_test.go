@@ -662,7 +662,7 @@ func TestClientRetry(t *testing.T) {
 			tp := TokenProviderFromCreator(tm, "test", tokens.Options{})
 
 			c := NewBaseAPIClient(s.URL+basePath, "X-Request-Token", tp, http.DefaultClient, true)
-			c = c.WithRetry(backoff.NewConstantBackOff(500*time.Millisecond), 2)
+			c = c.WithRetry(backoff.NewConstantBackOff(500*time.Millisecond), 2, nil)
 
 			require.Equal(t, s.URL+basePath, c.GetBaseURL())
 
