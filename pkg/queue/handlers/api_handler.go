@@ -163,7 +163,10 @@ func (h jsonAPIHandler) Process(ctx context.Context, task queue.Task, heartbeats
 
 	var payload interface{} = nil
 	if spec.RequestBody != "" {
-		payload = spec.RequestBody
+		err = json.Unmarshal([]byte(spec.RequestBody), &payload)
+		if err != nil {
+			return fmt.Errorf("can not unmarshal the request body: %w", err)
+		}
 	}
 
 	resp, err := taskClient.DoRequestWithResponse(ctx, spec.Method, spec.URL, nil, payload)
