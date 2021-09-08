@@ -19,6 +19,16 @@ func NewMigrater(stmts []string, assets http.FileSystem) func(context.Context, *
 }
 
 func migrate(ctx context.Context, db *sql.DB, list []string, assets http.FileSystem) (err error) {
+	for _, stmtName := range list {
+		err = executeMigration(ctx, db, stmtName, assets)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func executeMigration(ctx context.Context, db *sql.DB, stmtName string, assets http.FileSystem) (err error) {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		logrus.Errorf("failed to start migration transaction: %v", err)
@@ -43,7 +53,7 @@ func migrate(ctx context.Context, db *sql.DB, list []string, assets http.FileSys
 				err = nil
 			}
 			if err != nil {
-				logger.WithError(err).Error("can not commit migrations transaction")
+				logger.WithError(err).Error("can not commit migration transaction")
 			}
 			return
 		}
@@ -57,54 +67,52 @@ func migrate(ctx context.Context, db *sql.DB, list []string, assets http.FileSys
 		}
 	}()
 
-	for _, stmtName := range list {
-		logger := logrus.
-			WithField("method", "migrate").
-			WithField("stmt", stmtName)
-		logger.Debug("migration started")
+	logger = logrus.
+		WithField("method", "migrate").
+		WithField("stmt", stmtName)
+	logger.Debug("migration started")
 
-		stmt, err := getSQL(stmtName, migrations, assets)
-		if err != nil {
-			logger.WithError(err).Error("migration failed")
-			return fmt.Errorf("migration failed: %w", err)
-		}
-
-		hash, err := crypto.HashToString(stmt)
-		if err != nil {
-			logger.WithError(err).Error("can not hash sql statement")
-			return errors.Wrap(err, "can not hash sql statement")
-		}
-
-		sqlVersion := fmt.Sprintf("%s_%s", stmtName, hash)
-		row := db.QueryRowContext(ctx,
-			`SELECT version FROM migrations WHERE version = $1;`,
-			sqlVersion,
-		)
-
-		var version string
-		err = row.Scan(&version)
-		if err != nil && err != sql.ErrNoRows {
-			logger.WithError(err).Errorf("version hash scan err")
-			return errors.Wrap(err, "version hash scan err")
-		}
-
-		if version == sqlVersion {
-			logger.Info("migration already run")
-			continue
-		}
-
-		res, err := tx.ExecContext(ctx, stmt)
-		if err != nil {
-			logger.WithError(err).Error("migration failed")
-			return errors.Wrap(err, "migration failed")
-		}
-		affected, err := res.RowsAffected()
-		if err != nil {
-			logger.WithError(err).Error("can't count affected rows")
-			return errors.Wrap(err, "can't count affected rows")
-		}
-		logger.WithField("affected", affected).Info("migration finished")
+	stmt, err := getSQL(stmtName, migrations, assets)
+	if err != nil {
+		logger.WithError(err).Error("migration failed")
+		return fmt.Errorf("migration failed: %w", err)
 	}
+
+	hash, err := crypto.HashToString(stmt)
+	if err != nil {
+		logger.WithError(err).Error("can not hash sql statement")
+		return errors.Wrap(err, "can not hash sql statement")
+	}
+
+	sqlVersion := fmt.Sprintf("%s_%s", stmtName, hash)
+	row := db.QueryRowContext(ctx,
+		`SELECT version FROM migrations WHERE version = $1;`,
+		sqlVersion,
+	)
+
+	var version string
+	err = row.Scan(&version)
+	if err != nil && err != sql.ErrNoRows {
+		logger.WithError(err).Errorf("version hash scan err")
+		return errors.Wrap(err, "version hash scan err")
+	}
+
+	if version == sqlVersion {
+		logger.Info("migration already run")
+		return nil
+	}
+
+	res, err := tx.ExecContext(ctx, stmt)
+	if err != nil {
+		logger.WithError(err).Error("migration failed")
+		return errors.Wrap(err, "migration failed")
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		logger.WithError(err).Error("can't count affected rows")
+		return errors.Wrap(err, "can't count affected rows")
+	}
+	logger.WithField("affected", affected).Info("migration finished")
 
 	return err
 }
