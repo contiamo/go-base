@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.4.0](https://www.github.com/contiamo/go-base/compare/v4.3.0...v4.4.0) (2021-08-27)
+
+
+### Features
+
+* Add WithRetry to the BaseAPIClient interface ([#155](https://www.github.com/contiamo/go-base/issues/155)) ([7f77db1](https://www.github.com/contiamo/go-base/commit/7f77db1fe70b0225661574ace50dde2a98c0b96e))
+
+
+### Bug Fixes
+
+* treat json api task body as json ([#159](https://www.github.com/contiamo/go-base/issues/159)) ([5fe641f](https://www.github.com/contiamo/go-base/commit/5fe641f9da0169d4c3d9d974684f5661143b02f2))
+
 ## [4.3.0](https://www.github.com/contiamo/go-base/compare/v4.2.1...v4.3.0) (2021-08-02)
 
 

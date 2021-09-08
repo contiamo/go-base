@@ -9,7 +9,7 @@ import (
 
 	"github.com/contiamo/go-base/v4/pkg/tracing"
 	goserverhttp "github.com/contiamo/goserver/http"
-	jwt "github.com/golang-jwt/jwt"
+	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -84,7 +84,7 @@ func (a *middleware) WrapHandler(next http.Handler) http.Handler {
 			return
 		}
 
-		claims, err := parseClaims(token.Raw)
+		claims, err := parseClaims(token)
 		if err != nil {
 			err = errors.Wrap(err, "could not parse request token from claims")
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
@@ -126,24 +126,17 @@ func sanitizeHeaderValue(value string) string {
 	return trimmed[0:len(trimmed)/2] + "****"
 }
 
-func parseClaims(token string) (claims Claims, err error) {
-	parts := strings.Split(token, ".")
-	if len(parts) != 3 {
-		return claims, errors.New("token contains an invalid number of segments")
-	}
-
-	rawClaims, err := jwt.DecodeSegment(parts[1])
+func parseClaims(token *jwt.Token) (claims Claims, err error) {
+	rawClaims, err := json.Marshal(token.Claims)
 	if err != nil {
 		return claims, err
 	}
 
-	claimMap := make(map[string]interface{})
-	err = json.Unmarshal(rawClaims, &claimMap)
+	err = json.Unmarshal(rawClaims, &claims)
 	if err != nil {
 		return claims, err
 	}
 
-	err = claims.FromClaimsMap(claimMap)
 	return claims, err
 }
 

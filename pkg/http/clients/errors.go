@@ -109,3 +109,27 @@ func (e APIError) ResponseErrors() (errs []error) {
 
 	return errs
 }
+
+// GetStatusCode returns the api error code, if it exists.
+// When err is nil, it always returns 200.
+func GetStatusCode(err error) int {
+	if err == nil {
+		return 200
+	}
+	apiErr, ok := err.(APIError)
+	if ok {
+		return apiErr.Status
+	}
+	switch err {
+	case cerrors.ErrAuthorization:
+		return http.StatusUnauthorized
+	case cerrors.ErrPermission:
+		return http.StatusForbidden
+	case cerrors.ErrNotFound:
+		return http.StatusNotFound
+	case cerrors.ErrNotImplemented:
+		return http.StatusNotImplemented
+	default:
+		return 0
+	}
+}
