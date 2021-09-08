@@ -150,13 +150,6 @@ func NewPrepareDatabase(config MigrationConfig, queueConfig *QueueDBConfig, appV
 		}
 		logger.Info("Finished running View initialization statements...")
 
-		for _, name := range config.MigrationStatements {
-			err = saveVersionHash(ctx, name, config.Assets, tx)
-			if err != nil {
-				return err
-			}
-		}
-
 		// store the migration into the log
 		_, err = tx.ExecContext(ctx, `
 			INSERT INTO migrations (version) VALUES ($1);`,

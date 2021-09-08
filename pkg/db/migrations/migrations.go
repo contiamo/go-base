@@ -112,6 +112,15 @@ func executeMigration(ctx context.Context, db *sql.DB, stmtName string, assets h
 		logger.WithError(err).Error("can't count affected rows")
 		return errors.Wrap(err, "can't count affected rows")
 	}
+
+	_, err = tx.ExecContext(ctx,
+		`INSERT INTO migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING;`,
+		sqlVersion,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to save sql version: %w", err)
+	}
+
 	logger.WithField("affected", affected).Info("migration finished")
 
 	return err
