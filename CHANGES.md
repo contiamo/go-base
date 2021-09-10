@@ -1,5 +1,12 @@
 # Changelog
 
+### [4.4.1](https://www.github.com/contiamo/go-base/compare/v4.4.0...v4.4.1) (2021-09-10)
+
+
+### Bug Fixes
+
+* do not allow infinite retry by default in the base api client ([#163](https://www.github.com/contiamo/go-base/issues/163)) ([1980674](https://www.github.com/contiamo/go-base/commit/19806746d1bfe0bf57b3952d82702e4f1b87a9c0))
+
 ## [4.4.0](https://www.github.com/contiamo/go-base/compare/v4.3.0...v4.4.0) (2021-08-27)
 
 
