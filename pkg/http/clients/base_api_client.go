@@ -72,7 +72,7 @@ type BaseAPIClient interface {
 	//
 	// The typical plans to user are backoff.NewConstantBackoff() or backoff.NewExponentialBackoff().
 	//
-	// Use maxAttempts = 0 to allow unlimited retries.
+	// Setting maxAttempts = 0 is the same as setting maxAttempts = 1, it will run the requests exactly once.
 	// Use testRetryable = nil for the default implementation implemented in IsRetryable
 	WithRetry(plan backoff.BackOff, maxAttempts uint64, testRetryable func(*http.Response, error) bool) BaseAPIClient
 }
@@ -178,10 +178,14 @@ func (c baseAPIClient) DoRequestWithResponse(ctx context.Context, method, path s
 
 	// let the backoff plan handle the max case and context cancel
 	// WithMaxRetries is not thread-safe, so we initialize it here
+	attempts := c.maxAttempts
+	if c.maxAttempts > 0 {
+		// the attempts counter is 0 based
+		attempts = c.maxAttempts - 1
+	}
 	plan := backoff.WithMaxRetries(
 		backoff.WithContext(basePlan, ctx),
-		// the attempts counter is 0 based
-		c.maxAttempts-1,
+		attempts,
 	)
 
 	retryable := c.retryable

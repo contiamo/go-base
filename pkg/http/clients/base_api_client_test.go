@@ -439,11 +439,12 @@ func TestClientRetry(t *testing.T) {
 	cases := []struct {
 		name string
 
-		method  string
-		path    string
-		query   url.Values
-		payload interface{}
-		out     interface{}
+		method      string
+		path        string
+		query       url.Values
+		payload     interface{}
+		out         interface{}
+		maxAttempts uint64
 
 		serverStatus   int
 		serverResponse []byte
@@ -459,7 +460,7 @@ func TestClientRetry(t *testing.T) {
 	}{
 		// retryable cases
 		{
-			name:   "Returns error response from the server on 500",
+			name:   "Respects max attempts set to zero",
 			method: http.MethodGet,
 			path:   "/some/path",
 			out:    &out,
@@ -478,6 +479,30 @@ func TestClientRetry(t *testing.T) {
 				},
 				Response: []byte("some crazy internal stuff"),
 			},
+			maxAttempts: 0,
+			expAttempts: 1,
+		},
+		{
+			name:   "Returns error response from the server on 500, respects max attempts higher than zero",
+			method: http.MethodGet,
+			path:   "/some/path",
+			out:    &out,
+
+			token: "tokenSample",
+
+			serverStatus:   http.StatusInternalServerError,
+			serverResponse: []byte("some crazy internal stuff"),
+
+			expError: APIError{
+				Status: http.StatusInternalServerError,
+				Header: http.Header{
+					"Content-Length": []string{"25"},
+					"Content-Type":   []string{"application/json"},
+					"Date":           []string{"fixed value"},
+				},
+				Response: []byte("some crazy internal stuff"),
+			},
+			maxAttempts: 2,
 			expAttempts: 2,
 		},
 		{
@@ -500,6 +525,7 @@ func TestClientRetry(t *testing.T) {
 				},
 				Response: []byte("some crazy internal stuff"),
 			},
+			maxAttempts: 2,
 			expAttempts: 2,
 		},
 		// cases without retries
@@ -523,6 +549,7 @@ func TestClientRetry(t *testing.T) {
 				},
 				Response: []byte("conflict"),
 			},
+			maxAttempts: 2,
 			expAttempts: 1,
 		},
 		{
@@ -547,6 +574,7 @@ func TestClientRetry(t *testing.T) {
 			expResponse: &response{
 				Answer: resp.Answer,
 			},
+			maxAttempts: 2,
 			expAttempts: 1,
 		},
 		{
@@ -559,6 +587,7 @@ func TestClientRetry(t *testing.T) {
 			serverStatus: http.StatusUnauthorized,
 
 			expError:    cerrors.ErrAuthorization,
+			maxAttempts: 2,
 			expAttempts: 1,
 		},
 		{
@@ -571,6 +600,7 @@ func TestClientRetry(t *testing.T) {
 			serverStatus: http.StatusForbidden,
 
 			expError:    cerrors.ErrPermission,
+			maxAttempts: 2,
 			expAttempts: 1,
 		},
 		{
@@ -583,6 +613,7 @@ func TestClientRetry(t *testing.T) {
 			serverStatus: http.StatusNotFound,
 
 			expError:    cerrors.ErrNotFound,
+			maxAttempts: 2,
 			expAttempts: 1,
 		},
 		{
@@ -595,6 +626,7 @@ func TestClientRetry(t *testing.T) {
 			serverStatus: http.StatusNotImplemented,
 
 			expError:    cerrors.ErrNotImplemented,
+			maxAttempts: 2,
 			expAttempts: 1,
 		},
 		{
@@ -608,6 +640,7 @@ func TestClientRetry(t *testing.T) {
 			serverResponse: []byte("invalid"),
 
 			expErrorStr: "failed to decode JSON response: invalid character 'i' looking for beginning of value",
+			maxAttempts: 2,
 			expAttempts: 1,
 		},
 		// cases with no attempts
@@ -621,7 +654,8 @@ func TestClientRetry(t *testing.T) {
 			token:        "tokenSample",
 			tokenErr:     tokenError,
 
-			expError: tokenError,
+			expError:    tokenError,
+			maxAttempts: 2,
 		},
 	}
 
@@ -662,7 +696,7 @@ func TestClientRetry(t *testing.T) {
 			tp := TokenProviderFromCreator(tm, "test", tokens.Options{})
 
 			c := NewBaseAPIClient(s.URL+basePath, "X-Request-Token", tp, http.DefaultClient, true)
-			c = c.WithRetry(backoff.NewConstantBackOff(500*time.Millisecond), 2, nil)
+			c = c.WithRetry(backoff.NewConstantBackOff(500*time.Millisecond), tc.maxAttempts, nil)
 
 			require.Equal(t, s.URL+basePath, c.GetBaseURL())
 
