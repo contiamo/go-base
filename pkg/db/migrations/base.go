@@ -1,6 +1,8 @@
 package migrations
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -27,4 +29,17 @@ func getSQL(name string, kind sqlKind, assets http.FileSystem) (string, error) {
 	}
 
 	return string(s), nil
+}
+
+// Lock to ensure multiple migrations cannot occur simultaneously
+const lockNum = int64(47831730) // arbitrary random number
+
+func acquireAdvisoryLock(ctx context.Context, db *sql.DB) error {
+	_, err := db.ExecContext(ctx, "select pg_advisory_lock($1)", lockNum)
+	return err
+}
+
+func releaseAdvisoryLock(ctx context.Context, db *sql.DB) error {
+	_, err := db.ExecContext(ctx, "select pg_advisory_unlock($1)", lockNum)
+	return err
 }
