@@ -16,8 +16,9 @@ import (
 type sqlKind string
 
 const (
-	migrations sqlKind = "migrations"
-	views      sqlKind = "views"
+	migrations         sqlKind = "migrations"
+	views              sqlKind = "views"
+	idleTransactionErr         = "pq: unexpected transaction status idle"
 )
 
 func getSQL(name string, kind sqlKind, assets http.FileSystem) (string, error) {
@@ -54,7 +55,7 @@ func runStatement(ctx context.Context, db *sql.DB, stmt string) error {
 			//    https://github.com/lib/pq/issues/225
 			// Initial experiments have only produced this during unit tests, but actual
 			// application environments run without any transaction issues.
-			if err != nil && err.Error() == "pq: unexpected transaction status idle" {
+			if err != nil && err.Error() == idleTransactionErr {
 				logger.WithError(err).Warn("idle transaction at Commit")
 				err = nil
 			}
