@@ -24,6 +24,23 @@ func NewPostIniter(stmts []string, assets http.FileSystem) func(context.Context,
 }
 
 func configureViews(ctx context.Context, db *sql.DB, stmts []string, assets http.FileSystem) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err == nil {
+			err = tx.Commit()
+			return
+		}
+
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			err = errors.Wrap(err, rollbackErr.Error())
+		}
+	}()
+
 	for i, stmtName := range stmts {
 		logger := logrus.WithField("stmt", stmtName)
 		logger.Debug("migration started")
@@ -33,11 +50,12 @@ func configureViews(ctx context.Context, db *sql.DB, stmts []string, assets http
 			logger.Errorf("migration failed: %v", err)
 			return fmt.Errorf("migration failed: %w", err)
 		}
-		err = runStatement(ctx, db, stmt)
+
+		_, err = tx.ExecContext(ctx, stmt)
 		if err != nil {
 			return errors.Wrapf(err, "configure view failed at index %d", i)
 		}
 	}
 
-	return nil
+	return err
 }
