@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"sync"
 	"time"
 
 	"github.com/contiamo/go-base/v4/pkg/queue"
@@ -17,6 +19,11 @@ import (
 
 var (
 	maxSpanDuration = 1 * time.Minute
+	heartbeatTTL    = 15 * time.Second
+	// HeartbeatTimeout is returned from the worker when the task heartbeat is too slow,
+	// tasks must heartbeat every 15s or else the worker abandons he task. The task is
+	// not marked as a failure, but can be restarted by another worker.
+	HeartbeatTimeout = fmt.Errorf("task timeout")
 )
 
 // NewTaskWorker creates a new Task Worker instance
@@ -173,20 +180,27 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 	cleanup := make(chan struct{}, 1)
 	defer close(cleanup)
 
-	done := make(chan taskDone)
-	defer close(done)
-
+	processDone := make(chan taskDone)
 	go func() {
+		defer close(processDone)
 		// handler.Process is responsible for closing the heartbeats channel
 		// if `Process` returns an error it means the task failed
 		err := w.handler.Process(ctx, task, heartbeats)
-		done <- taskDone{err: err, fromProcessing: true}
+
+		processDone <- taskDone{err: err, fromProcessing: true}
 	}()
 
+	heartbeatsDone := make(chan taskDone)
 	progress := queue.Progress("{}") // empty progress by default
 	go func() {
+		defer close(heartbeatsDone)
+
+		ttl := time.NewTimer(heartbeatTTL)
 		for {
 			select {
+			case <-ttl.C:
+				processDone <- taskDone{err: HeartbeatTimeout, fromProcessing: false}
+				return
 			case <-cleanup:
 				return
 
@@ -211,11 +225,25 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 						return
 					default:
 						// fatal error, time to stop
-						done <- taskDone{err: hrtErr, fromProcessing: false}
+						heartbeatsDone <- taskDone{err: hrtErr, fromProcessing: false}
 						return
 					}
 				}
+
+				if !ttl.Stop() {
+					// ttl has fired and we need to drain the channel
+					<-ttl.C
+				}
+				ttl.Reset(heartbeatTTL)
 			}
+		}
+	}()
+
+	// use separate channels and merge to avoid pushes to closed channels
+	done := merge(processDone, heartbeatsDone)
+	defer func() {
+		// drain done to avoid leaks
+		for range done {
 		}
 	}()
 
@@ -273,4 +301,23 @@ func (w *taskWorker) setError(progress queue.Progress, err error) queue.Progress
 		return progress
 	}
 	return queue.Progress(bytes)
+}
+
+func merge(cs ...<-chan taskDone) <-chan taskDone {
+	out := make(chan taskDone)
+	var wg sync.WaitGroup
+	wg.Add(len(cs))
+	for _, c := range cs {
+		go func(c <-chan taskDone) {
+			for v := range c {
+				out <- v
+			}
+			wg.Done()
+		}(c)
+	}
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+	return out
 }

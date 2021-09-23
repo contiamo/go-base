@@ -87,8 +87,8 @@ func TestTaskWorkerMetrics(t *testing.T) {
 func TestTaskWorkerWork(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	logrus.SetOutput(ioutil.Discard)
-	defer logrus.SetOutput(os.Stdout)
+	// logrus.SetOutput(ioutil.Discard)
+	// defer logrus.SetOutput(os.Stdout)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -370,6 +370,53 @@ func TestTaskWorkerWork(t *testing.T) {
 
 		expStatus := `{"error":"heartbeats not closed error"}`
 		require.Equal(t, []queue.Progress{queue.Progress(expStatus)}, q.fails)
+		require.Equal(t, float64(3), testutil.ToFloat64(testCounter))
+	})
+
+	t.Run("slow heartbeats triggers an error", func(t *testing.T) {
+		originalTTL := heartbeatTTL
+		heartbeatTTL = time.Second
+		defer func() {
+			heartbeatTTL = originalTTL
+		}()
+
+		ctx, cancel := context.WithCancel(ctx)
+		qCh := make(chan *queue.Task, 1)
+		q := &mockQueue{queue: qCh}
+
+		testTask := &queue.Task{
+			TaskBase: queue.TaskBase{
+				Queue: "testQueue",
+				Type:  "testType",
+			},
+			ID: "testTask",
+		}
+		qCh <- testTask
+
+		handler := queue.TaskHandlerFunc(func(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) error {
+			defer close(heartbeats)
+			time.Sleep(heartbeatTTL + time.Second)
+			return errors.New("some serious error")
+		})
+
+		w := NewTaskWorker(q, handler)
+
+		done := make(chan error)
+		go func() {
+			done <- w.Work(ctx)
+		}()
+
+		time.Sleep(3 * time.Millisecond)
+		cancel()
+		err := <-done
+		// we should get the context error from the Work thread because the dequeue
+		// is not a fatal error, but we should see the timeout error in the logs
+		require.EqualError(t, err, "context canceled")
+
+		// task does not finish or fail, the queue can restart it
+		require.Equal(t, 0, len(q.heartbeats))
+		require.Equal(t, 0, len(q.fails))
+		require.Equal(t, 0, len(q.finishes))
 		require.Equal(t, float64(3), testutil.ToFloat64(testCounter))
 	})
 }
