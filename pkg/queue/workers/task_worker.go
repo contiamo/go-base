@@ -142,6 +142,11 @@ func (w *taskWorker) tryDequeueTask(ctx context.Context) (task *queue.Task, err 
 	return w.dequeuer.Dequeue(ctx)
 }
 
+type taskDone struct {
+	err            error
+	fromProcessing bool
+}
+
 // handleTask is responsible for actually calling the handler.Process method.  This method includes
 // the standardized logic need for metrics and handling cancellation errors
 func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error) {
@@ -156,48 +161,89 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 	timer := prometheus.NewTimer(queue.TaskWorkerMetrics.ProcessingDuration)
 	defer timer.ObserveDuration()
 
-	log := logrus.WithField("worker", "handleTask")
+	log := logrus.WithContext(ctx).
+		WithField("worker", "handleTask").
+		WithField("queue", task.Queue)
 
 	heartbeats := make(chan queue.Progress)
-	done := make(chan struct{})
 
-	var workErr error
+	// use cleanup to signal to the hearbeat loop that Processing is done to
+	// avoid any leaks and to handle edge cases where heatbeats doesn't close
+	// or the heartbeats are very slow.
+	cleanup := make(chan struct{}, 1)
+	defer close(cleanup)
+
+	done := make(chan taskDone)
+	defer close(done)
+
 	go func() {
-		defer close(done)
 		// handler.Process is responsible for closing the heartbeats channel
 		// if `Process` returns an error it means the task failed
-		workErr = w.handler.Process(ctx, task, heartbeats)
+		err := w.handler.Process(ctx, task, heartbeats)
+		done <- taskDone{err: err, fromProcessing: true}
 	}()
 
-	// assumes that the handler will close the heartbeats channel when if finishes/errors
 	progress := queue.Progress("{}") // empty progress by default
-	for progress = range heartbeats {
-		hrtErr := w.dequeuer.Heartbeat(ctx, task.ID, progress)
-		if hrtErr != nil {
-			switch hrtErr {
-			case queue.ErrTaskCancelled,
-				queue.ErrTaskFinished,
-				queue.ErrTaskNotFound,
-				queue.ErrTaskNotRunning:
-				log.Error(hrtErr)
-				// finished/canceled errors are not considered event errors, stop and return nil
-				return nil
-			default:
-				return hrtErr
+	go func() {
+		for {
+			select {
+			case <-cleanup:
+				return
+
+			// use a temporary p instead of shadowing progress directory so that
+			// we don't accidentally nil the progress when the heartbeats closes
+			case p, ok := <-heartbeats:
+				if !ok {
+					log.Debug("closed heartbeats")
+					return
+				}
+				// record the latest valid progress
+				progress = p
+				hrtErr := w.dequeuer.Heartbeat(ctx, task.ID, progress)
+				if hrtErr != nil {
+					switch hrtErr {
+					case queue.ErrTaskCancelled,
+						queue.ErrTaskFinished,
+						queue.ErrTaskNotFound,
+						queue.ErrTaskNotRunning:
+						log.Error(hrtErr)
+						// finished/canceled errors are not considered event errors, stop and return nil
+						return
+					default:
+						// fatal error, time to stop
+						done <- taskDone{err: hrtErr, fromProcessing: false}
+						return
+					}
+				}
 			}
 		}
-	}
+	}()
 
-	<-done
+	workErr := <-done
+	// there is a potential race condition at the end of the Process(). The implementation may do something like
+	//
+	// 		heartbeats <- progress
+	// 		return err
+	//
+	// We now have a small race between the Process goroutine that pushed `err` into the done channel
+	// and the heartbeat goroutine that is processing `progress`. This small sleep  should help capture that final progress
+	// item most of the time, if there is one.
+	time.Sleep(time.Millisecond)
+	cleanup <- struct{}{}
 
-	if workErr != nil {
+	if workErr.err != nil && workErr.fromProcessing {
 		// we must try to put the error message in the latest version of progress
 		// empty progress (no heartbeats) is also fine
 		span.SetTag("workErr", workErr)
 		queue.TaskWorkerMetrics.ProcessingErrorsCounter.With(labels).Inc()
 
-		progress = w.setError(progress, workErr)
+		progress = w.setError(progress, workErr.err)
 		return w.dequeuer.Fail(ctx, task.ID, progress)
+	}
+
+	// non-processing error, usually a DB or serialization failure
+	if workErr.err != nil {
+		return workErr.err
 	}
 
 	err = w.dequeuer.Finish(ctx, task.ID, progress)
