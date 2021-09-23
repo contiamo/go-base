@@ -90,7 +90,7 @@ func TestTaskWorkerWork(t *testing.T) {
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	testCounter := queue.TaskWorkerMetrics.ProcessingErrorsCounter.With(prometheus.Labels{"queue": "testQueue", "type": "testType"})
@@ -332,6 +332,45 @@ func TestTaskWorkerWork(t *testing.T) {
 		t.Run("should not increment worker error during heartbeat errors", func(t *testing.T) {
 			require.Equal(t, float64(2), testutil.ToFloat64(testCounter))
 		})
+	})
+
+	t.Run("worker stops if process tops without closing the heartbeats", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(ctx)
+		qCh := make(chan *queue.Task, 1)
+		q := &mockQueue{queue: qCh}
+
+		testTask := &queue.Task{
+			TaskBase: queue.TaskBase{
+				Queue: "testQueue",
+				Type:  "testType",
+			},
+			ID: "testTask",
+		}
+		qCh <- testTask
+
+		handler := queue.TaskHandlerFunc(func(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) error {
+			// explicitly don't close the heartbeats
+			// defer close(heartbeats)
+			return errors.New("heartbeats not closed error")
+		})
+
+		w := NewTaskWorker(q, handler)
+
+		done := make(chan error)
+		go func() {
+			done <- w.Work(ctx)
+		}()
+
+		time.Sleep(3 * time.Millisecond)
+		cancel()
+		err := <-done
+		// we should get the context error from the Work thread because the dequeue
+		// is not a fatal error, but we should see the dequeue error in the logs
+		require.EqualError(t, err, "context canceled")
+
+		expStatus := `{"error":"heartbeats not closed error"}`
+		require.Equal(t, []queue.Progress{queue.Progress(expStatus)}, q.fails)
+		require.Equal(t, float64(3), testutil.ToFloat64(testCounter))
 	})
 }
 
