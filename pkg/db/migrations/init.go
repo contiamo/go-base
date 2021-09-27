@@ -43,7 +43,7 @@ func initialize(ctx context.Context, db *sql.DB, assets http.FileSystem, queueCo
 		return fmt.Errorf("can not read init statement: %w", err)
 	}
 
-	_, err = db.ExecContext(ctx, stmt)
+	err = runStatement(ctx, db, stmt)
 	if err != nil {
 		return fmt.Errorf("init execution failed: %w", err)
 	}
