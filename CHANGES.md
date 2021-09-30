@@ -1,5 +1,25 @@
 # Changelog
 
+### [4.5.1](https://www.github.com/contiamo/go-base/compare/v4.4.1...v4.5.1) (2021-09-30)
+
+
+### Features
+
+* remove goserver as dependency ([#174](https://www.github.com/contiamo/go-base/issues/174)) ([67b1950](https://www.github.com/contiamo/go-base/commit/67b19504057b948c701d931a8a3a29da79961213))
+* update `contiamo/jwt` to fix CVE ([#170](https://www.github.com/contiamo/go-base/issues/170)) ([1a58be6](https://www.github.com/contiamo/go-base/commit/1a58be6dec199197811d4cc6a981e745cfc2828d))
+* update go-server to v0.6.0 ([#172](https://www.github.com/contiamo/go-base/issues/172)) ([9b674c4](https://www.github.com/contiamo/go-base/commit/9b674c456f309d3623a8f60e074583275402bbd2))
+* use pg_advisory_lock to control db migration concurrency ([#165](https://www.github.com/contiamo/go-base/issues/165)) ([fcea24b](https://www.github.com/contiamo/go-base/commit/fcea24bd94f459af6bbb6a3997ce5e1a6ebdf6bc))
+
+
+### Bug Fixes
+
+* go.sum ([#173](https://www.github.com/contiamo/go-base/issues/173)) ([a82b3eb](https://www.github.com/contiamo/go-base/commit/a82b3eb4b62ab79a88aa34dff7b7d4b087e8b521))
+
+
+### Miscellaneous Chores
+
+* release 4.5.1 ([71456a8](https://www.github.com/contiamo/go-base/commit/71456a8751986d8c99310ac7b629500218365a04))
+
 ### [4.4.1](https://www.github.com/contiamo/go-base/compare/v4.4.0...v4.4.1) (2021-09-10)
 
 
