@@ -7,15 +7,15 @@ import (
 	"net/http/httputil"
 	"strings"
 
+	chttp "github.com/contiamo/go-base/v4/pkg/http"
 	"github.com/contiamo/go-base/v4/pkg/tracing"
-	goserverhttp "github.com/contiamo/goserver/http"
 	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 // NewMiddleware creates a new authrorization middleware to set the claims in the context
-func NewMiddleware(headerName string, publicKey interface{}) goserverhttp.Option {
+func NewMiddleware(headerName string, publicKey interface{}) chttp.Option {
 	return &middleware{
 		Tracer:     tracing.NewTracer("authorization", "middleware"),
 		headerName: headerName,
