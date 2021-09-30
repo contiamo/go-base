@@ -30,9 +30,9 @@ require (
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/urfave/negroni v1.0.0
 	go.uber.org/atomic v1.7.0 // indirect
-	go.uber.org/goleak v1.1.10
+	go.uber.org/goleak v1.1.11
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
-	golang.org/x/tools v0.0.0-20200103221440-774c71fcf114
+	golang.org/x/tools v0.1.5
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
