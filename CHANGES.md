@@ -1,5 +1,12 @@
 # Changelog
 
+### [4.5.2](https://www.github.com/contiamo/go-base/compare/v4.5.1...v4.5.2) (2021-10-01)
+
+
+### Bug Fixes
+
+* Revert "feat: use pg_advisory_lock to control db migration concurrency ([#165](https://www.github.com/contiamo/go-base/issues/165))" ([#176](https://www.github.com/contiamo/go-base/issues/176)) ([e79943c](https://www.github.com/contiamo/go-base/commit/e79943ce8e76799c0101300b454944605b08890c))
+
 ### [4.5.1](https://www.github.com/contiamo/go-base/compare/v4.4.1...v4.5.1) (2021-09-30)
 
 
