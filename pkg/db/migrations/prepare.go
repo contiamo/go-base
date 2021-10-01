@@ -12,9 +12,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Lock to ensure multiple migrations cannot occur simultaneously
-const lockNum = int64(47831730) // arbitrary random number
-
 // MigrationConfig contains the ordered migration and view sql statements
 // that will be run during startup as well as the assets filesystem object.
 // Use NewSQLAssets to generate this filesystem object.
@@ -57,23 +54,6 @@ func NewPrepareDatabase(config MigrationConfig, queueConfig *QueueDBConfig, appV
 		time.Sleep(GetJitter(config.JitterInterval))
 		logger := logrus.WithField("version", appVersion)
 
-		defer func() {
-			if err != nil {
-				logger.Warnf("migration finished with: %s", err)
-			}
-		}()
-
-		err = acquireAdvisoryLock(ctx, database)
-		if err != nil {
-			return err
-		}
-		defer func() {
-			unlockErr := releaseAdvisoryLock(ctx, database)
-			if err == nil && unlockErr != nil {
-				err = unlockErr
-			}
-		}()
-
 		logger.Debug("preparing migration tracking")
 		// initialize the migration list if does not exist.
 		_, err = database.ExecContext(ctx,
@@ -101,7 +81,25 @@ func NewPrepareDatabase(config MigrationConfig, queueConfig *QueueDBConfig, appV
 			return err
 		}
 
-		row := database.QueryRowContext(ctx,
+		defer func() {
+			if err != nil {
+				_ = tx.Rollback()
+				return
+			}
+			err = tx.Commit()
+			if err != nil {
+				logger.Infof("migration finished with: %s", err)
+			}
+		}()
+
+		// SHARE ROW EXCLUSIVE allows other sessions to read the table but nothing else
+		logger.Info("waiting for migration lock")
+		_, err = tx.ExecContext(ctx, `LOCK TABLE migrations IN SHARE ROW EXCLUSIVE MODE;`)
+		if err != nil {
+			return fmt.Errorf("migrations table locked: %s", err)
+		}
+
+		row := tx.QueryRowContext(ctx,
 			`SELECT version FROM migrations WHERE version = $1;`, appVersion,
 		)
 
@@ -160,7 +158,7 @@ func NewPrepareDatabase(config MigrationConfig, queueConfig *QueueDBConfig, appV
 		}
 
 		// store the migration into the log
-		_, err = database.ExecContext(ctx, `
+		_, err = tx.ExecContext(ctx, `
 			INSERT INTO migrations (version) VALUES ($1);`,
 			appVersion,
 		)
@@ -235,14 +233,4 @@ func GetJitter(interval time.Duration) time.Duration {
 	)
 
 	return time.Duration(minJitter + (random * (maxJitter - minJitter)))
-}
-
-func acquireAdvisoryLock(ctx context.Context, db *sql.DB) error {
-	_, err := db.ExecContext(ctx, "select pg_advisory_lock($1)", lockNum)
-	return err
-}
-
-func releaseAdvisoryLock(ctx context.Context, db *sql.DB) error {
-	_, err := db.ExecContext(ctx, "select pg_advisory_unlock($1)", lockNum)
-	return err
 }
