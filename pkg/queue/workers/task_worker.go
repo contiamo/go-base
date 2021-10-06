@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/contiamo/go-base/v4/pkg/queue"
@@ -20,18 +19,29 @@ import (
 var (
 	maxSpanDuration = 1 * time.Minute
 	heartbeatTTL    = 15 * time.Second
-	// HeartbeatTimeout is returned from the worker when the task heartbeat is too slow,
+	// ErrHeartbeatTimeout is returned from the worker when the task heartbeat is too slow,
 	// tasks must heartbeat every 15s or else the worker abandons he task. The task is
 	// not marked as a failure, but can be restarted by another worker.
-	HeartbeatTimeout = fmt.Errorf("task timeout")
+	ErrHeartbeatTimeout = fmt.Errorf("task timeout")
 )
 
-// NewTaskWorker creates a new Task Worker instance
+type Options struct {
+	HeartbeatTTL time.Duration
+}
+
+// NewTaskWorker creates a new Task Worker instance, the worker will enforce a default
+// heartbeat ttl of 15 seconds.
 func NewTaskWorker(dequeuer queue.Dequeuer, handler queue.TaskHandler) queue.Worker {
+	return NewWorker(dequeuer, handler, Options{HeartbeatTTL: heartbeatTTL})
+}
+
+// NewWorker creates a task Worker instance with the specified options.
+func NewWorker(dequeuer queue.Dequeuer, handler queue.TaskHandler, opts Options) queue.Worker {
 	return &taskWorker{
 		Tracer:   tracing.NewTracer("workers", "TaskWorker"),
 		dequeuer: dequeuer,
 		handler:  handler,
+		ttl:      opts.HeartbeatTTL,
 	}
 }
 
@@ -42,6 +52,8 @@ type taskWorker struct {
 	dequeuer queue.Dequeuer
 
 	queue.Worker
+
+	ttl time.Duration
 }
 
 func (w *taskWorker) Work(ctx context.Context) (err error) {
@@ -149,11 +161,6 @@ func (w *taskWorker) tryDequeueTask(ctx context.Context) (task *queue.Task, err 
 	return w.dequeuer.Dequeue(ctx)
 }
 
-type taskDone struct {
-	err            error
-	fromProcessing bool
-}
-
 // handleTask is responsible for actually calling the handler.Process method.  This method includes
 // the standardized logic need for metrics and handling cancellation errors
 func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error) {
@@ -168,110 +175,57 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 	timer := prometheus.NewTimer(queue.TaskWorkerMetrics.ProcessingDuration)
 	defer timer.ObserveDuration()
 
-	log := logrus.WithContext(ctx).
+	logger := logrus.WithContext(ctx).
 		WithField("worker", "handleTask").
 		WithField("queue", task.Queue)
 
 	heartbeats := make(chan queue.Progress)
+	processDone := make(chan error, 1)
 
-	// use cleanup to signal to the hearbeat loop that Processing is done to
-	// avoid any leaks and to handle edge cases where heatbeats doesn't close
-	// or the heartbeats are very slow.
-	cleanup := make(chan struct{}, 1)
-	defer close(cleanup)
-
-	processDone := make(chan taskDone)
+	// use to signal the end of the work but not the end of handleTask
+	workCtx, workCancel := context.WithCancel(ctx)
 	go func() {
+		// handle panics because we force close the heartbeats if the beats are too slow
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Errorf("Recovered in task handler.Process: %v", r)
+			}
+		}()
+		// force cleanup heartbeats, this might cause a panic ....
+		defer close(heartbeats)
 		defer close(processDone)
+		defer workCancel()
 		// handler.Process is responsible for closing the heartbeats channel
 		// if `Process` returns an error it means the task failed
-		err := w.handler.Process(ctx, task, heartbeats)
-
-		processDone <- taskDone{err: err, fromProcessing: true}
+		processDone <- w.handler.Process(workCtx, task, heartbeats)
 	}()
 
-	heartbeatsDone := make(chan taskDone)
-	progress := queue.Progress("{}") // empty progress by default
-	go func() {
-		defer close(heartbeatsDone)
+	// block while we process the heartbeats
+	progress, err := w.processHeartbeats(workCtx, task, heartbeats)
+	if err != nil && err != ErrHeartbeatTimeout {
+		return err
+	}
 
-		ttl := time.NewTimer(heartbeatTTL)
-		for {
-			select {
-			case <-ttl.C:
-				processDone <- taskDone{err: HeartbeatTimeout, fromProcessing: false}
-				return
-			case <-cleanup:
-				return
+	if err == ErrHeartbeatTimeout {
+		// we must try to put the error message in the latest version of progress
+		// empty progress (no heartbeats) is also fine
+		span.SetTag("err", err)
+		queue.TaskWorkerMetrics.ProcessingErrorsCounter.With(labels).Inc()
 
-			// use a temporary p instead of shadowing progress directory so that
-			// we don't accidentally nil the progress when the heartbeats closes
-			case p, ok := <-heartbeats:
-				if !ok {
-					log.Debug("closed heartbeats")
-					return
-				}
-				// record the latest valid progress
-				progress = p
-				hrtErr := w.dequeuer.Heartbeat(ctx, task.ID, progress)
-				if hrtErr != nil {
-					switch hrtErr {
-					case queue.ErrTaskCancelled,
-						queue.ErrTaskFinished,
-						queue.ErrTaskNotFound,
-						queue.ErrTaskNotRunning:
-						log.Error(hrtErr)
-						// finished/canceled errors are not considered event errors, stop and return nil
-						return
-					default:
-						// fatal error, time to stop
-						heartbeatsDone <- taskDone{err: hrtErr, fromProcessing: false}
-						return
-					}
-				}
+		progress = w.setError(progress, err)
+		return w.dequeuer.Fail(ctx, task.ID, progress)
+	}
 
-				if !ttl.Stop() {
-					// ttl has fired and we need to drain the channel
-					<-ttl.C
-				}
-				ttl.Reset(heartbeatTTL)
-			}
-		}
-	}()
-
-	// use separate channels and merge to avoid pushes to closed channels
-	done := merge(processDone, heartbeatsDone)
-	defer func() {
-		// drain done to avoid leaks
-		for range done {
-		}
-	}()
-
-	workErr := <-done
-	// there is a potential race condition at the end of the Process(). The implementation may do something like
-	//
-	// 		heartbeats <- progress
-	// 		return err
-	//
-	// We now have a small race between the Process goroutine that pushed `err` into the done channel
-	// and the heartbeat goroutine that is processing `progress`. This small sleep  should help capture that final progress
-	// item most of the time, if there is one.
-	time.Sleep(time.Millisecond)
-	cleanup <- struct{}{}
-
-	if workErr.err != nil && workErr.fromProcessing {
+	// now wait for the worker processing error
+	workErr := <-processDone
+	if workErr != nil {
 		// we must try to put the error message in the latest version of progress
 		// empty progress (no heartbeats) is also fine
 		span.SetTag("workErr", workErr)
 		queue.TaskWorkerMetrics.ProcessingErrorsCounter.With(labels).Inc()
 
-		progress = w.setError(progress, workErr.err)
+		progress = w.setError(progress, workErr)
 		return w.dequeuer.Fail(ctx, task.ID, progress)
-	}
-
-	// non-processing error, usually a DB or serialization failure
-	if workErr.err != nil {
-		return workErr.err
 	}
 
 	err = w.dequeuer.Finish(ctx, task.ID, progress)
@@ -281,6 +235,57 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 
 	queue.TaskWorkerMetrics.ProcessedCounter.With(labels).Inc()
 	return nil
+}
+
+// processHeartbeats will synchronously orocess the heartbeats channel, saving the progress reports to the dequeuer.
+// We moved this to a method because using returns is nicer than labels and break.
+func (w *taskWorker) processHeartbeats(ctx context.Context, task queue.Task, heartbeats chan queue.Progress) (progress queue.Progress, err error) {
+	progress = queue.Progress("{}") // empty progress by default
+	ttl := time.NewTimer(w.ttl)
+
+	logger := logrus.WithContext(ctx).
+		WithField("worker", "processHeartbeats").
+		WithField("queue", task.Queue)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return progress, nil
+		case t := <-ttl.C:
+			logrus.WithField("time", t).Error("heartbeat timeout")
+			return progress, ErrHeartbeatTimeout
+		// use a temporary p instead of shadowing progress directory so that
+		// we don't accidentally nil the progress when the heartbeats closes
+		case p, ok := <-heartbeats:
+			if !ok {
+				logger.Debug("closed heartbeats")
+				return progress, nil
+			}
+			if !ttl.Stop() {
+				// ttl has fired and we need to drain the channel
+				<-ttl.C
+			}
+
+			// record the latest valid progress
+			progress = p
+			hrtErr := w.dequeuer.Heartbeat(ctx, task.ID, progress)
+			if hrtErr != nil {
+				switch hrtErr {
+				case queue.ErrTaskCancelled,
+					queue.ErrTaskFinished,
+					queue.ErrTaskNotFound,
+					queue.ErrTaskNotRunning:
+					logger.Error(hrtErr)
+					// finished/canceled errors are not considered event errors, stop and return nil
+					return progress, nil
+				default:
+					// fatal error, time to stop
+					return progress, hrtErr
+				}
+			}
+			ttl.Reset(heartbeatTTL)
+		}
+	}
 }
 
 func (w *taskWorker) setError(progress queue.Progress, err error) queue.Progress {
@@ -301,23 +306,4 @@ func (w *taskWorker) setError(progress queue.Progress, err error) queue.Progress
 		return progress
 	}
 	return queue.Progress(bytes)
-}
-
-func merge(cs ...<-chan taskDone) <-chan taskDone {
-	out := make(chan taskDone)
-	var wg sync.WaitGroup
-	wg.Add(len(cs))
-	for _, c := range cs {
-		go func(c <-chan taskDone) {
-			for v := range c {
-				out <- v
-			}
-			wg.Done()
-		}(c)
-	}
-	go func() {
-		wg.Wait()
-		close(out)
-	}()
-	return out
 }
