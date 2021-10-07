@@ -182,8 +182,6 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 	heartbeats := make(chan queue.Progress)
 	processDone := make(chan error, 1)
 
-	// use to signal the end of the work but not the end of handleTask
-	workCtx, workCancel := context.WithCancel(ctx)
 	go func() {
 		// handle panics because we force close the heartbeats if the beats are too slow
 		defer func() {
@@ -194,18 +192,13 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 		// force cleanup heartbeats, this might cause a panic ....
 		defer close(heartbeats)
 		defer close(processDone)
-		defer workCancel()
 		// handler.Process is responsible for closing the heartbeats channel
 		// if `Process` returns an error it means the task failed
-		processDone <- w.handler.Process(workCtx, task, heartbeats)
+		processDone <- w.handler.Process(ctx, task, heartbeats)
 	}()
 
 	// block while we process the heartbeats
-	progress, err := w.processHeartbeats(workCtx, task, heartbeats)
-	if err != nil && err != ErrHeartbeatTimeout {
-		return err
-	}
-
+	progress, err := w.processHeartbeats(ctx, task, heartbeats)
 	if err == ErrHeartbeatTimeout {
 		// we must try to put the error message in the latest version of progress
 		// empty progress (no heartbeats) is also fine
@@ -214,6 +207,10 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 
 		progress = w.setError(progress, err)
 		return w.dequeuer.Fail(ctx, task.ID, progress)
+	}
+
+	if err != nil {
+		return err
 	}
 
 	// now wait for the worker processing error
@@ -250,7 +247,7 @@ func (w *taskWorker) processHeartbeats(ctx context.Context, task queue.Task, hea
 	for {
 		select {
 		case <-ctx.Done():
-			return progress, nil
+			return progress, ctx.Err()
 		case t := <-ttl.C:
 			logrus.WithField("time", t).Error("heartbeat timeout")
 			return progress, ErrHeartbeatTimeout
