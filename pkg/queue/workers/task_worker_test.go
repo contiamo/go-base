@@ -88,8 +88,8 @@ func TestTaskWorkerMetrics(t *testing.T) {
 func TestTaskWorkerWork(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	// logrus.SetOutput(ioutil.Discard)
-	// defer logrus.SetOutput(os.Stdout)
+	logrus.SetOutput(ioutil.Discard)
+	defer logrus.SetOutput(os.Stdout)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

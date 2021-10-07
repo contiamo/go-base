@@ -237,7 +237,7 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 	return nil
 }
 
-// processHeartbeats will synchronously orocess the heartbeats channel, saving the progress reports to the dequeuer.
+// processHeartbeats will synchronously process the heartbeats channel, saving the progress reports to the dequeuer.
 // We moved this to a method because using returns is nicer than labels and break.
 func (w *taskWorker) processHeartbeats(ctx context.Context, task queue.Task, heartbeats chan queue.Progress) (progress queue.Progress, err error) {
 	progress = queue.Progress("{}") // empty progress by default
