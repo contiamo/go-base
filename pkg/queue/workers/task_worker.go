@@ -241,6 +241,7 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 func (w *taskWorker) processHeartbeats(ctx context.Context, task queue.Task, heartbeats chan queue.Progress) (progress queue.Progress, err error) {
 	progress = queue.Progress("{}") // empty progress by default
 	ttl := time.NewTimer(w.ttl)
+	defer ttl.Stop()
 
 	logger := logrus.WithContext(ctx).
 		WithField("worker", "processHeartbeats").
@@ -260,10 +261,6 @@ func (w *taskWorker) processHeartbeats(ctx context.Context, task queue.Task, hea
 				logger.Debug("closed heartbeats")
 				return progress, nil
 			}
-			if !ttl.Stop() {
-				// ttl has fired and we need to drain the channel
-				<-ttl.C
-			}
 
 			// record the latest valid progress
 			progress = p
@@ -281,6 +278,10 @@ func (w *taskWorker) processHeartbeats(ctx context.Context, task queue.Task, hea
 					// fatal error, time to stop
 					return progress, hrtErr
 				}
+			}
+			if !ttl.Stop() {
+				// ttl has fired and we need to drain the channel
+				<-ttl.C
 			}
 			ttl.Reset(heartbeatTTL)
 		}
