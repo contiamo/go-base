@@ -31,6 +31,8 @@ type Options struct {
 
 // NewTaskWorker creates a new Task Worker instance, the worker will enforce a default
 // heartbeat ttl of 15 seconds.
+//
+// Deprecated: Use NewWorker instead.
 func NewTaskWorker(dequeuer queue.Dequeuer, handler queue.TaskHandler) queue.Worker {
 	return NewWorker(dequeuer, handler, Options{HeartbeatTTL: heartbeatTTL})
 }
