@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.6.0](https://www.github.com/contiamo/go-base/compare/v4.5.2...v4.6.0) (2021-10-08)
+
+
+### Features
+
+* implement heartbeat timeout in the worker ([#167](https://www.github.com/contiamo/go-base/issues/167)) ([6a97dbf](https://www.github.com/contiamo/go-base/commit/6a97dbf698914b1c05752e001b135a8e9fcf20a4))
+
 ### [4.5.2](https://www.github.com/contiamo/go-base/compare/v4.5.1...v4.5.2) (2021-10-01)
 
 
