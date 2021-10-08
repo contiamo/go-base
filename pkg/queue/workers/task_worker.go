@@ -294,7 +294,7 @@ func (w *taskWorker) processHeartbeats(ctx context.Context, task queue.Task, hea
 				// ttl has fired and we need to drain the channel
 				<-ttl.C
 			}
-			ttl.Reset(defaultHeartbeatPeriod)
+			ttl.Reset(w.heartbeatPeriod)
 		}
 	}
 }
