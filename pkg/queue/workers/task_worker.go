@@ -17,33 +17,44 @@ import (
 )
 
 var (
-	maxSpanDuration = 1 * time.Minute
-	heartbeatTTL    = 15 * time.Second
 	// ErrHeartbeatTimeout is returned from the worker when the task heartbeat is too slow,
 	// tasks must heartbeat every 15s or else the worker abandons he task. The task is
 	// not marked as a failure, but can be restarted by another worker.
 	ErrHeartbeatTimeout = fmt.Errorf("task timeout")
 )
 
+const (
+	// maxSpanDuration is used to control how large the worker tracing spans can be
+	maxSpanDuration = 1 * time.Minute
+	// defaultHeartbeatPeriod is a fallback value for use in the NewTaskWorker method
+	defaultHeartbeatPeriod = 15 * time.Second
+)
+
+// Options controls how the worker behaves.
 type Options struct {
-	HeartbeatTTL time.Duration
+	// HeartbeatPeriod is the time the worker is allowed to wait for a heartbeat before
+	// failing the task. If a task does not send a heartbeat before this value, then the task is
+	// marked as failed. We recommend using a value like Queue.HeartbeatTTL + 100 time.Millisecond
+	// to give your task handlers a little bit of extra time and avoiding any kind of race condition
+	// between the heartbeat and the worker cleanup actually failing it.
+	HeartbeatPeriod time.Duration
 }
 
 // NewTaskWorker creates a new Task Worker instance, the worker will enforce a default
 // heartbeat ttl of 15 seconds.
 //
-// Deprecated: Use NewWorker instead.
+// Deprecated: Use NewTaskWorkerWithOpts instead.
 func NewTaskWorker(dequeuer queue.Dequeuer, handler queue.TaskHandler) queue.Worker {
-	return NewWorker(dequeuer, handler, Options{HeartbeatTTL: heartbeatTTL})
+	return NewTaskWorkerWithOpts(dequeuer, handler, Options{HeartbeatPeriod: defaultHeartbeatPeriod})
 }
 
-// NewWorker creates a task Worker instance with the specified options.
-func NewWorker(dequeuer queue.Dequeuer, handler queue.TaskHandler, opts Options) queue.Worker {
+// NewTaskWorkerWithOpts creates a task Worker instance with the specified options.
+func NewTaskWorkerWithOpts(dequeuer queue.Dequeuer, handler queue.TaskHandler, opts Options) queue.Worker {
 	return &taskWorker{
-		Tracer:   tracing.NewTracer("workers", "TaskWorker"),
-		dequeuer: dequeuer,
-		handler:  handler,
-		ttl:      opts.HeartbeatTTL,
+		Tracer:          tracing.NewTracer("workers", "TaskWorker"),
+		dequeuer:        dequeuer,
+		handler:         handler,
+		heartbeatPeriod: opts.HeartbeatPeriod,
 	}
 }
 
@@ -55,7 +66,7 @@ type taskWorker struct {
 
 	queue.Worker
 
-	ttl time.Duration
+	heartbeatPeriod time.Duration
 }
 
 func (w *taskWorker) Work(ctx context.Context) (err error) {
@@ -240,7 +251,7 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 // We moved this to a method because using returns is nicer than labels and break.
 func (w *taskWorker) processHeartbeats(ctx context.Context, task queue.Task, heartbeats chan queue.Progress) (progress queue.Progress, err error) {
 	progress = queue.Progress("{}") // empty progress by default
-	ttl := time.NewTimer(w.ttl)
+	ttl := time.NewTimer(w.heartbeatPeriod)
 	defer ttl.Stop()
 
 	logger := logrus.WithContext(ctx).
@@ -283,7 +294,7 @@ func (w *taskWorker) processHeartbeats(ctx context.Context, task queue.Task, hea
 				// ttl has fired and we need to drain the channel
 				<-ttl.C
 			}
-			ttl.Reset(heartbeatTTL)
+			ttl.Reset(defaultHeartbeatPeriod)
 		}
 	}
 }

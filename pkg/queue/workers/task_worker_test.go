@@ -390,14 +390,14 @@ func TestTaskWorkerWork(t *testing.T) {
 		}
 		qCh <- testTask
 
-		opts := Options{HeartbeatTTL: time.Second}
-		slow := opts.HeartbeatTTL + time.Second
+		opts := Options{HeartbeatPeriod: time.Second}
+		slow := opts.HeartbeatPeriod + time.Second
 		handler := queue.TaskHandlerFunc(func(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) error {
 			time.Sleep(slow)
 			return errors.New("some serious error")
 		})
 
-		w := NewWorker(q, handler, opts)
+		w := NewTaskWorkerWithOpts(q, handler, opts)
 
 		done := make(chan error)
 		go func() {
@@ -448,8 +448,8 @@ func TestTaskWorkerWork(t *testing.T) {
 			return errors.New("some serious error")
 		})
 
-		opts := Options{HeartbeatTTL: 3 * time.Second}
-		w := NewWorker(q, handler, opts)
+		opts := Options{HeartbeatPeriod: 3 * time.Second}
+		w := NewTaskWorkerWithOpts(q, handler, opts)
 
 		done := make(chan error)
 		go func() {
@@ -457,7 +457,7 @@ func TestTaskWorkerWork(t *testing.T) {
 		}()
 
 		// give time for the long task and then stop the worker
-		time.Sleep(opts.HeartbeatTTL + 3*time.Millisecond)
+		time.Sleep(opts.HeartbeatPeriod + 3*time.Millisecond)
 		cancel()
 		err := <-done
 		require.EqualError(t, err, "context canceled")
