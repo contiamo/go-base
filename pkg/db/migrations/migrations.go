@@ -38,7 +38,7 @@ func migrate(ctx context.Context, db *sql.DB, list []string, assets http.FileSys
 			//    https://github.com/lib/pq/issues/225
 			// Initial experiments have only produced this during unit tests, but actual
 			// application environments run without any transaction issues.
-			if err != nil && err.Error() == idleTransactionErr {
+			if err != nil && err.Error() == "pq: unexpected transaction status idle" {
 				logger.WithError(err).Warn("idle transaction at Commit")
 				err = nil
 			}

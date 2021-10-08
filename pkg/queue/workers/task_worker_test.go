@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/contiamo/go-base/v4/pkg/queue"
 
 	"github.com/sirupsen/logrus"
@@ -90,12 +91,13 @@ func TestTaskWorkerWork(t *testing.T) {
 	logrus.SetOutput(ioutil.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	testCounter := queue.TaskWorkerMetrics.ProcessingErrorsCounter.With(prometheus.Labels{"queue": "testQueue", "type": "testType"})
-	require.Equal(t, float64(0), testutil.ToFloat64(testCounter))
+	errorCounter := queue.TaskWorkerMetrics.ProcessingErrorsCounter.With(prometheus.Labels{"queue": "testQueue", "type": "testType"})
+	require.Equal(t, float64(0), testutil.ToFloat64(errorCounter))
 
+	taskTimeoutStatus := `{"error":"task timeout"}`
 	t.Run("worker handles multiple tasks without stopping", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(ctx)
 		qCh := make(chan *queue.Task, 2)
@@ -174,7 +176,7 @@ func TestTaskWorkerWork(t *testing.T) {
 		expStatus := `{"error":"some serious error"}`
 		require.Equal(t, []queue.Progress{queue.Progress(expStatus)}, q.fails)
 
-		require.Equal(t, float64(1), testutil.ToFloat64(testCounter))
+		require.Equal(t, float64(1), testutil.ToFloat64(errorCounter))
 	})
 
 	t.Run("worker sets the error to the latest progress if handler returns an error", func(t *testing.T) {
@@ -213,7 +215,7 @@ func TestTaskWorkerWork(t *testing.T) {
 
 		expStatus := `{"error":"some serious error","some":"text"}`
 		require.Equal(t, []queue.Progress{queue.Progress(expStatus)}, q.fails)
-		require.Equal(t, float64(2), testutil.ToFloat64(testCounter))
+		require.Equal(t, float64(2), testutil.ToFloat64(errorCounter))
 	})
 
 	t.Run("worker does not stop and logs the error when queue returns a dequeue error", func(t *testing.T) {
@@ -270,7 +272,7 @@ func TestTaskWorkerWork(t *testing.T) {
 		require.Contains(t, logs.String(), "can not dequeue")
 
 		t.Run("should not increment worker error during queue errors", func(t *testing.T) {
-			require.Equal(t, float64(2), testutil.ToFloat64(testCounter))
+			require.Equal(t, float64(2), testutil.ToFloat64(errorCounter))
 		})
 	})
 
@@ -330,8 +332,143 @@ func TestTaskWorkerWork(t *testing.T) {
 		}
 
 		t.Run("should not increment worker error during heartbeat errors", func(t *testing.T) {
-			require.Equal(t, float64(2), testutil.ToFloat64(testCounter))
+			require.Equal(t, float64(2), testutil.ToFloat64(errorCounter))
 		})
+	})
+	t.Run("worker stops if process stops without closing the heartbeats", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
+		qCh := make(chan *queue.Task, 1)
+		q := &mockQueue{queue: qCh}
+
+		testTask := &queue.Task{
+			TaskBase: queue.TaskBase{
+				Queue: "testQueue",
+				Type:  "testType",
+			},
+			ID: "testTask",
+		}
+		qCh <- testTask
+
+		handler := queue.TaskHandlerFunc(func(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) error {
+			// explicitly don't close the heartbeats
+			// defer close(heartbeats)
+			// time.Sleep(time.Second)
+			return errors.New("heartbeats not closed error")
+		})
+
+		w := NewTaskWorker(q, handler)
+
+		done := make(chan error)
+		go func() {
+			done <- w.Work(ctx)
+		}()
+
+		// give time for the long task and then stop the worker
+		time.Sleep(100 * time.Millisecond)
+		cancel()
+		<-done
+		expStatus := `{"error":"heartbeats not closed error"}`
+		require.Equal(t, float64(3), testutil.ToFloat64(errorCounter))
+		require.Equal(t, []queue.Progress{queue.Progress(expStatus)}, q.fails)
+	})
+
+	t.Run("slow heartbeats triggers an error", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
+		qCh := make(chan *queue.Task, 1)
+		q := &mockQueue{queue: qCh}
+
+		testTask := &queue.Task{
+			TaskBase: queue.TaskBase{
+				Queue: "testQueue",
+				Type:  "testType",
+			},
+			ID: "testTask",
+		}
+		qCh <- testTask
+
+		opts := Options{HeartbeatPeriod: time.Second}
+		slow := opts.HeartbeatPeriod + time.Second
+		handler := queue.TaskHandlerFunc(func(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) error {
+			time.Sleep(slow)
+			return errors.New("some serious error")
+		})
+
+		w := NewTaskWorkerWithOpts(q, handler, opts)
+
+		done := make(chan error)
+		go func() {
+			done <- w.Work(ctx)
+		}()
+
+		// give time for the long task and then stop the worker
+		time.Sleep(slow + 100*time.Millisecond)
+		cancel()
+		err := <-done
+		require.EqualError(t, err, "context canceled")
+
+		require.Equal(t, 0, len(q.heartbeats))
+		require.Equal(t, 1, len(q.fails))
+		require.Equal(t, 0, len(q.finishes))
+		require.Equal(t, float64(4), testutil.ToFloat64(errorCounter))
+
+		require.Equal(t, []queue.Progress{queue.Progress(taskTimeoutStatus)}, q.fails)
+	})
+
+	t.Run("long exponential backoff eventually stops the task", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(ctx)
+		qCh := make(chan *queue.Task, 1)
+		q := &mockQueue{queue: qCh}
+
+		testTask := &queue.Task{
+			TaskBase: queue.TaskBase{
+				Queue: "testQueue",
+				Type:  "testType",
+			},
+			ID: "testTask",
+		}
+		qCh <- testTask
+
+		var backoffErr error
+		handler := queue.TaskHandlerFunc(func(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) error {
+			defer close(heartbeats)
+			plan := backoff.WithMaxRetries(
+				backoff.WithContext(backoff.NewExponentialBackOff(), ctx),
+				10,
+			)
+			// every attempt will trigger a retry
+			backoffErr = backoff.Retry(func() error {
+				time.Sleep(time.Second)
+				return fmt.Errorf("retryable error")
+			}, plan)
+
+			return errors.New("some serious error")
+		})
+
+		opts := Options{HeartbeatPeriod: 3 * time.Second}
+		w := NewTaskWorkerWithOpts(q, handler, opts)
+
+		done := make(chan error)
+		go func() {
+			done <- w.Work(ctx)
+		}()
+
+		// give time for the long task and then stop the worker
+		time.Sleep(opts.HeartbeatPeriod + 3*time.Millisecond)
+		cancel()
+		err := <-done
+		require.EqualError(t, err, "context canceled")
+		require.EqualError(t, backoffErr, "context canceled", "handler backoff should fail because the task context is canceled by the worker")
+
+		require.Equal(t, 0, len(q.heartbeats))
+		require.Equal(t, 1, len(q.fails))
+		require.Equal(t, 0, len(q.finishes))
+		require.Equal(t, float64(5), testutil.ToFloat64(errorCounter))
+
+		require.Equal(t, []queue.Progress{queue.Progress(taskTimeoutStatus)}, q.fails)
 	})
 }
 
