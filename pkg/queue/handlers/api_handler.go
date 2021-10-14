@@ -221,6 +221,9 @@ func (h jsonAPIHandler) Process(ctx context.Context, task queue.Task, heartbeats
 		if err != nil {
 			return err
 		}
+		if checkForErrorStatus(m) {
+			return fmt.Errorf("error response: %s", m)
+		}
 		respString := string(m)
 		progress.ReturnedBody = &respString
 		err = sendAPIRequestProgress(progress, heartbeats)
@@ -234,4 +237,15 @@ func (h jsonAPIHandler) Process(ctx context.Context, task queue.Task, heartbeats
 	}
 
 	return nil
+}
+
+func checkForErrorStatus(m json.RawMessage) bool {
+	doc := struct {
+		Status string `json:"status"`
+	}{}
+	err := json.Unmarshal(m, &doc)
+	if err != nil {
+		return false
+	}
+	return doc.Status == "error"
 }
