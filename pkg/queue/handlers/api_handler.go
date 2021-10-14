@@ -77,14 +77,27 @@ import (
 // 		}
 func NewJSONAPIHandler(client clients.BaseAPIClient) queue.TaskHandler {
 	return jsonAPIHandler{
-		Tracer: tracing.NewTracer("handlers", "JSONAPIHandler"),
-		client: client,
+		Tracer:       tracing.NewTracer("handlers", "JSONAPIHandler"),
+		client:       client,
+		errorChecker: checkForErrorStatus,
 	}
 }
 
+func NewJSONAPIHandlerWithErrorChecker(client clients.BaseAPIClient, checker CheckForErrorFunction) queue.TaskHandler {
+	return jsonAPIHandler{
+		Tracer:       tracing.NewTracer("handlers", "JSONAPIHandler"),
+		client:       client,
+		errorChecker: checker,
+	}
+}
+
+// CheckForErrorStatus checks if the response contains an error status
+type CheckForErrorFunction func(m json.RawMessage) error
+
 type jsonAPIHandler struct {
 	tracing.Tracer
-	client clients.BaseAPIClient
+	client       clients.BaseAPIClient
+	errorChecker CheckForErrorFunction
 }
 
 func (h jsonAPIHandler) Process(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) (err error) {
@@ -221,8 +234,9 @@ func (h jsonAPIHandler) Process(ctx context.Context, task queue.Task, heartbeats
 		if err != nil {
 			return err
 		}
-		if checkForErrorStatus(m) {
-			return fmt.Errorf("error response: %s", m)
+
+		if err := h.errorChecker(m); err != nil {
+			return err
 		}
 		respString := string(m)
 		progress.ReturnedBody = &respString
@@ -239,13 +253,16 @@ func (h jsonAPIHandler) Process(ctx context.Context, task queue.Task, heartbeats
 	return nil
 }
 
-func checkForErrorStatus(m json.RawMessage) bool {
+func checkForErrorStatus(m json.RawMessage) error {
 	doc := struct {
 		Status string `json:"status"`
 	}{}
 	err := json.Unmarshal(m, &doc)
 	if err != nil {
-		return false
+		return err
 	}
-	return doc.Status == "error"
+	if doc.Status == "error" {
+		return fmt.Errorf("found error status: %s", m)
+	}
+	return nil
 }

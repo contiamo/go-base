@@ -428,7 +428,7 @@ func TestAPIHandlerProcess(t *testing.T) {
 
 		err := hrh.Process(ctx, task, beats)
 		require.Error(t, err)
-		require.Equal(t, "error response: {\"status\":\"error\"}", err.Error())
+		require.Equal(t, "found error status: {\"status\":\"error\"}", err.Error())
 
 		<-ready
 	})
