@@ -12,6 +12,7 @@ import (
 	"github.com/contiamo/go-base/v4/pkg/http/clients"
 	"github.com/contiamo/go-base/v4/pkg/queue"
 	"github.com/contiamo/go-base/v4/pkg/tracing"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -255,13 +256,17 @@ func (h jsonAPIHandler) Process(ctx context.Context, task queue.Task, heartbeats
 
 func checkForErrorStatus(m json.RawMessage) error {
 	doc := struct {
-		Status string `json:"status"`
+		Status  string `json:"status"`
+		Message string `json:"message"`
 	}{}
 	err := json.Unmarshal(m, &doc)
 	if err != nil {
 		return err
 	}
 	if doc.Status == "error" {
+		if doc.Message != "" {
+			return errors.New(doc.Message)
+		}
 		return fmt.Errorf("found error status: %s", m)
 	}
 	return nil
