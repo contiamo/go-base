@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.7.0](https://www.github.com/contiamo/go-base/compare/v4.6.0...v4.7.0) (2021-10-15)
+
+
+### Features
+
+* check progress for status:error and return error if found. ([#182](https://www.github.com/contiamo/go-base/issues/182)) ([fc4d29f](https://www.github.com/contiamo/go-base/commit/fc4d29fb207aeddd3142b9d375a489b8180d8a47))
+
 ## [4.6.0](https://www.github.com/contiamo/go-base/compare/v4.5.2...v4.6.0) (2021-10-08)
 
 
