@@ -375,6 +375,122 @@ func TestAPIHandlerProcess(t *testing.T) {
 		<-ready
 	})
 
+	t.Run("returns error if last progress contains status:error", func(t *testing.T) {
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/ndjson")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"status":"active"}`))
+			_, _ = w.Write([]byte("\n"))
+			_, _ = w.Write([]byte(`{"status":"error"}`))
+			_, _ = w.Write([]byte("\n"))
+		}))
+		defer s.Close()
+
+		creator := tokens.CreatorMock{}
+		client := clients.NewBaseAPIClient(
+			"", // use an empty baseURL because the task spec will hold the URL
+			"X-Auth-Test",
+			clients.TokenProviderFromCreator(&creator, "apiRequestTask", tokens.Options{}),
+			http.DefaultClient,
+			false,
+		)
+		hrh := NewJSONAPIHandler(client)
+
+		// collect heartbeats with the status
+		var progress []APIRequestProgress
+		beats := make(chan queue.Progress)
+		ready := make(chan bool)
+
+		go func() {
+			for b := range beats {
+				var p APIRequestProgress
+				err := json.Unmarshal(b, &p)
+				require.NoError(t, err)
+
+				// this field is not deterministic, so we remove the value
+				p.Duration = nil
+				progress = append(progress, p)
+			}
+			ready <- true
+		}()
+
+		spec := APIRequestTaskSpec{
+			Method:         http.MethodPost,
+			URL:            s.URL,
+			ExpectedStatus: http.StatusOK,
+		}
+
+		task := queue.Task{
+			TaskBase: queue.TaskBase{
+				Spec: test.ToJSONBytes(t, spec),
+			},
+		}
+
+		err := hrh.Process(ctx, task, beats)
+		require.Error(t, err)
+		require.Equal(t, "found error status: {\"status\":\"error\"}", err.Error())
+
+		<-ready
+	})
+
+	t.Run("returns error if last progress contains status:error and uses the 'message' as error message if found", func(t *testing.T) {
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/ndjson")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"status":"active"}`))
+			_, _ = w.Write([]byte("\n"))
+			_, _ = w.Write([]byte(`{"status":"error","message":"this is it"}`))
+			_, _ = w.Write([]byte("\n"))
+		}))
+		defer s.Close()
+
+		creator := tokens.CreatorMock{}
+		client := clients.NewBaseAPIClient(
+			"", // use an empty baseURL because the task spec will hold the URL
+			"X-Auth-Test",
+			clients.TokenProviderFromCreator(&creator, "apiRequestTask", tokens.Options{}),
+			http.DefaultClient,
+			false,
+		)
+		hrh := NewJSONAPIHandler(client)
+
+		// collect heartbeats with the status
+		var progress []APIRequestProgress
+		beats := make(chan queue.Progress)
+		ready := make(chan bool)
+
+		go func() {
+			for b := range beats {
+				var p APIRequestProgress
+				err := json.Unmarshal(b, &p)
+				require.NoError(t, err)
+
+				// this field is not deterministic, so we remove the value
+				p.Duration = nil
+				progress = append(progress, p)
+			}
+			ready <- true
+		}()
+
+		spec := APIRequestTaskSpec{
+			Method:         http.MethodPost,
+			URL:            s.URL,
+			ExpectedStatus: http.StatusOK,
+		}
+
+		task := queue.Task{
+			TaskBase: queue.TaskBase{
+				Spec: test.ToJSONBytes(t, spec),
+			},
+		}
+
+		err := hrh.Process(ctx, task, beats)
+		require.Error(t, err)
+		require.Equal(t, "this is it", err.Error())
+
+		<-ready
+	})
+
 	t.Run("returns error if response content type is JSON but response is invalid JSON", func(t *testing.T) {
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("content-type", "application/json")

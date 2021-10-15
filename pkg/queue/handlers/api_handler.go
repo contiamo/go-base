@@ -12,6 +12,7 @@ import (
 	"github.com/contiamo/go-base/v4/pkg/http/clients"
 	"github.com/contiamo/go-base/v4/pkg/queue"
 	"github.com/contiamo/go-base/v4/pkg/tracing"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -77,14 +78,27 @@ import (
 // 		}
 func NewJSONAPIHandler(client clients.BaseAPIClient) queue.TaskHandler {
 	return jsonAPIHandler{
-		Tracer: tracing.NewTracer("handlers", "JSONAPIHandler"),
-		client: client,
+		Tracer:       tracing.NewTracer("handlers", "JSONAPIHandler"),
+		client:       client,
+		errorChecker: checkForErrorStatus,
 	}
 }
 
+func NewJSONAPIHandlerWithErrorChecker(client clients.BaseAPIClient, checker CheckForErrorFunction) queue.TaskHandler {
+	return jsonAPIHandler{
+		Tracer:       tracing.NewTracer("handlers", "JSONAPIHandler"),
+		client:       client,
+		errorChecker: checker,
+	}
+}
+
+// CheckForErrorStatus checks if the response contains an error status
+type CheckForErrorFunction func(m json.RawMessage) error
+
 type jsonAPIHandler struct {
 	tracing.Tracer
-	client clients.BaseAPIClient
+	client       clients.BaseAPIClient
+	errorChecker CheckForErrorFunction
 }
 
 func (h jsonAPIHandler) Process(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) (err error) {
@@ -221,6 +235,10 @@ func (h jsonAPIHandler) Process(ctx context.Context, task queue.Task, heartbeats
 		if err != nil {
 			return err
 		}
+
+		if err := h.errorChecker(m); err != nil {
+			return err
+		}
 		respString := string(m)
 		progress.ReturnedBody = &respString
 		err = sendAPIRequestProgress(progress, heartbeats)
@@ -233,5 +251,23 @@ func (h jsonAPIHandler) Process(ctx context.Context, task queue.Task, heartbeats
 		return fmt.Errorf("expected status %d but got %d", spec.ExpectedStatus, resp.StatusCode)
 	}
 
+	return nil
+}
+
+func checkForErrorStatus(m json.RawMessage) error {
+	doc := struct {
+		Status  string `json:"status"`
+		Message string `json:"message"`
+	}{}
+	err := json.Unmarshal(m, &doc)
+	if err != nil {
+		return err
+	}
+	if doc.Status == "error" {
+		if doc.Message != "" {
+			return errors.New(doc.Message)
+		}
+		return fmt.Errorf("found error status: %s", m)
+	}
 	return nil
 }
