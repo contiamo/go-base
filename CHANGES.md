@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.8.0](https://www.github.com/contiamo/go-base/compare/v4.7.0...v4.8.0) (2021-10-19)
+
+
+### Features
+
+* **CON-4069:** add in-memory cache for JWT public keys ([#184](https://www.github.com/contiamo/go-base/issues/184)) ([db1a120](https://www.github.com/contiamo/go-base/commit/db1a12052fee0b3ff1118ac694b9b49b0d097b60))
+
 ## [4.7.0](https://www.github.com/contiamo/go-base/compare/v4.6.0...v4.7.0) (2021-10-15)
 
 
