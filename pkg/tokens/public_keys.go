@@ -47,8 +47,8 @@ type PublicKeyMap interface {
 	// MaintainCache runs a synchronization loop that reads the public keys directory
 	// and refreshes the in-memory cache for quick access.
 	MaintainCache(ctx context.Context, interval time.Duration) error
-	// GetKeyFunction returns a key function that can be used in the JWT library
-	GetKeyFunction() jwt.Keyfunc
+	// KeyFunction is a key function that can be used in the JWT library
+	KeyFunction(token *jwt.Token) (interface{}, error)
 }
 
 func NewPublicKeyMap(directoryPath string) (PublicKeyMap, error) {
@@ -82,10 +82,6 @@ func (m *publicKeyMap) MaintainCache(ctx context.Context, interval time.Duration
 	return nil
 }
 
-func (m *publicKeyMap) GetKeyFunction() jwt.Keyfunc {
-	return m.keyFunc
-}
-
 func (m *publicKeyMap) lookup(hash string) (entry *keyEntry, ok bool) {
 	m.rw.RLock()
 	entry, ok = m.keysByHashes[hash]
@@ -93,7 +89,7 @@ func (m *publicKeyMap) lookup(hash string) (entry *keyEntry, ok bool) {
 	return entry, ok
 }
 
-func (m *publicKeyMap) keyFunc(token *jwt.Token) (interface{}, error) {
+func (m *publicKeyMap) KeyFunction(token *jwt.Token) (interface{}, error) {
 	_, ok := token.Method.(*jwt.SigningMethodRSA)
 	if !ok {
 		return nil, errors.Wrapf(

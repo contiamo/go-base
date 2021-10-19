@@ -60,7 +60,7 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 		cache, err := NewPublicKeyMap(tmpPath)
 		require.NoError(t, err)
 
-		key, err := cache.GetKeyFunction()(createToken(kid))
+		key, err := cache.KeyFunction(createToken(kid))
 		require.NoError(t, err)
 		require.NotNil(t, key)
 	})
@@ -85,7 +85,7 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 
 		<-time.After(20 * time.Millisecond)
 
-		key, err := cache.GetKeyFunction()(createToken(kid))
+		key, err := cache.KeyFunction(createToken(kid))
 		require.NoError(t, err)
 		require.NotNil(t, key)
 	})
@@ -116,10 +116,10 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 
 		<-time.After(20 * time.Millisecond)
 
-		_, err = cache.GetKeyFunction()(createToken(kid1))
+		_, err = cache.KeyFunction(createToken(kid1))
 		require.ErrorIs(t, err, ErrKeyNotFound)
 
-		key, err := cache.GetKeyFunction()(createToken(kid2))
+		key, err := cache.KeyFunction(createToken(kid2))
 		require.NoError(t, err)
 		require.NotNil(t, key)
 	})
@@ -146,7 +146,7 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 			_ = cache.MaintainCache(ctx, 10*time.Millisecond)
 		}()
 
-		key, err := cache.GetKeyFunction()(createToken(kid))
+		key, err := cache.KeyFunction(createToken(kid))
 		require.NoError(t, err)
 		require.NotNil(t, key)
 
@@ -155,7 +155,7 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 
 		<-time.After(20 * time.Millisecond)
 
-		_, err = cache.GetKeyFunction()(createToken(kid))
+		_, err = cache.KeyFunction(createToken(kid))
 		require.ErrorIs(t, err, ErrKeyNotFound)
 	})
 
@@ -180,7 +180,7 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 			_ = cache.MaintainCache(ctx, 10*time.Millisecond)
 		}()
 
-		key, err := cache.GetKeyFunction()(createToken(kid))
+		key, err := cache.KeyFunction(createToken(kid))
 		require.NoError(t, err)
 		require.NotNil(t, key)
 
@@ -190,7 +190,7 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 
 		<-time.After(20 * time.Millisecond)
 
-		_, err = cache.GetKeyFunction()(createToken(kid))
+		_, err = cache.KeyFunction(createToken(kid))
 		require.ErrorIs(t, err, ErrKeyNotFound)
 	})
 
@@ -212,13 +212,13 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 			_ = cache.MaintainCache(ctx, 10*time.Millisecond)
 		}()
 
-		key, err := cache.GetKeyFunction()(createToken(kid))
+		key, err := cache.KeyFunction(createToken(kid))
 		require.NoError(t, err)
 		require.NotNil(t, key)
 
 		<-time.After(20 * time.Millisecond)
 
-		key, err = cache.GetKeyFunction()(createToken(kid))
+		key, err = cache.KeyFunction(createToken(kid))
 		require.NoError(t, err)
 		require.NotNil(t, key)
 	})
@@ -241,7 +241,7 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 			_ = cache.MaintainCache(ctx, 10*time.Millisecond)
 		}()
 
-		key, err := cache.GetKeyFunction()(createToken(kid))
+		key, err := cache.KeyFunction(createToken(kid))
 		require.NoError(t, err)
 		require.NotNil(t, key)
 
@@ -250,7 +250,7 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 
 		<-time.After(20 * time.Millisecond)
 
-		key, err = cache.GetKeyFunction()(createToken(kid))
+		key, err = cache.KeyFunction(createToken(kid))
 		require.NoError(t, err)
 		require.NotNil(t, key)
 	})
@@ -266,14 +266,14 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 		require.NoError(t, err)
 
 		t.Run("ErrUnsupportedSigningMethod", func(t *testing.T) {
-			_, err = cache.GetKeyFunction()(&jwt.Token{})
+			_, err = cache.KeyFunction(&jwt.Token{})
 			require.ErrorIs(t, err, ErrUnsupportedSigningMethod)
 		})
 		t.Run("ErrMalformedKeyID", func(t *testing.T) {
 			token := &jwt.Token{
 				Method: &jwt.SigningMethodRSA{},
 			}
-			_, err = cache.GetKeyFunction()(token)
+			_, err = cache.KeyFunction(token)
 			require.ErrorIs(t, err, ErrMalformedKeyID)
 		})
 		t.Run("ErrKeyNotFound", func(t *testing.T) {
@@ -283,9 +283,22 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 				},
 				Method: &jwt.SigningMethodRSA{},
 			}
-			_, err = cache.GetKeyFunction()(token)
+			_, err = cache.KeyFunction(token)
 			require.ErrorIs(t, err, ErrKeyNotFound)
 		})
+	})
+
+	t.Run("key function satisfies the jwt.KeyFunc type", func(t *testing.T) {
+		tmpPath, err := ioutil.TempDir(os.TempDir(), "public-keys-test")
+		require.NoError(t, err)
+		defer func() {
+			_ = os.RemoveAll(tmpPath)
+		}()
+
+		cache, err := NewPublicKeyMap(tmpPath)
+		require.NoError(t, err)
+
+		_, _ = jwt.Parse("", cache.KeyFunction)
 	})
 }
 
