@@ -69,11 +69,10 @@ func NewPublicKeyMap(directoryPath string) (PublicKeyMap, error) {
 }
 
 type publicKeyMap struct {
-	keysByFilenames map[string]*keyEntry
-	keysByHashes    map[string]*keyEntry
-	fileSys         fs.FS
-	directoryPath   string
-	rw              *sync.RWMutex
+	keysByHashes  map[string]*keyEntry
+	fileSys       fs.FS
+	directoryPath string
+	rw            *sync.RWMutex
 }
 
 func (m *publicKeyMap) MaintainCache(ctx context.Context, interval time.Duration) (err error) {
@@ -127,7 +126,6 @@ func (m *publicKeyMap) init() (err error) {
 		return errors.Wrapf(err, "failed to read directory with keys: %s", m.directoryPath)
 	}
 
-	keysByFilenames := make(map[string]*keyEntry, len(files))
 	keysByHashes := make(map[string]*keyEntry, len(files))
 
 	for _, file := range files {
@@ -143,14 +141,12 @@ func (m *publicKeyMap) init() (err error) {
 			continue
 		}
 
-		keysByFilenames[key.Filename] = key
 		keysByHashes[key.Hash] = key
 	}
 
-	keysAdded := len(keysByFilenames)
+	keysAdded := len(keysByHashes)
 
 	m.rw.Lock()
-	m.keysByFilenames = keysByFilenames
 	m.keysByHashes = keysByHashes
 	m.rw.Unlock()
 
@@ -163,7 +159,6 @@ func (m *publicKeyMap) init() (err error) {
 
 func (m *publicKeyMap) clear() {
 	m.rw.RLock()
-	m.keysByFilenames = map[string]*keyEntry{}
 	m.keysByHashes = map[string]*keyEntry{}
 	m.rw.RUnlock()
 }
@@ -172,19 +167,19 @@ func (m *publicKeyMap) sync(ctx context.Context) (err error) {
 	// sync algorithm:
 
 	// 1. ReadLock
-	// 2. Clone `keysByFilenames` into `currentKeys`
+	// 2. Clone `keysByHashes` into `currentKeys` which is map of keys but their filenames
 	// 3. Unlock
 	// 4. Initialize `deletes := map[string]struct{}` of known filenames (keys of `currentKeys` map)
-	// 5. Define counters `keysAdded` and `keysUpdated`
+	// 5. Define counters `keysAdded`, `keysKept` and `keysUpdated`
 	// 6. Read files (only first level) in the given directory using fs.ReadDir (not recursive) on each file:
-	//     1. delete(deletes, filename) – we mark a seen file, no need to delete
+	//     1. delete(deletes, filename) – we mark a seen file, no need to delete it
 	//     2. for a file that has a known filename, matching modtime and size do nothing and continue to the next file. We don't check the hashes, it's too expensive to do for each file
 	//     3. for a known filename but not matching properties we try load a public key and store it in `currentKeys`, increment `keysUpdated`
 	//     4. for a new file try to load a public key and compute file's hash, store into `currentKeys`, increment `keysAdded`
 	// 7. Delete from `currentKeys` those files that are left in `deletes` set.
 	// 8. Build an updated `currentKeyHashes := map[string]*KeyEntry` a map of hashes to key entries.
 	// 9. WriteLock
-	// 10. Replace `keysByFilenames` and `keysByHashes` with `currentKeys` and `currentKeyHashes` respectively
+	// 10. Replace `keysByHashes` with `currentKeyHashes`
 	// 11. Unlock
 
 	err = ctx.Err()
@@ -243,13 +238,13 @@ func (m *publicKeyMap) sync(ctx context.Context) (err error) {
 
 	m.rw.RLock()
 
-	// clone `keysByFilenames` into `currentKeys`
+	// Clone `keysByHashes` into `currentKeys` which is map of keys but their filenames
 	// Initialize `deletes := map[string]struct{}` of known filenames
-	currentKeys := make(map[string]*keyEntry, len(m.keysByFilenames))
-	deletes := make(map[string]struct{}, len(m.keysByFilenames))
-	for filename, entry := range m.keysByFilenames {
-		currentKeys[filename] = entry
-		deletes[filename] = struct{}{}
+	currentKeys := make(map[string]*keyEntry, len(m.keysByHashes))
+	deletes := make(map[string]struct{}, len(m.keysByHashes))
+	for _, entry := range m.keysByHashes {
+		currentKeys[entry.Filename] = entry
+		deletes[entry.Filename] = struct{}{}
 	}
 
 	m.rw.RUnlock()
@@ -322,13 +317,13 @@ func (m *publicKeyMap) sync(ctx context.Context) (err error) {
 	}
 	keysKept = len(currentKeys) - keysAdded - keysUpdated - len(deletes)
 
+	// build an updated map of hashes to key entries.
 	currentKeyHashes := make(map[string]*keyEntry, len(currentKeys))
 	for _, key := range currentKeys {
 		currentKeyHashes[key.Hash] = key
 	}
 
 	m.rw.Lock()
-	m.keysByFilenames = currentKeys
 	m.keysByHashes = currentKeyHashes
 	m.rw.Unlock()
 
