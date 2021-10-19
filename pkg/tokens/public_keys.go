@@ -5,8 +5,10 @@ import (
 	"crypto/rsa"
 	"crypto/sha512"
 	"encoding/hex"
+	"io/fs"
 	"os"
 	"path"
+	"strings"
 	"sync"
 	"time"
 
@@ -51,17 +53,25 @@ type PublicKeyMap interface {
 	KeyFunction(token *jwt.Token) (interface{}, error)
 }
 
-func NewPublicKeyMap(directoryPath string) (PublicKeyMap, error) {
+// NewPublicKeyMapWithFS returns a public key map for a given directory path in the given FS
+func NewPublicKeyMapWithFS(fileSys fs.FS, directoryPath string) (PublicKeyMap, error) {
 	m := &publicKeyMap{
 		rw:            &sync.RWMutex{},
 		directoryPath: directoryPath,
+		fileSys:       fileSys,
 	}
 	return m, m.init()
+}
+
+// NewPublicKeyMap returns a public key map for a given directory path
+func NewPublicKeyMap(directoryPath string) (PublicKeyMap, error) {
+	return NewPublicKeyMapWithFS(os.DirFS("/"), strings.TrimLeft(directoryPath, "/"))
 }
 
 type publicKeyMap struct {
 	keysByFilenames map[string]*keyEntry
 	keysByHashes    map[string]*keyEntry
+	fileSys         fs.FS
 	directoryPath   string
 	rw              *sync.RWMutex
 }
@@ -112,7 +122,7 @@ func (m *publicKeyMap) KeyFunction(token *jwt.Token) (interface{}, error) {
 }
 
 func (m *publicKeyMap) init() (err error) {
-	files, err := os.ReadDir(m.directoryPath)
+	files, err := fs.ReadDir(m.fileSys, m.directoryPath)
 	if err != nil {
 		return errors.Wrapf(err, "failed to read directory with keys: %s", m.directoryPath)
 	}
@@ -166,7 +176,7 @@ func (m *publicKeyMap) sync(ctx context.Context) (err error) {
 	// 3. Unlock
 	// 4. Initialize `deletes := map[string]struct{}` of known filenames (keys of `currentKeys` map)
 	// 5. Define counters `keysAdded` and `keysUpdated`
-	// 6. Read files (only first level) in the given directly using os.ReadDir (not recursive) on each file:
+	// 6. Read files (only first level) in the given directory using fs.ReadDir (not recursive) on each file:
 	//     1. delete(deletes, filename) – we mark a seen file, no need to delete
 	//     2. for a file that has a known filename, matching modtime and size do nothing and continue to the next file. We don't check the hashes, it's too expensive to do for each file
 	//     3. for a known filename but not matching properties we try load a public key and store it in `currentKeys`, increment `keysUpdated`
@@ -189,7 +199,7 @@ func (m *publicKeyMap) sync(ctx context.Context) (err error) {
 		Debug("reading the keys directory...")
 
 	// first try if even can read the directory
-	files, err := os.ReadDir(m.directoryPath)
+	files, err := fs.ReadDir(m.fileSys, m.directoryPath)
 	if err != nil {
 		logrus.
 			WithField("path", m.directoryPath).
@@ -340,7 +350,8 @@ func (m *publicKeyMap) fileToKeyEntry(file os.DirEntry) (key *keyEntry, err erro
 
 	filename := file.Name()
 	fullPath := path.Join(m.directoryPath, filename)
-	bytes, err := os.ReadFile(fullPath)
+
+	bytes, err := fs.ReadFile(m.fileSys, fullPath)
 	if err != nil {
 		return nil, err
 	}
