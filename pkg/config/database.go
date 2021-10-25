@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -12,7 +13,28 @@ var defaultPorts = map[string]uint32{
 	"postgres": 5432,
 }
 
+const (
+	// these environment variables can be used to control the SSL
+	// validation behavior and behave the same as the documented
+	// postegres environment variables
+	PGSSLModeEnvKey         = "PGSSLMODE"
+	PGSSLCertPathEnvKey     = "PGSSLCERT"
+	PGSSLKeyPathEnvKey      = "PGSSLKEY"
+	PGSSLRootCertPathEnvKey = "PGSSLROOTCERT"
+)
+
+const (
+	pgSSLDisabled   = "disable"
+	pgSSLRequire    = "require"
+	pgSSLVerifyCA   = "verify-ca"
+	pgSSLVerifyFull = "verify-full"
+)
+
 // Database contains all the configuration parameters for a database
+// SSL mode and options can be configured via the standard Postgres env variables
+// documented here https://www.postgresql.org/docs/current/libpq-envars.html
+//
+// Specifically, it supports:  PGSSLMODE, PGSSLCERT, PGSSLKEY, PGSSLROOTCERT.
 type Database struct {
 	// Host of the database server
 	Host string `json:"host"`
@@ -65,7 +87,30 @@ func (cfg *Database) GetPort() uint32 {
 
 // GetConnectionString returns the formed connection string
 func (cfg *Database) GetConnectionString() (connStr string, err error) {
-	connStr = "sslmode=disable "
+	sslMode, found := os.LookupEnv(PGSSLModeEnvKey)
+	if !found {
+		sslMode = pgSSLDisabled
+	}
+
+	switch sslMode {
+	case pgSSLDisabled, pgSSLRequire, pgSSLVerifyCA, pgSSLVerifyFull:
+		// nothing to do
+	default:
+		return "", fmt.Errorf("unknown or unsupported ssl mode: %q", sslMode)
+	}
+
+	connStr = fmt.Sprintf("sslmode=%s ", sslMode)
+	if value, found := os.LookupEnv(PGSSLCertPathEnvKey); found {
+		connStr += fmt.Sprintf("sslcert=%s ", value)
+	}
+
+	if value, found := os.LookupEnv(PGSSLKeyPathEnvKey); found {
+		connStr += fmt.Sprintf("sslkey=%s ", value)
+	}
+
+	if value, found := os.LookupEnv(PGSSLRootCertPathEnvKey); found {
+		connStr += fmt.Sprintf("sslrootcert=%s ", value)
+	}
 
 	if cfg.Host != "" {
 		connStr += fmt.Sprintf("host=%s ", cfg.Host)

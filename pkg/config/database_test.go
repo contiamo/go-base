@@ -1,6 +1,7 @@
 package config
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -61,6 +62,7 @@ func TestDatabaseGetConnectionString(t *testing.T) {
 	cases := []struct {
 		name     string
 		cfg      Database
+		env      map[string]string
 		expected string
 		err      string
 	}{
@@ -74,6 +76,23 @@ func TestDatabaseGetConnectionString(t *testing.T) {
 				PasswordPath: "./testdata/password",
 			},
 			expected: "sslmode=disable host=example.com port=80 dbname=database user=root password=password",
+		},
+		{
+			name: "Can set sslmode to require via env variables",
+			cfg: Database{
+				Host:         "example.com",
+				Port:         80,
+				Name:         "database",
+				Username:     "root",
+				PasswordPath: "./testdata/password",
+			},
+			env: map[string]string{
+				"PGSSLMODE":     "require",
+				"PGSSLCERT":     "/cert/path",
+				"PGSSLKEY":      "/key/path",
+				"PGSSLROOTCERT": "/root/cert/path",
+			},
+			expected: "sslmode=require sslcert=/cert/path sslkey=/key/path sslrootcert=/root/cert/path host=example.com port=80 dbname=database user=root password=password",
 		},
 		{
 			name: "Returns a connection string when Host is not set",
@@ -140,6 +159,9 @@ func TestDatabaseGetConnectionString(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			reset := envSetup(tc.env)
+			defer reset()
+
 			str, err := tc.cfg.GetConnectionString()
 			if tc.err != "" {
 				require.Error(t, err)
@@ -149,5 +171,31 @@ func TestDatabaseGetConnectionString(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tc.expected, str)
 		})
+	}
+}
+
+func envSetup(envs map[string]string) (resetter func()) {
+	if len(envs) == 0 {
+		return func() {}
+	}
+
+	originalEnvs := map[string]string{}
+
+	for name, value := range envs {
+		if originalValue, ok := os.LookupEnv(name); ok {
+			originalEnvs[name] = originalValue
+		}
+		_ = os.Setenv(name, value)
+	}
+
+	return func() {
+		for name := range envs {
+			origValue, has := originalEnvs[name]
+			if has {
+				_ = os.Setenv(name, origValue)
+			} else {
+				_ = os.Unsetenv(name)
+			}
+		}
 	}
 }
