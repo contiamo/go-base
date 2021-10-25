@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.9.0](https://www.github.com/contiamo/go-base/compare/v4.8.0...v4.9.0) (2021-10-25)
+
+
+### Features
+
+* support PGSSL* env variables for configuring the ssl mode ([#187](https://www.github.com/contiamo/go-base/issues/187)) ([96447ad](https://www.github.com/contiamo/go-base/commit/96447adbea23e00d0ea691f5bf84b88b1d2a86c3))
+
 ## [4.8.0](https://www.github.com/contiamo/go-base/compare/v4.7.0...v4.8.0) (2021-10-19)
 
 
