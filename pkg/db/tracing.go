@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/contiamo/go-base/v4/pkg/tracing"
+	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -32,19 +33,48 @@ type SQLDB interface {
 type TraceableDB interface {
 	SQLDB
 	tracing.Tracer
+	// WithTrimmedQuery sets the max length of the SQL query logged in open tracing.
+	// Depending on the chosen transport open tracing can have limitations on the length of the span
+	// If the consumer of the interface anticipates building very long SQL queries they might want
+	// to use this function.
+	// `maxLength == 0` means no query will be logged in open tracing.
+	// `maxLength > 0` does `query[:maxLength]+"..."`, so please account for 3 additional characters.
+	WithTrimmedQuery(maxLength uint) TraceableDB
 }
 
 // WrapWithTracing Wraps a SQL database with open tracing and logging
 func WrapWithTracing(db SQLDB) TraceableDB {
 	return &traceableDB{
-		SQLDB:  db,
-		Tracer: tracing.NewTracer("db", "traceableSQL"),
+		SQLDB:          db,
+		Tracer:         tracing.NewTracer("db", "traceableSQL"),
+		maxQueryLength: -1,
 	}
 }
 
 type traceableDB struct {
 	SQLDB
 	tracing.Tracer
+	maxQueryLength int
+}
+
+func (d traceableDB) logQuery(span opentracing.Span, query string) {
+	// `0` means no logging
+	if d.maxQueryLength == 0 {
+		return
+	}
+
+	// `-1` means, no trimming
+	// any other number trims the query
+	if d.maxQueryLength > 0 && len(query) > d.maxQueryLength {
+		query = query[:d.maxQueryLength] + "..."
+	}
+	span.LogKV("sql", query)
+}
+
+func (d traceableDB) WithTrimmedQuery(maxLength uint) TraceableDB {
+	// we modify the copy of the struct here
+	d.maxQueryLength = int(maxLength)
+	return &d
 }
 
 func (d traceableDB) ExecContext(ctx context.Context, query string, args ...interface{}) (result sql.Result, err error) {
@@ -52,7 +82,8 @@ func (d traceableDB) ExecContext(ctx context.Context, query string, args ...inte
 	defer func() {
 		d.FinishSpan(span, err)
 	}()
-	span.LogKV("sql", query)
+
+	d.logQuery(span, query)
 	logrus.WithTime(time.Now()).WithField("sql_method", "ExecContext").Debug(query)
 
 	result, err = d.SQLDB.ExecContext(ctx, query, args...)
@@ -67,8 +98,8 @@ func (d traceableDB) QueryContext(ctx context.Context, query string, args ...int
 	defer func() {
 		d.FinishSpan(span, err)
 	}()
-	span.LogKV("sql", query)
 
+	d.logQuery(span, query)
 	logrus.WithTime(time.Now()).WithField("sql_method", "QueryContext").Debug(query)
 
 	// nolint: sqlclosecheck // rows are supposed to be not closed because it's a wrapper
@@ -83,9 +114,9 @@ func (d traceableDB) QueryRowContext(ctx context.Context, query string, args ...
 	span, ctx := d.StartSpan(ctx, "QueryRowContext")
 	defer d.FinishSpan(span, nil)
 
-	span.LogKV("sql", query)
-
+	d.logQuery(span, query)
 	logrus.WithTime(time.Now()).WithField("sql_method", "QueryRowContext").Debug(query)
+
 	return d.SQLDB.QueryRowContext(ctx, query, args...)
 }
 
