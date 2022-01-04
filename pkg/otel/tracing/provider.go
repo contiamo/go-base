@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/contiamo/go-base/v4/pkg/otel/component"
 	"go.opentelemetry.io/contrib/detectors/aws/eks"
 	"go.opentelemetry.io/contrib/propagators/aws/xray"
 	jaegerprop "go.opentelemetry.io/contrib/propagators/jaeger"
@@ -48,8 +49,8 @@ type Shutdown func(context.Context)
 // the Jaeger exporter that will send spans to the provided url. The returned
 // TracerProvider will also use a Resource configured with all the information
 // about the application.
-func Provider(ctx context.Context, name, version, commit string) (shutdown Shutdown, err error) {
-	exporter := Exporter(get(otelEnvTraceSExporter, "disabled"))
+func Provider(ctx context.Context, component component.Info) (shutdown Shutdown, err error) {
+	exporter := Exporter(get(otelEnvTraceSExporter, string(DisabledExporter)))
 
 	var exp trace.TracerProviderOption
 	switch exporter {
@@ -108,9 +109,9 @@ func Provider(ctx context.Context, name, version, commit string) (shutdown Shutd
 		resource.WithOS(),
 		resource.WithTelemetrySDK(),
 		resource.WithAttributes(
-			semconv.ServiceVersionKey.String(version),
-			attribute.String("service.commit", commit),
-			semconv.ServiceNameKey.String(get(otelEnvServiceName, "connector")),
+			semconv.ServiceVersionKey.String(component.Version),
+			attribute.String("service.commit", component.Commit),
+			semconv.ServiceNameKey.String(get(otelEnvServiceName, component.Name)),
 		),
 	)
 	if err != nil {

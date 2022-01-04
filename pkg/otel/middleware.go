@@ -1,9 +1,10 @@
-package tracing
+package otel
 
 import (
 	"net/http"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp/filters"
 )
 
 // Middleware configures the otelhttp.NewHandler and returns a middleware is compatible
@@ -32,11 +33,9 @@ func Middleware(name string, opts ...otelhttp.Option) func(next http.Handler) ht
 
 // WithInternalPathFilter is the default tracing filter passed to the Middleware.
 // It filters out /metrics and /health requests.
-var WithInternalPathFilter = otelhttp.WithFilter(func(r *http.Request) bool {
-	switch r.URL.Path {
-	case "/metrics", "/health":
-		return true
-	default:
-		return false
-	}
-})
+var WithInternalPathFilter = otelhttp.WithFilter(
+	filters.None(
+		filters.Path("/metrics"),
+		filters.Path("/health"),
+	),
+)
