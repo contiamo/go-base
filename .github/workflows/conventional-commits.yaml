@@ -1,6 +1,4 @@
-
-
-name: 'Conventional commit titles'
+name: "Conventional commit titles"
 on:
   pull_request:
     types:
@@ -20,5 +18,5 @@ jobs:
       - uses: deepakputhraya/action-pr-title@master
         with:
           # Ensure pull request titles match the Conventional Commits specification https://www.conventionalcommits.org/en/v1.0.0/
-          # The optional scope is for a Jira ticket number (`CON-xxxx`)
-          regex: '^(feat|fix|chore|ci|refactor|test)(\(CON-\d+\))?!?:'
+          # The scope is optional, but recommended.
+          regex: '^(feat|fix|chore|ci|refactor|test|docs)(\(.+\))?!?:'
