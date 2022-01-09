@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.11.0](https://github.com/contiamo/go-base/compare/v4.10.0...v4.11.0) (2022-01-09)
+
+
+### Features
+
+* add Getters to the component Info struct ([1c83a04](https://github.com/contiamo/go-base/commit/1c83a04622134efae59111a4ce6e3852b1eaa855))
+
 ## [4.10.0](https://github.com/contiamo/go-base/compare/v4.9.0...v4.10.0) (2022-01-09)
 
 
