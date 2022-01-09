@@ -19,3 +19,15 @@ func RecordError(span trace.Span, err error) {
 	span.RecordError(err)
 	span.SetStatus(codes.Error, err.Error())
 }
+
+// EndSpan is a utility to simplify ending a span and recording an error.
+func EndSpan(span trace.Span, err error) {
+	if err == nil {
+		span.End()
+		return
+	}
+
+	span.RecordError(err)
+	span.SetStatus(codes.Error, err.Error())
+	span.End()
+}
