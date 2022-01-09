@@ -62,6 +62,7 @@ func Test_MetricsMiddleware(t *testing.T) {
 		err = testWebsocketEcho(ts.URL)
 		require.NoError(t, err)
 
+		time.Sleep(100 * time.Millisecond)
 		req, err := http.NewRequest(http.MethodGet, ts.URL+"/metrics", nil)
 		require.NoError(t, err)
 		req = req.WithContext(ctx)
