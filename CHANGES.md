@@ -1,5 +1,31 @@
 # Changelog
 
+## [4.10.0](https://github.com/contiamo/go-base/compare/v4.9.0...v4.10.0) (2022-01-09)
+
+
+### Features
+
+* add a standard logging configuration util ([#208](https://github.com/contiamo/go-base/issues/208)) ([67192db](https://github.com/contiamo/go-base/commit/67192dbc4245584b416491aaa0a84f59e638b0f7))
+* add contexts package to simplify signal handling ([#204](https://github.com/contiamo/go-base/issues/204)) ([36a26ca](https://github.com/contiamo/go-base/commit/36a26cabbfae5636670b698dc6b247ec44786247))
+* add option for trimming SQL in open tracing spans ([#192](https://github.com/contiamo/go-base/issues/192)) ([8347610](https://github.com/contiamo/go-base/commit/83476100d5f9698a23a71ab46d017ab61dcd0fa5))
+* Add package for the default OpenTelemetry usage ([#201](https://github.com/contiamo/go-base/issues/201)) ([bd18d2b](https://github.com/contiamo/go-base/commit/bd18d2b0593013fbaad19dfadce69f6550d1bbd7))
+* Add support for open telemetry metrics ([bd18d2b](https://github.com/contiamo/go-base/commit/bd18d2b0593013fbaad19dfadce69f6550d1bbd7))
+
+
+### Miscellaneous
+
+* add EndSpan utility ([#205](https://github.com/contiamo/go-base/issues/205)) ([85e1d23](https://github.com/contiamo/go-base/commit/85e1d237441cb60523f21ec9cfe029467909d059))
+* bump actions/checkout from 2.3.5 to 2.4.0 ([#189](https://github.com/contiamo/go-base/issues/189)) ([a1fa8b0](https://github.com/contiamo/go-base/commit/a1fa8b0e16ce6a68190b081f6cf2e3ff5a33691a))
+* bump actions/setup-go from 2.1.4 to 2.1.5 ([#199](https://github.com/contiamo/go-base/issues/199)) ([c8ed12f](https://github.com/contiamo/go-base/commit/c8ed12f806bda2c4efbe62a48c742dd8ed095bcb))
+* bump github.com/cenkalti/backoff/v4 from 4.1.1 to 4.1.2 ([#191](https://github.com/contiamo/go-base/issues/191)) ([3fc1918](https://github.com/contiamo/go-base/commit/3fc19183b812dc2a4a3ef99467ac5ea00b7f5b15))
+* bump github.com/golang-jwt/jwt/v4 from 4.1.0 to 4.2.0 ([#196](https://github.com/contiamo/go-base/issues/196)) ([519f059](https://github.com/contiamo/go-base/commit/519f0592527e2f9df25205f227d57bd5a8680986))
+* bump github.com/lib/pq from 1.10.3 to 1.10.4 ([#190](https://github.com/contiamo/go-base/issues/190)) ([1ece810](https://github.com/contiamo/go-base/commit/1ece8108ace535da06822bb2ad83e50c02beb234))
+* bump github.com/Masterminds/squirrel from 1.5.1 to 1.5.2 ([#194](https://github.com/contiamo/go-base/issues/194)) ([150ae9a](https://github.com/contiamo/go-base/commit/150ae9a4f38995d8299aa089c9235af9b568441f))
+* bump github.com/rs/cors from 1.8.0 to 1.8.2 ([#198](https://github.com/contiamo/go-base/issues/198)) ([5092688](https://github.com/contiamo/go-base/commit/509268869e92996812e2f15159890623ab097b0b))
+* bump github.com/uber/jaeger-client-go ([#197](https://github.com/contiamo/go-base/issues/197)) ([acc1e73](https://github.com/contiamo/go-base/commit/acc1e73b5964d01b9a99597ae08dc693324227ec))
+* bump golang.org/x/tools from 0.1.7 to 0.1.8 ([#195](https://github.com/contiamo/go-base/issues/195)) ([5517c06](https://github.com/contiamo/go-base/commit/5517c06467f929c4c99cf10d653db5c357dc4a1b))
+* bump GoogleCloudPlatform/release-please-action from 2 to 3 ([#200](https://github.com/contiamo/go-base/issues/200)) ([1b56448](https://github.com/contiamo/go-base/commit/1b564486faef6d0c517d9cf83b0993a2439af55d))
+
 ## [4.9.0](https://www.github.com/contiamo/go-base/compare/v4.8.0...v4.9.0) (2021-10-25)
 
 
