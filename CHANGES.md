@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.10.0](https://github.com/contiamo/go-base/compare/v4.9.0...v4.10.0) (2022-01-09)
+
+
+### Features
+
+* add option for trimming SQL in open tracing spans ([#192](https://github.com/contiamo/go-base/issues/192)) ([8347610](https://github.com/contiamo/go-base/commit/83476100d5f9698a23a71ab46d017ab61dcd0fa5))
+
 ## [4.9.0](https://www.github.com/contiamo/go-base/compare/v4.8.0...v4.9.0) (2021-10-25)
 
 
