@@ -84,7 +84,7 @@ jobs:
       #####################
       # Release and Publish
       #####################
-      - uses: GoogleCloudPlatform/release-please-action@v2
+      - uses: GoogleCloudPlatform/release-please-action@v3
         id: release
         if: ${{ github.ref == env.default_branch || github.event.inputs.release_tag }}
         with:
