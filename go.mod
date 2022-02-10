@@ -7,7 +7,7 @@ require (
 	github.com/bakins/net-http-recover v0.0.0-20141007104922-6cba69d01459
 	github.com/cenkalti/backoff/v4 v4.1.2
 	github.com/contiamo/jwt v0.3.0
-	github.com/go-chi/chi v4.0.2+incompatible
+	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/golang-jwt/jwt/v4 v4.3.0
