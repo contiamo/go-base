@@ -23,7 +23,6 @@ func (b jsonBlob) GetData() interface{} {
 func (b jsonBlob) Scan(src interface{}) error {
 	switch value := src.(type) {
 	case nil:
-		b.data = nil
 		return nil
 	case []byte:
 		return json.Unmarshal(value, b.data)

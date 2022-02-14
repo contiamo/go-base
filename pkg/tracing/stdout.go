@@ -82,6 +82,7 @@ func (t loggingTracer) FinishSpan(span opentracing.Span, err error) {
 func GetTraceID(span opentracing.Span) string {
 	switch s := span.(type) {
 	case *jaeger.Span:
+		//nolint:forcetypeassert // we know the context will be a SpanContext if it is a Jaeger span
 		return s.Context().(jaeger.SpanContext).TraceID().String()
 	default:
 		return ""
@@ -95,6 +96,7 @@ func GetTraceID(span opentracing.Span) string {
 func GetSpanID(span opentracing.Span) string {
 	switch s := span.(type) {
 	case *jaeger.Span:
+		//nolint:forcetypeassert // we know the context will be a SpanContext if it is a Jaeger span
 		return s.Context().(jaeger.SpanContext).SpanID().String()
 	default:
 		return ""

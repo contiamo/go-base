@@ -336,6 +336,10 @@ func listColumns(ctx context.Context, db db.SQLDB, tableName string) (columns ma
 		columns[columnName] = none
 	}
 
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+
 	return columns, nil
 }
 

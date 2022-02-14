@@ -97,6 +97,11 @@ func (r *idResolver) Resolve(ctx context.Context, sql db.SQLBuilder, value strin
 	if !rows.Next() {
 		return "", dserrors.ErrNotFound
 	}
+
+	if rows.Err() != nil {
+		return "", rows.Err()
+	}
+
 	var id string
 	err = rows.Scan(&id)
 	if err != nil {
@@ -110,6 +115,10 @@ func (r *idResolver) Resolve(ctx context.Context, sql db.SQLBuilder, value strin
 			value,
 			r.table,
 		)
+	}
+
+	if rows.Err() != nil {
+		return "", rows.Err()
 	}
 
 	return id, err
