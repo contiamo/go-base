@@ -104,6 +104,7 @@ func (m *baseManager) GetPageInfoWithQuery(ctx context.Context, query squirrel.S
 
 	// it's tied to the squirrel implementation now but there is no other way I know of to
 	// overwrite the columns in a `SelectBuilder`. The `.Columns(string)` function just appends more.
+	//nolint:forcetypeassert  // we know that Delete is always also a SelectBuilder
 	counter := builder.
 		Delete(query, "Columns").(squirrel.SelectBuilder).
 		Columns("COUNT(1)")

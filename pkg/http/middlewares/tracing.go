@@ -130,8 +130,14 @@ func middleware(tr opentracing.Tracer, h http.Handler, options ...mwOption) http
 
 		h.ServeHTTP(w, r)
 
-		ext.HTTPStatusCode.Set(sp, uint16(w.(negroni.ResponseWriter).Status()))
+		if sw, ok := w.(statusWriter); ok {
+			ext.HTTPStatusCode.Set(sp, uint16(sw.Status()))
+		}
 		sp.Finish()
 	}
 	return http.HandlerFunc(fn)
+}
+
+type statusWriter interface {
+	Status() int
 }
