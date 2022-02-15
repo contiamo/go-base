@@ -28,7 +28,7 @@ require (
 	github.com/urfave/negroni v1.0.0
 	go.opentelemetry.io/contrib/detectors/aws/eks v1.3.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.28.0
-	go.opentelemetry.io/contrib/instrumentation/runtime v0.27.0
+	go.opentelemetry.io/contrib/instrumentation/runtime v0.29.0
 	go.opentelemetry.io/contrib/propagators/aws v1.3.0
 	go.opentelemetry.io/contrib/propagators/jaeger v1.3.0
 	go.opentelemetry.io/otel v1.4.0
