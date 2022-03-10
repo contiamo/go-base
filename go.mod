@@ -33,7 +33,7 @@ require (
 	go.opentelemetry.io/contrib/propagators/jaeger v1.4.0
 	go.opentelemetry.io/otel v1.4.1
 	go.opentelemetry.io/otel/exporters/jaeger v1.3.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.4.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.4.1
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.4.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.4.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.27.0
