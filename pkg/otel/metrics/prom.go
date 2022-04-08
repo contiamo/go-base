@@ -12,8 +12,8 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/prometheus"
-	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
+	"go.opentelemetry.io/otel/metric/instrument"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	"go.opentelemetry.io/otel/sdk/metric/export/aggregation"
 	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
@@ -58,6 +58,7 @@ func Setup(component component.Info) (*prometheus.Exporter, error) {
 		return nil, fmt.Errorf("failed to initialize prometheus exporter: %w", err)
 	}
 	global.SetMeterProvider(exporter.MeterProvider())
+	provider := global.MeterProvider()
 
 	err = runtime.Start(
 		runtime.WithMinimumReadMemStatsInterval(time.Second),
@@ -66,10 +67,10 @@ func Setup(component component.Info) (*prometheus.Exporter, error) {
 		log.Fatalln("failed to start runtime instrumentation:", err)
 	}
 
-	meter := global.Meter(component.Name)
-	componentInfo, err := meter.NewInt64UpDownCounter(
+	meter := provider.Meter(component.Name)
+	componentInfo, err := meter.SyncInt64().UpDownCounter(
 		"component_info",
-		metric.WithDescription("version information of the component"),
+		instrument.WithDescription("version information of the component"),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create component_info metric: %w", err)
