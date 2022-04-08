@@ -1,5 +1,30 @@
 # Changelog
 
+### [4.11.1](https://github.com/contiamo/go-base/compare/v4.11.0...v4.11.1) (2022-04-08)
+
+
+### Miscellaneous
+
+* bump actions/checkout from 2.4.0 to 3 ([#237](https://github.com/contiamo/go-base/issues/237)) ([5e8f493](https://github.com/contiamo/go-base/commit/5e8f49319ff93ae479385d80b529f097c211c80c))
+* bump actions/setup-go from 2.1.5 to 2.2.0 ([#215](https://github.com/contiamo/go-base/issues/215)) ([0678d17](https://github.com/contiamo/go-base/commit/0678d17dc98bfe446aaac91b91fa7dba48ca2af8))
+* bump actions/setup-go from 2.2.0 to 3 ([#236](https://github.com/contiamo/go-base/issues/236)) ([ed14841](https://github.com/contiamo/go-base/commit/ed14841670664de5849d9d4b0988d661ccd3d328))
+* bump github.com/go-chi/chi ([#203](https://github.com/contiamo/go-base/issues/203)) ([1dfd553](https://github.com/contiamo/go-base/commit/1dfd553de6d3b2da34a247991b609c67d7fc6659))
+* bump github.com/golang-jwt/jwt/v4 from 4.2.0 to 4.3.0 ([#214](https://github.com/contiamo/go-base/issues/214)) ([8ec3d2f](https://github.com/contiamo/go-base/commit/8ec3d2f83c5f8e1e88786fe5c0e105edf9eab5e7))
+* bump github.com/gorilla/websocket from 1.4.2 to 1.5.0 ([#229](https://github.com/contiamo/go-base/issues/229)) ([2a07f17](https://github.com/contiamo/go-base/commit/2a07f170acfc63a64d2f212e4196d93b7b105452))
+* bump github.com/prometheus/client_golang from 1.11.0 to 1.12.0 ([#210](https://github.com/contiamo/go-base/issues/210)) ([b76fcdf](https://github.com/contiamo/go-base/commit/b76fcdf434aa4a524dc93be30e0726d3b9385a16))
+* bump github.com/prometheus/client_golang from 1.12.0 to 1.12.1 ([#213](https://github.com/contiamo/go-base/issues/213)) ([201aac5](https://github.com/contiamo/go-base/commit/201aac58ac33dbc031f76d11a9ecfc77772e5481))
+* bump github.com/stretchr/testify from 1.7.0 to 1.7.1 ([#241](https://github.com/contiamo/go-base/issues/241)) ([b8047c6](https://github.com/contiamo/go-base/commit/b8047c6a6b1e1c5a8cb32861ac02e455c311b305))
+* bump go.opentelemetry.io/otel/exporters/jaeger ([#233](https://github.com/contiamo/go-base/issues/233)) ([10589b5](https://github.com/contiamo/go-base/commit/10589b5b763477f1136cf9922ae8e3d160298af4))
+* bump go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc ([#239](https://github.com/contiamo/go-base/issues/239)) ([7400136](https://github.com/contiamo/go-base/commit/7400136bfeee6fe34edcc7874d59336f740c253b))
+* bump go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp ([#231](https://github.com/contiamo/go-base/issues/231)) ([950e85b](https://github.com/contiamo/go-base/commit/950e85b2092a89201b7be2fc27b2c4b18335240f))
+* bump go.opentelemetry.io/otel/exporters/stdout/stdouttrace ([#230](https://github.com/contiamo/go-base/issues/230)) ([d43fc26](https://github.com/contiamo/go-base/commit/d43fc26fe21718bd4daac776ebdf1f662d982c92))
+* bump golang.org/x/tools from 0.1.8 to 0.1.9 ([#211](https://github.com/contiamo/go-base/issues/211)) ([1a78774](https://github.com/contiamo/go-base/commit/1a787740c2647608ccf5d6a3492fa1b0b2fb0cd9))
+* bump golang.org/x/tools from 0.1.9 to 0.1.10 ([#240](https://github.com/contiamo/go-base/issues/240)) ([4ded79b](https://github.com/contiamo/go-base/commit/4ded79bf4677ac05c83fa8731a50fb8b362e4028))
+* bump golangci/golangci-lint-action from 2 to 3.1.0 ([#235](https://github.com/contiamo/go-base/issues/235)) ([c85c462](https://github.com/contiamo/go-base/commit/c85c4621cc1131a0fc2e635d6d03a788193f8ce0))
+* upgrade observability components ([8beb2d6](https://github.com/contiamo/go-base/commit/8beb2d6f218ffe3f8896ca7b4552da7d7ecdd75e))
+* upgrade otel components ([#221](https://github.com/contiamo/go-base/issues/221)) ([9967478](https://github.com/contiamo/go-base/commit/9967478b214a4bf50c1ba032226590a6c9c26a94))
+* upgrade otel contrib packages ([#227](https://github.com/contiamo/go-base/issues/227)) ([bf71d97](https://github.com/contiamo/go-base/commit/bf71d97c15f7d42e97c40f1ff97045dd38c37a0f))
+
 ## [4.11.0](https://github.com/contiamo/go-base/compare/v4.10.0...v4.11.0) (2022-01-09)
 
 
