@@ -8,11 +8,6 @@ on:
       - synchronize
       - opened
       - reopened
-  workflow_dispatch:
-    inputs:
-      release_tag:
-        description: "Release Version. Must be an existing tag"
-        required: true
 
 jobs:
   # Label of the container job
@@ -44,20 +39,12 @@ jobs:
           --health-retries 5
 
     steps:
-      # validate workflow_dispatch is for a tag
-      - uses: mukunku/tag-exists-action@v1.0.0
-        id: checkTag
-        if: ${{ github.event.inputs.release_tag }}
-        with:
-          tag: ${{ github.event.inputs.release_tag }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Downloads a copy of the code in your repository before running CI tests
       - name: Check out repository code
         uses: actions/checkout@v3
       - uses: actions/setup-go@v3
         with:
-          go-version: "1.16"
+          go-version: "1.18"
       - name: Print env
         run: make env
       - name: Format
@@ -66,7 +53,7 @@ jobs:
       - name: Lint
         uses: golangci/golangci-lint-action@v3.1.0
         with:
-          version: v1.44
+          version: v1.45.2
       - name: Tests
         run: make .test-ci
         env:
@@ -86,7 +73,7 @@ jobs:
       #####################
       - uses: GoogleCloudPlatform/release-please-action@v3
         id: release
-        if: ${{ github.ref == env.default_branch || github.event.inputs.release_tag }}
+        if: ${{ github.ref == env.default_branch }}
         with:
           # use the CI token to pretend not to be a action?
           # if this works then the resulting PRs will trigger
