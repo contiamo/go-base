@@ -38,17 +38,17 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.6.3
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.6.3
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.6.3
-	go.opentelemetry.io/otel/exporters/prometheus v0.28.0
+	go.opentelemetry.io/otel/exporters/prometheus v0.29.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.6.3
-	go.opentelemetry.io/otel/metric v0.28.0
+	go.opentelemetry.io/otel/metric v0.29.0
 	go.opentelemetry.io/otel/sdk v1.6.3
-	go.opentelemetry.io/otel/sdk/metric v0.28.0
+	go.opentelemetry.io/otel/sdk/metric v0.29.0
 	go.opentelemetry.io/otel/trace v1.6.3
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/goleak v1.1.12
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	golang.org/x/net v0.0.0-20220407224826-aac1ed45d8e3 // indirect
-	golang.org/x/sys v0.0.0-20220406163625-3f8b81556e12 // indirect
+	golang.org/x/sys v0.0.0-20220412071739-889880a91fd5 // indirect
 	golang.org/x/tools v0.1.10
 	google.golang.org/genproto v0.0.0-20220407144326-9054f6ed7bac // indirect
 	google.golang.org/protobuf v1.28.0
