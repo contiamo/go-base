@@ -1,5 +1,16 @@
 # Changelog
 
+### [4.11.2](https://github.com/contiamo/go-base/compare/v4.11.1...v4.11.2) (2022-04-12)
+
+
+### Miscellaneous
+
+* bump github.com/cenkalti/backoff/v4 from 4.1.2 to 4.1.3 ([#264](https://github.com/contiamo/go-base/issues/264)) ([29bca07](https://github.com/contiamo/go-base/commit/29bca0785262af0bfaa75048f462f8702299babb))
+* bump github.com/golang-jwt/jwt/v4 from 4.3.0 to 4.4.1 ([#262](https://github.com/contiamo/go-base/issues/262)) ([ea370ac](https://github.com/contiamo/go-base/commit/ea370ac69a870f4677d382a0f8ef4b1bc4c60b3b))
+* bump github.com/lib/pq from 1.10.4 to 1.10.5 ([#261](https://github.com/contiamo/go-base/issues/261)) ([1dd0d34](https://github.com/contiamo/go-base/commit/1dd0d349b7be1577c24d264a637e4eed61e9de5e))
+* bump go.opentelemetry.io/contrib/detectors/aws/eks ([#260](https://github.com/contiamo/go-base/issues/260)) ([b4f77ed](https://github.com/contiamo/go-base/commit/b4f77eda6cb636f8bcef8014104287efc709daf2))
+* bump otel metric packages from 0.28.0 to 0.29.0 ([2862942](https://github.com/contiamo/go-base/commit/286294222b961fe33ecfb38816754873f51de6a1))
+
 ### [4.11.1](https://github.com/contiamo/go-base/compare/v4.11.0...v4.11.1) (2022-04-08)
 
 
