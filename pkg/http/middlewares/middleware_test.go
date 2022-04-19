@@ -37,6 +37,10 @@ func createServer(opts []server.Option) (*http.Server, error) {
 
 	mux.Handle("/metrics", promhttp.Handler())
 	mux.HandleFunc("/ws/", echoWS)
+	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = io.Copy(w, r.Body)
+	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/panic" {
 			panic("PANIC!!!")

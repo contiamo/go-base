@@ -31,7 +31,7 @@ type tracingOption struct {
 }
 
 func (opt *tracingOption) WrapHandler(handler http.Handler) http.Handler {
-	mw := middleware(
+	mw := traceMiddleware(
 		opentracing.GlobalTracer(),
 		handler,
 		operationNameFunc(opt.opNameFunc),
@@ -90,7 +90,7 @@ func mwComponentName(componentName string) mwOption {
 // Example:
 //	 http.ListenAndServe("localhost:80", nethttp.Middleware(tracer, http.DefaultServeMux))
 //
-// The options allow fine tuning the behavior of the middleware.
+// The options allow fine tuning the behavior of the traceMiddleware.
 //
 // Example:
 //   mw := nethttp.Middleware(
@@ -103,7 +103,7 @@ func mwComponentName(componentName string) mwOption {
 //			sp.SetTag("http.uri", r.URL.EscapedPath())
 //		}),
 //   )
-func middleware(tr opentracing.Tracer, h http.Handler, options ...mwOption) http.Handler {
+func traceMiddleware(tr opentracing.Tracer, h http.Handler, options ...mwOption) http.Handler {
 	opts := mwOptions{
 		opNameFunc: func(r *http.Request) string {
 			return "HTTP " + r.Method
