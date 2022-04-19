@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.12.0](https://github.com/contiamo/go-base/compare/v4.11.2...v4.12.0) (2022-04-19)
+
+
+### Features
+
+* allow skipping http loggin per request ([#268](https://github.com/contiamo/go-base/issues/268)) ([1a3b401](https://github.com/contiamo/go-base/commit/1a3b401a7bbd93ad2f4f96e16d8f2000b41d1698))
+
 ### [4.11.2](https://github.com/contiamo/go-base/compare/v4.11.1...v4.11.2) (2022-04-12)
 
 
