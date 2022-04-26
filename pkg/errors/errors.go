@@ -44,7 +44,7 @@ type ValidationErrors = validation.Errors
 
 // ValidationErrorsToFieldErrorResponse converts validation errors to the format that is
 // served by HTTP handlers
-func ValidationErrorsToFieldErrorResponse(errs ValidationErrors) (resp ErrorResponse) {
+func ValidationErrorsToFieldErrorResponse(errs map[string]error) (resp ErrorResponse) {
 	resp.Errors = make([]APIErrorMessenger, 0, len(errs))
 	for key, fieldErr := range errs {
 		if fieldErr == nil {
