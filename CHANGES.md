@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.13.0](https://github.com/contiamo/go-base/compare/v4.12.0...v4.13.0) (2022-04-26)
+
+
+### Features
+
+* allow customizing http handler error parsing ([#270](https://github.com/contiamo/go-base/issues/270)) ([61a10a7](https://github.com/contiamo/go-base/commit/61a10a7a4a7da13cb2579150dee34c5aa915e781))
+
 ## [4.12.0](https://github.com/contiamo/go-base/compare/v4.11.2...v4.12.0) (2022-04-19)
 
 
