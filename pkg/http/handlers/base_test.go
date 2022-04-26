@@ -70,6 +70,15 @@ func TestWrite(t *testing.T) {
 		require.Equal(t, "application/json", resp.Header().Get("content-type"))
 		require.Equal(t, "{\"Name\":\"some\"}\n", resp.Body.String())
 	})
+
+	t.Run("Write handle nil objects", func(t *testing.T) {
+		h := NewBaseHandler("test", Megabyte, false)
+		resp := httptest.NewRecorder()
+		h.Write(context.Background(), resp, http.StatusCreated, nil)
+		require.Equal(t, http.StatusCreated, resp.Code)
+		require.Equal(t, "", resp.Header().Get("content-type"))
+		require.Equal(t, "", resp.Body.String())
+	})
 }
 
 func TestError(t *testing.T) {
@@ -99,11 +108,8 @@ func TestError(t *testing.T) {
 			expBody:   `{"errors":[{"type":"GeneralError","message":"You don't have required permission to perform this action"}]}`,
 		},
 		{
-			name: "Returns 422 when ErrUnmarshalling",
-			err: errors.Wrap(
-				errors.New("unexpected end of file"),
-				cerrors.ErrUnmarshalling.Error(),
-			),
+			name:      "Returns 422 when ErrUnmarshalling",
+			err:       &parseError{cause: errors.New("unexpected end of file")},
 			expStatus: http.StatusUnprocessableEntity,
 			expBody:   `{"errors":[{"type":"GeneralError","message":"Failed to read JSON from the request body: unexpected end of file"}]}`,
 		},
@@ -133,13 +139,13 @@ func TestError(t *testing.T) {
 		},
 		{
 			name:      "Returns 422 and field errors when validation errors",
-			err:       validation.Errors{"field": errors.New("terrible")},
+			err:       validation.Errors{"field": errors.New("terrible")}.Filter(),
 			expStatus: http.StatusUnprocessableEntity,
 			expBody:   `{"errors":[{"type":"FieldError","message":"terrible","key":"field"}]}`,
 		},
 		{
-			name:      "Returns 422 and field errors when validation errors",
-			err:       validationV1.Errors{"field": errors.New("terrible")},
+			name:      "Returns 422 and field errors when validation v1 errors",
+			err:       validationV1.Errors{"field": errors.New("terrible")}.Filter(),
 			expStatus: http.StatusUnprocessableEntity,
 			expBody:   `{"errors":[{"type":"FieldError","message":"terrible","key":"field"}]}`,
 		},
