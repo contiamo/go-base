@@ -109,10 +109,8 @@ func (h *Handler) Write(ctx context.Context, w http.ResponseWriter, status int, 
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	if obj != nil {
-		enc := json.NewEncoder(w)
-		err = enc.Encode(obj)
-	}
+	enc := json.NewEncoder(w)
+	err = enc.Encode(obj)
 }
 
 func (h *Handler) Parse(r *http.Request, out interface{}) error {
