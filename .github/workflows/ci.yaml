@@ -51,7 +51,7 @@ jobs:
         run: make fmt
       # use the action instead of make because it is slightly faster
       - name: Lint
-        uses: golangci/golangci-lint-action@v3.1.0
+        uses: golangci/golangci-lint-action@v3.2.0
         with:
           version: v1.45.2
       - name: Tests
