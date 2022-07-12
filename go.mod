@@ -24,16 +24,16 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749
 	github.com/sirupsen/logrus v1.8.1
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.8.0
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/urfave/negroni v1.0.0
-	go.opentelemetry.io/contrib/detectors/aws/eks v1.6.0
+	go.opentelemetry.io/contrib/detectors/aws/eks v1.8.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.31.0
 	go.opentelemetry.io/contrib/propagators/aws v1.6.0
 	go.opentelemetry.io/contrib/propagators/jaeger v1.6.0
-	go.opentelemetry.io/otel v1.6.3
+	go.opentelemetry.io/otel v1.8.0
 	go.opentelemetry.io/otel/exporters/jaeger v1.6.3
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.6.3
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.6.3
@@ -41,12 +41,12 @@ require (
 	go.opentelemetry.io/otel/exporters/prometheus v0.29.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.6.3
 	go.opentelemetry.io/otel/metric v0.29.0
-	go.opentelemetry.io/otel/sdk v1.6.3
+	go.opentelemetry.io/otel/sdk v1.8.0
 	go.opentelemetry.io/otel/sdk/metric v0.29.0
-	go.opentelemetry.io/otel/trace v1.6.3
+	go.opentelemetry.io/otel/trace v1.8.0
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/goleak v1.1.12
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
+	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
 	golang.org/x/net v0.0.0-20220407224826-aac1ed45d8e3 // indirect
 	golang.org/x/sys v0.0.0-20220412071739-889880a91fd5 // indirect
 	golang.org/x/tools v0.1.10
