@@ -5,7 +5,10 @@
 
 ### Miscellaneous
 
+* improve logging for heartbeat errors ([087007e](https://github.com/contiamo/go-base/commit/087007e17aacf6eb9b035210641dbdb82d39c449))
+* reduce log noise from work closing channels ([58f5371](https://github.com/contiamo/go-base/commit/58f5371cf3dd4c73a2a01cf9d44be413e71fbbc1))
 * bump golangci/golangci-lint-action from 3.1.0 to 3.2.0 ([#277](https://github.com/contiamo/go-base/issues/277)) ([05320c7](https://github.com/contiamo/go-base/commit/05320c70da111a8cc5b7a1ff98737c1004bee021))
+
 
 ## [4.13.0](https://github.com/contiamo/go-base/compare/v4.12.0...v4.13.0) (2022-04-26)
 
