@@ -29,7 +29,15 @@ type dispatchHandler struct {
 
 func (h *dispatchHandler) Process(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) (err error) {
 	span, ctx := h.StartSpan(ctx, "Process")
+	logger := logrus.
+		WithContext(ctx).
+		WithField("component", "dispatchHandler").
+		WithField("type", task.Type).
+		WithField("id", task.ID).
+		WithField("queue", task.Queue)
+
 	defer func() {
+		logger.Debug("end")
 		h.FinishSpan(span, err)
 	}()
 	span.SetTag("task.id", task.ID)
@@ -37,14 +45,14 @@ func (h *dispatchHandler) Process(ctx context.Context, task queue.Task, heartbea
 	span.SetTag("task.type", task.Type)
 	span.SetTag("task.spec", string(task.Spec))
 
-	logrus := logrus.WithField("type", task.Type)
-
-	logrus.Debug("dispatching task...")
+	logger.Debug("dispatching task")
 	handler, ok := h.handlers[task.Type]
 	if !ok {
-		logrus.Error("there is no handler for this task type")
+		logger.Error("there is no handler for this task type")
 		close(heartbeats)
 		return ErrNoHandlerFound
 	}
+
+	logger.Debug("pass to handler")
 	return handler.Process(ctx, task, heartbeats)
 }

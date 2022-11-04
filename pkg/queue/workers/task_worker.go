@@ -180,10 +180,6 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 	span, ctx := w.StartSpan(ctx, "handleTask")
 	ctx, cancel := context.WithCancel(ctx)
 	labels := prometheus.Labels{"queue": task.Queue, "type": task.Type.String()}
-	defer func() {
-		cancel()
-		w.FinishSpan(span, err)
-	}()
 
 	timer := prometheus.NewTimer(queue.TaskWorkerMetrics.ProcessingDuration)
 	defer timer.ObserveDuration()
@@ -192,6 +188,12 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 		WithField("worker", "handleTask").
 		WithField("queue", task.Queue)
 
+	defer func() {
+		logger.Debug("end")
+		cancel()
+		w.FinishSpan(span, err)
+	}()
+
 	heartbeats := make(chan queue.Progress)
 	processDone := make(chan error, 1)
 
@@ -199,20 +201,20 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 		// handle panics because we force close the heartbeats if the beats are too slow
 		defer func() {
 			if r := recover(); r != nil {
+				if fmt.Sprintf("%v", r) == "close of closed channel" {
+					// ignore error from closing a closed channel
+					return
+				}
 				logger.Errorf("Recovered in task handler.Process: %v", r)
 			}
 		}()
-		// force cleanup heartbeats, this might cause a panic ....
-		defer func() {
-			//nolint: errcheck // we don't care about any errors here because  we are force closing the channel
-			defer recover()
-			defer close(heartbeats)
-			defer close(processDone)
-		}()
-
+		// force cleanup heartbeats, this might cause a panic ...
+		defer close(heartbeats)
+		defer close(processDone)
 		// handler.Process is responsible for closing the heartbeats channel
 		// if `Process` returns an error it means the task failed
 		processDone <- w.handler.Process(ctx, task, heartbeats)
+		logger.Debug("processing finished")
 	}()
 
 	// block while we process the heartbeats
@@ -264,11 +266,14 @@ func (w *taskWorker) processHeartbeats(ctx context.Context, task queue.Task, hea
 		WithField("queue", task.Queue).
 		WithField("task_id", task.ID).
 		WithField("task_type", task.Type.String()).
-		WithField("created_at", task.CreatedAt.Format(time.RFC3339))
+		WithField("created_at", task.CreatedAt.Format(time.RFC3339)).
+		WithField("started_at", time.Now().Format(time.RFC3339)).
+		WithField("period", w.heartbeatPeriod.String())
 
 	for {
 		select {
 		case <-ctx.Done():
+			logger.WithError(ctx.Err()).Debug("context canceled")
 			return progress, ctx.Err()
 		case t := <-ttl.C:
 			logger.WithField("time", t).Error("heartbeat timeout")
@@ -280,6 +285,14 @@ func (w *taskWorker) processHeartbeats(ctx context.Context, task queue.Task, hea
 				logger.Debug("closed heartbeats")
 				return progress, nil
 			}
+
+			// prevent timeouts
+			if !ttl.Stop() {
+				// ttl has fired and we need to drain the channel
+				<-ttl.C
+			}
+
+			logger.WithField("payload", string(progress)).Debug("progress")
 
 			// record the latest valid progress
 			progress = p
@@ -298,10 +311,8 @@ func (w *taskWorker) processHeartbeats(ctx context.Context, task queue.Task, hea
 					return progress, hrtErr
 				}
 			}
-			if !ttl.Stop() {
-				// ttl has fired and we need to drain the channel
-				<-ttl.C
-			}
+
+			logger.Debug("restart heartbeat timer")
 			ttl.Reset(w.heartbeatPeriod)
 		}
 	}
