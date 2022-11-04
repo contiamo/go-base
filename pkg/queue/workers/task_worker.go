@@ -261,14 +261,17 @@ func (w *taskWorker) processHeartbeats(ctx context.Context, task queue.Task, hea
 
 	logger := logrus.WithContext(ctx).
 		WithField("worker", "processHeartbeats").
-		WithField("queue", task.Queue)
+		WithField("queue", task.Queue).
+		WithField("task_id", task.ID).
+		WithField("task_type", task.Type.String()).
+		WithField("created_at", task.CreatedAt.Format(time.RFC3339))
 
 	for {
 		select {
 		case <-ctx.Done():
 			return progress, ctx.Err()
 		case t := <-ttl.C:
-			logrus.WithField("time", t).Error("heartbeat timeout")
+			logger.WithField("time", t).Error("heartbeat timeout")
 			return progress, ErrHeartbeatTimeout
 		// use a temporary p instead of shadowing progress directory so that
 		// we don't accidentally nil the progress when the heartbeats closes
