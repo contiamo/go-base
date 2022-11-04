@@ -45,6 +45,21 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: "1.18"
+      - name: Determine Golang cache paths
+        id: golang-path
+        run: |
+          echo "build=$(go env GOCACHE)" >>"$GITHUB_OUTPUT"
+          echo "module=$(go env GOMODCACHE)" >>"$GITHUB_OUTPUT"
+        shell: bash
+      - name: Setup Golang cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ steps.golang-path.outputs.build }}
+            ${{ steps.golang-path.outputs.module }}
+          key: ${{ runner.os }}-golang-contiamo-o-base-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-golang-contiamo-go-base-
       - name: Print env
         run: make env
       - name: Format
