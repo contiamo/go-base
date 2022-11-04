@@ -203,8 +203,13 @@ func (w *taskWorker) handleTask(ctx context.Context, task queue.Task) (err error
 			}
 		}()
 		// force cleanup heartbeats, this might cause a panic ....
-		defer close(heartbeats)
-		defer close(processDone)
+		defer func() {
+			//nolint: errcheck // we don't care about any errors here because  we are force closing the channel
+			defer recover()
+			defer close(heartbeats)
+			defer close(processDone)
+		}()
+
 		// handler.Process is responsible for closing the heartbeats channel
 		// if `Process` returns an error it means the task failed
 		processDone <- w.handler.Process(ctx, task, heartbeats)
