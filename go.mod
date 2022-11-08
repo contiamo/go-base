@@ -43,8 +43,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.6.3
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/goleak v1.2.0
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
-	golang.org/x/tools v0.1.10
+	golang.org/x/crypto v0.1.0
+	golang.org/x/tools v0.2.0
 	google.golang.org/protobuf v1.28.1
 )
 
@@ -52,7 +52,6 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.10.0 // indirect
 	github.com/prometheus/common v0.33.0 // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
-	golang.org/x/net v0.0.0-20220407224826-aac1ed45d8e3 // indirect
 	google.golang.org/genproto v0.0.0-20220407144326-9054f6ed7bac // indirect
 )
 
