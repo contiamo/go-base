@@ -16,7 +16,7 @@ require (
 	github.com/lib/pq v1.10.7
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.12.1
+	github.com/prometheus/client_golang v1.14.0
 	github.com/robfig/cron v1.2.0
 	github.com/rs/cors v1.8.2
 	github.com/satori/go.uuid v1.2.0
@@ -50,7 +50,6 @@ require (
 
 require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.10.0 // indirect
-	github.com/prometheus/common v0.33.0 // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	google.golang.org/genproto v0.0.0-20220407144326-9054f6ed7bac // indirect
 )
