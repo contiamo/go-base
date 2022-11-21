@@ -2,7 +2,7 @@ package postgres
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 	"time"
@@ -20,7 +20,7 @@ func TestSetupTables(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
 	t.Run("bootstraps without references", func(t *testing.T) {

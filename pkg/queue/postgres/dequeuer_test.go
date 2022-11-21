@@ -2,7 +2,7 @@ package postgres
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"os"
 	"sort"
 	"testing"
@@ -22,7 +22,7 @@ import (
 func TestFinish(t *testing.T) {
 	verifyLeak(t)
 
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -93,7 +93,7 @@ func TestFinish(t *testing.T) {
 func TestFail(t *testing.T) {
 	verifyLeak(t)
 
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -164,7 +164,7 @@ func TestFail(t *testing.T) {
 func TestHeartbeat(t *testing.T) {
 	verifyLeak(t)
 
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
 	waitingUUID := uuid.NewV4().String()
@@ -337,7 +337,7 @@ func TestHeartbeat(t *testing.T) {
 func TestDequeueTicker(t *testing.T) {
 	verifyLeak(t)
 
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -427,7 +427,7 @@ func TestDequeueTicker(t *testing.T) {
 func TestDequeue(t *testing.T) {
 	verifyLeak(t)
 
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

@@ -19,16 +19,16 @@ type Config struct {
 //
 // Example:
 //
-// srv, _ := server.New(&server.Config{
-//  Addr: ":8080",
-//  Handler: http.DefaultServeMux,
-//  Options: []server.Option{
-//    server.WithLogging("my-server"),
-//    server.WithMetrics("my-server"),
-//    server.WithRecovery(),
-//    server.WithTracing("opentracing-server:6831", "my-server"),
-//  }
-// })
+//	srv, _ := server.New(&server.Config{
+//	 Addr: ":8080",
+//	 Handler: http.DefaultServeMux,
+//	 Options: []server.Option{
+//	   server.WithLogging("my-server"),
+//	   server.WithMetrics("my-server"),
+//	   server.WithRecovery(),
+//	   server.WithTracing("opentracing-server:6831", "my-server"),
+//	 }
+//	})
 //
 // srv.ListenAndServe(context.Background())
 func New(cfg *Config) (*http.Server, error) {

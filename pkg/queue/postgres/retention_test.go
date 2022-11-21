@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 	"time"
@@ -22,7 +22,7 @@ import (
 func TestRetentionHandler(t *testing.T) {
 	verifyLeak(t)
 
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

@@ -25,7 +25,9 @@ func FromTime(t time.Time) Timestamp {
 }
 
 // MarshalJSON implements the JSON marshal interface, returning
-//  t as a Unix time, the number of seconds elapsed since
+//
+//	t as a Unix time, the number of seconds elapsed since
+//
 // January 1, 1970 UTC.
 func (t Timestamp) MarshalJSON() ([]byte, error) {
 	return []byte(strconv.FormatInt(t.time.UTC().Unix(), 10)), nil

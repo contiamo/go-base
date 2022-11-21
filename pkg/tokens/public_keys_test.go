@@ -9,7 +9,7 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
-	"io/ioutil"
+	"io"
 	"os"
 	"path"
 	"testing"
@@ -25,7 +25,7 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
 	t.Run("returns error if the path is empty", func(t *testing.T) {
@@ -39,7 +39,7 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 	})
 
 	t.Run("returns no error on empty dir", func(t *testing.T) {
-		tmpPath, err := ioutil.TempDir(os.TempDir(), "public-keys-test")
+		tmpPath, err := os.MkdirTemp(os.TempDir(), "public-keys-test")
 		require.NoError(t, err)
 		defer func() {
 			_ = os.RemoveAll(tmpPath)
@@ -50,7 +50,7 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 	})
 
 	t.Run("reads the key on init", func(t *testing.T) {
-		tmpPath, err := ioutil.TempDir(os.TempDir(), "public-keys-test")
+		tmpPath, err := os.MkdirTemp(os.TempDir(), "public-keys-test")
 		require.NoError(t, err)
 		defer func() {
 			_ = os.RemoveAll(tmpPath)
@@ -66,7 +66,7 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 	})
 
 	t.Run("adds the key when the file gets added", func(t *testing.T) {
-		tmpPath, err := ioutil.TempDir(os.TempDir(), "public-keys-test")
+		tmpPath, err := os.MkdirTemp(os.TempDir(), "public-keys-test")
 		require.NoError(t, err)
 		defer func() {
 			_ = os.RemoveAll(tmpPath)
@@ -91,7 +91,7 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 	})
 
 	t.Run("updates the key if the file gets re-written", func(t *testing.T) {
-		tmpPath, err := ioutil.TempDir(os.TempDir(), "public-keys-test")
+		tmpPath, err := os.MkdirTemp(os.TempDir(), "public-keys-test")
 		require.NoError(t, err)
 		defer func() {
 			_ = os.RemoveAll(tmpPath)
@@ -125,7 +125,7 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 	})
 
 	t.Run("deletes the key if the file gets deleted", func(t *testing.T) {
-		tmpPath, err := ioutil.TempDir(os.TempDir(), "public-keys-test")
+		tmpPath, err := os.MkdirTemp(os.TempDir(), "public-keys-test")
 		require.NoError(t, err)
 		defer func() {
 			_ = os.RemoveAll(tmpPath)
@@ -160,7 +160,7 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 	})
 
 	t.Run("clears the cache when there are no keys anymore", func(t *testing.T) {
-		tmpPath, err := ioutil.TempDir(os.TempDir(), "public-keys-test")
+		tmpPath, err := os.MkdirTemp(os.TempDir(), "public-keys-test")
 		require.NoError(t, err)
 		defer func() {
 			_ = os.RemoveAll(tmpPath)
@@ -195,7 +195,7 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 	})
 
 	t.Run("keeps the key if there is no change", func(t *testing.T) {
-		tmpPath, err := ioutil.TempDir(os.TempDir(), "public-keys-test")
+		tmpPath, err := os.MkdirTemp(os.TempDir(), "public-keys-test")
 		require.NoError(t, err)
 		defer func() {
 			_ = os.RemoveAll(tmpPath)
@@ -224,7 +224,7 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 	})
 
 	t.Run("does not corrupt the cache when there is an invalid key file", func(t *testing.T) {
-		tmpPath, err := ioutil.TempDir(os.TempDir(), "public-keys-test")
+		tmpPath, err := os.MkdirTemp(os.TempDir(), "public-keys-test")
 		require.NoError(t, err)
 		defer func() {
 			_ = os.RemoveAll(tmpPath)
@@ -256,7 +256,7 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 	})
 
 	t.Run("key function returns expected errors", func(t *testing.T) {
-		tmpPath, err := ioutil.TempDir(os.TempDir(), "public-keys-test")
+		tmpPath, err := os.MkdirTemp(os.TempDir(), "public-keys-test")
 		require.NoError(t, err)
 		defer func() {
 			_ = os.RemoveAll(tmpPath)
@@ -289,7 +289,7 @@ func TestPublicKeysGetKeyFunction(t *testing.T) {
 	})
 
 	t.Run("key function satisfies the jwt.KeyFunc type", func(t *testing.T) {
-		tmpPath, err := ioutil.TempDir(os.TempDir(), "public-keys-test")
+		tmpPath, err := os.MkdirTemp(os.TempDir(), "public-keys-test")
 		require.NoError(t, err)
 		defer func() {
 			_ = os.RemoveAll(tmpPath)

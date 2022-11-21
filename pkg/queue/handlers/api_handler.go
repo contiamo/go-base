@@ -31,51 +31,50 @@ import (
 //
 // Example usage:
 //
-// 		client := clients.NewBaseAPIClient(
-// 			"", // use an empty baseURL because the task spec will hold the URL
-// 			"X-Auth",
-// 			clients.TokenProviderFromCreator(&creator, "apiRequestTask", tokens.Options{}),
-// 			http.DefaultClient,
-// 			false,
-// 		)
-// 		handler := NewJSONAPIHandler(client)
-//
+//	client := clients.NewBaseAPIClient(
+//		"", // use an empty baseURL because the task spec will hold the URL
+//		"X-Auth",
+//		clients.TokenProviderFromCreator(&creator, "apiRequestTask", tokens.Options{}),
+//		http.DefaultClient,
+//		false,
+//	)
+//	handler := NewJSONAPIHandler(client)
 //
 // Alternatively, use it within your custom task handler, this is required if the client
 // behavior is dependent on the task spec:
 //
-// 		type customHandler struct {
-// 			tracing.Tracer
-// 		}
-// 		func (h customHandler) Process(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) (err error) {
-// 			span, ctx := h.StartSpan(ctx, "Process")
-// 			defer func() {
-// 				close(heartbeats)
-// 				heartbeats = nil
-// 				h.FinishSpan(span, err)
-// 			}()
+//	type customHandler struct {
+//		tracing.Tracer
+//	}
+//	func (h customHandler) Process(ctx context.Context, task queue.Task, heartbeats chan<- queue.Progress) (err error) {
+//		span, ctx := h.StartSpan(ctx, "Process")
+//		defer func() {
+//			close(heartbeats)
+//			heartbeats = nil
+//			h.FinishSpan(span, err)
+//		}()
 //
-// 			var spec tasks.CustomSpec
-// 			err = json.Unmarshal(task.Spec, &spec)
-// 			if err != nil {
-// 				return err
-// 			}
+//		var spec tasks.CustomSpec
+//		err = json.Unmarshal(task.Spec, &spec)
+//		if err != nil {
+//			return err
+//		}
 //
-// 			creator := specSpecificTokenCreator{
-// 				projectID: spec.ProjectID,
-// 			}
-// 			client := clients.NewBaseAPIClient(
-// 				"", // use an empty baseURL because the task spec will hold the URL
-// 				"Auth",
-// 				clients.TokenProviderFromCreator(&creator, "apiRequestTask", tokens.Options{}),
-// 				http.DefaultClient,
-// 				false,
-// 			)
-//			client = clients.WithRetry(client, maxAttempts, backoff.Exponential())
-// 			taskHandler := handlers.NewJSONAPIHandler(client)
+//		creator := specSpecificTokenCreator{
+//			projectID: spec.ProjectID,
+//		}
+//		client := clients.NewBaseAPIClient(
+//			"", // use an empty baseURL because the task spec will hold the URL
+//			"Auth",
+//			clients.TokenProviderFromCreator(&creator, "apiRequestTask", tokens.Options{}),
+//			http.DefaultClient,
+//			false,
+//		)
+//		client = clients.WithRetry(client, maxAttempts, backoff.Exponential())
+//		taskHandler := handlers.NewJSONAPIHandler(client)
 //
-// 			return taskHandler.Process(ctx, task, heartbeats)
-// 		}
+//		return taskHandler.Process(ctx, task, heartbeats)
+//	}
 func NewJSONAPIHandler(client clients.BaseAPIClient) queue.TaskHandler {
 	return jsonAPIHandler{
 		Tracer:       tracing.NewTracer("handlers", "JSONAPIHandler"),

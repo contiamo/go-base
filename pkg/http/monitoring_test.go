@@ -2,7 +2,7 @@ package http
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 	"time"
@@ -43,7 +43,7 @@ func TestListenAndServeMonitoring(t *testing.T) {
 	require.NoError(t, err)
 
 	defer resp.Body.Close()
-	bs, err := ioutil.ReadAll(resp.Body)
+	bs, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	require.Contains(t, string(bs), "go_info")
 }

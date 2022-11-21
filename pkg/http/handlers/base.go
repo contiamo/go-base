@@ -55,8 +55,8 @@ func NewBaseHandler(componentName string, maxBodyBytes int64, debug bool) *Handl
 //
 // Deprecated: you can now configure/override the default Tracer using
 //
-//    h := NewBaseHandler(componentName, maxBodyBytes, debug)
-//    h.Tracer = tracing.NewTracer("handlers", componentName)
+//	h := NewBaseHandler(componentName, maxBodyBytes, debug)
+//	h.Tracer = tracing.NewTracer("handlers", componentName)
 func NewBaseHandlerWithTracer(tracer tracing.Tracer, maxBodyBytes int64, debug bool) *Handler {
 	if maxBodyBytes < 0 {
 		maxBodyBytes = Megabyte

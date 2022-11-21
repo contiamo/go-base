@@ -2,7 +2,7 @@ package middlewares
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,7 +18,7 @@ func Test_RecoveryMiddleware(t *testing.T) {
 	defer cancel()
 
 	t.Run("should be possible to configure panic recovery", func(t *testing.T) {
-		srv, err := createServer([]server.Option{WithRecovery(ioutil.Discard, true)})
+		srv, err := createServer([]server.Option{WithRecovery(io.Discard, true)})
 		require.NoError(t, err)
 
 		ts := httptest.NewServer(srv.Handler)
@@ -35,7 +35,7 @@ func Test_RecoveryMiddleware(t *testing.T) {
 	})
 
 	t.Run("should support websockets and tracing", func(t *testing.T) {
-		srv, err := createServer([]server.Option{WithRecovery(ioutil.Discard, true)})
+		srv, err := createServer([]server.Option{WithRecovery(io.Discard, true)})
 		require.NoError(t, err)
 
 		ts := httptest.NewServer(srv.Handler)

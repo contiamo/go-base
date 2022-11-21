@@ -1,5 +1,5 @@
 // Package union offers a simple http.FileSystem that can unify multiple filesystems at various mount points.
-//Copied from https://github.com/shurcooL/httpfs/blob/master/union/union.go due to import issues
+// Copied from https://github.com/shurcooL/httpfs/blob/master/union/union.go due to import issues
 package union
 
 import (

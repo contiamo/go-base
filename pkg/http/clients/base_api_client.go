@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -208,7 +207,7 @@ func (c baseAPIClient) DoRequestWithResponse(ctx context.Context, method, path s
 		// we assume that BaseAPIClient implements Tracer, so we don't create
 		// a subspan for each attempt, the DoRequestWithResponse will do that already
 
-		// nolint:bodyclose // caller is now responsible for closing, if there is no error
+		//nolint:bodyclose // caller is now responsible for closing, if there is no error
 		lastResp, attemptErr = c.do(ctx, method, path, query, payload)
 		if !retryable(lastResp, attemptErr) {
 			logger.WithField("attempt", attempt).WithError(attemptErr).Error("permanent error")
@@ -338,7 +337,7 @@ func (c baseAPIClient) do(ctx context.Context, method, path string, query url.Va
 		}
 
 		// general error processing
-		response, err := ioutil.ReadAll(resp.Body)
+		response, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to read response body")
 		}

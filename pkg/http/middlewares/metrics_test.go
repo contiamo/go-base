@@ -2,7 +2,7 @@ package middlewares
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -41,7 +41,7 @@ func Test_MetricsMiddleware(t *testing.T) {
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
-		bs, _ := ioutil.ReadAll(resp.Body)
+		bs, _ := io.ReadAll(resp.Body)
 
 		countMetric := `http_request_total{code="200",instance="` + getHostname() + `",method="get",path="/metrics_test",service="test"} 1`
 		durationMetric := `http_request_duration_ms_bucket{code="200",instance="` + getHostname() + `",method="get",path="/metrics_test",service="test",le="+Inf"} 1`
@@ -70,7 +70,7 @@ func Test_MetricsMiddleware(t *testing.T) {
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
-		bs, _ := ioutil.ReadAll(resp.Body)
+		bs, _ := io.ReadAll(resp.Body)
 
 		countMetric := `http_request_duration_ms_bucket{code="0",instance="` + getHostname() + `",method="get",path="/ws/echo",service="test",le="+Inf"} 1`
 		require.Contains(t, string(bs), countMetric)

@@ -10,9 +10,9 @@ type tHelper interface {
 
 // JSONEq asserts that two JSON strings are equivalent or both empty.
 //
-//  require.JSONEq(t, "", "")
-//  or
-//  require.JSONEq(t, `{"hello": "world", "foo": "bar"}`, `{"foo": "bar", "hello": "world"}`)
+//	require.JSONEq(t, "", "")
+//	or
+//	require.JSONEq(t, `{"hello": "world", "foo": "bar"}`, `{"foo": "bar", "hello": "world"}`)
 func JSONEq(t require.TestingT, expected string, actual string, msgAndArgs ...interface{}) {
 	if h, ok := t.(tHelper); ok {
 		h.Helper()

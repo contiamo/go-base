@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -59,7 +58,7 @@ func (cfg *Database) GetPassword() (string, error) {
 	if cfg.PasswordPath == "" {
 		return "", nil
 	}
-	passwordBytes, err := ioutil.ReadFile(cfg.PasswordPath)
+	passwordBytes, err := os.ReadFile(cfg.PasswordPath)
 	if err != nil {
 		return "", errors.Wrapf(err, "can not read the database password file `%s`", cfg.PasswordPath)
 	}

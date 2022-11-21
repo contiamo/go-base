@@ -3,7 +3,7 @@ package managers
 import (
 	"context"
 	"database/sql"
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 	"time"
@@ -33,7 +33,7 @@ func Test_Sqlizer(t *testing.T) {
 	_, err := db.ExecContext(ctx, `INSERT INTO test (id, parent_id, name) VALUES ($1,$2, 'unique')`, id, parentID)
 	require.NoError(t, err)
 
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
 	r := NewIDResolver("test", "id", "name")
@@ -52,7 +52,7 @@ func Test_Resolve(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
 	_, db := dbtest.GetDatabase(t, func(ctx context.Context, db *sql.DB) error {

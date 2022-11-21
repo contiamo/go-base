@@ -2,7 +2,7 @@ package migrations
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"path/filepath"
 )
@@ -21,7 +21,7 @@ func getSQL(name string, kind sqlKind, assets http.FileSystem) (string, error) {
 		return "", fmt.Errorf("getSQL failed: %w", err)
 	}
 
-	s, err := ioutil.ReadAll(file)
+	s, err := io.ReadAll(file)
 	if err != nil {
 		return "", fmt.Errorf("getSQL failed: %w", err)
 	}

@@ -147,7 +147,7 @@ func (q *dequeuer) attemptDequeue(ctx context.Context, queues ...string) (task *
 	}
 
 	// choose a random queue
-	// nolint: gosec // this random value is not involved in any security related logic
+	//nolint: gosec // this random value is not involved in any security related logic
 	n := rand.Intn(len(processableQs))
 	queueName := processableQs[n]
 	logrus.Debugf("choosing random queue `%s`", queueName)

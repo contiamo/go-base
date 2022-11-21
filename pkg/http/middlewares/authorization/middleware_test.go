@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -69,7 +69,7 @@ func Test_middleware(t *testing.T) {
 
 		require.Equal(t, http.StatusOK, res.StatusCode)
 
-		b, err := ioutil.ReadAll(res.Body)
+		b, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 		require.Equal(t, "OK!", string(b))
 	})
@@ -92,7 +92,7 @@ func Test_middleware(t *testing.T) {
 
 		require.Equal(t, http.StatusUnauthorized, res.StatusCode)
 
-		b, err := ioutil.ReadAll(res.Body)
+		b, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 		require.Equal(t, "Unauthorized\n", string(b))
 	})
@@ -111,7 +111,7 @@ func Test_middleware(t *testing.T) {
 
 		require.Equal(t, http.StatusUnauthorized, res.StatusCode)
 
-		b, err := ioutil.ReadAll(res.Body)
+		b, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 		require.Equal(t, "Unauthorized\n", string(b))
 	})
@@ -131,7 +131,7 @@ func Test_middleware(t *testing.T) {
 
 		require.Equal(t, http.StatusUnauthorized, res.StatusCode)
 
-		b, err := ioutil.ReadAll(res.Body)
+		b, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 		require.Equal(t, "Unauthorized\n", string(b))
 	})
@@ -151,7 +151,7 @@ func Test_middleware(t *testing.T) {
 
 		require.Equal(t, http.StatusUnauthorized, res.StatusCode)
 
-		b, err := ioutil.ReadAll(res.Body)
+		b, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 		require.Equal(t, "Unauthorized\n", string(b))
 	})
@@ -180,7 +180,7 @@ func Test_middleware(t *testing.T) {
 
 		require.Equal(t, http.StatusUnauthorized, res.StatusCode)
 
-		b, err := ioutil.ReadAll(res.Body)
+		b, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 
 		require.Equal(t, "Unauthorized\n", string(b))
@@ -210,7 +210,7 @@ func Test_middleware(t *testing.T) {
 
 		require.Equal(t, http.StatusUnauthorized, res.StatusCode)
 
-		b, err := ioutil.ReadAll(res.Body)
+		b, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 
 		require.Equal(t, "Unauthorized\n", string(b))
@@ -243,7 +243,7 @@ func Test_middleware(t *testing.T) {
 
 		require.Equal(t, http.StatusUnauthorized, res.StatusCode)
 
-		b, err := ioutil.ReadAll(res.Body)
+		b, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 
 		require.Equal(t, "Unauthorized\n", string(b))
