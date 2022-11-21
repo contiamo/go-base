@@ -2,7 +2,7 @@ package testing
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 
 	"github.com/sirupsen/logrus"
 )
@@ -35,7 +35,7 @@ func DiscardLogging() (restore func()) {
 		logrus.SetLevel(prevLevel)
 	}
 
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 	logrus.SetLevel(logrus.FatalLevel)
 	return restore
 }

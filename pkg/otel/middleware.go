@@ -12,10 +12,10 @@ import (
 //
 // Example:
 //
-// 	r := chi.NewRouter()
-// 	r.Use(otel.Middleware("Server"))
+//	r := chi.NewRouter()
+//	r.Use(otel.Middleware("Server"))
 //
-// The most common options to pass will be the otelhttp.WithFilter and otelhttp.WithSpanNameFormatter
+// # The most common options to pass will be the otelhttp.WithFilter and otelhttp.WithSpanNameFormatter
 //
 // When no options are passed a default filter for /metrics and /health is used.
 func Middleware(name string, opts ...otelhttp.Option) func(next http.Handler) http.Handler {

@@ -20,8 +20,9 @@ func ListenAndServePprof(ctx context.Context, addr string) error {
 	root.Mount("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 	root.Mount("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 	srv := &http.Server{
-		Addr:    addr,
-		Handler: root,
+		Addr:              addr,
+		Handler:           root,
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	// listen and serve profiling data

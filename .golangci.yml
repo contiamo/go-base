@@ -17,7 +17,6 @@ output:
 
 # all available settings of specific linters
 linters-settings:
-
   errcheck:
     # report about not checking of errors in type assertions: `a := b.(MyStruct)`;
     # default is false: such cases aren't reported by default.
@@ -136,7 +135,7 @@ linters-settings:
     go: "1.16"
 
   whitespace:
-    multi-if: true   # Enforces newlines (or comments) after every multi-line if statement
+    multi-if: true # Enforces newlines (or comments) after every multi-line if statement
     multi-func: true # Enforces newlines (or comments) after every multi-line function signature
 
   wsl:
@@ -159,22 +158,19 @@ linters:
   enable:
     # Find the whole list here https://golangci-lint.run/usage/linters/
     #
-    - deadcode # finds unused code
     - errcheck # checking for unchecked errors in go programs
     - gosimple # linter for Go source code that specializes in simplifying a code
     - govet # Vet examines Go source code and reports suspicious constructs, such as Printf calls whose arguments do not align with the format string
     - ineffassign # detects when assignments to existing variables are not used
     - staticcheck # Staticcheck is a go vet on steroids, applying a ton of static analysis checks
-    - structcheck # finds unused struct fields
     - typecheck # Like the front-end of a Go compiler, parses and type-checks Go code
     - unused # checks Go code for unused constants, variables, functions and types
-    - varcheck # Finds unused global variables and constants
     - asciicheck # simple linter to check that your code does not contain non-ASCII identifiers
     - bodyclose # checks whether HTTP response body is closed successfully
     - durationcheck # check for two durations multiplied together
     - exportloopref # checks for pointers to enclosing loop variables
     - forbidigo # forbids identifiers	by reg exps
-    - forcetypeassert	# finds forced type assertions
+    - forcetypeassert # finds forced type assertions
     - gochecknoinits # checks that no init functions are present in Go code
     - goconst # finds repeated strings that could be replaced by a constant
     - goimports # Goimports does everything that gofmt does. Additionally it checks unused imports

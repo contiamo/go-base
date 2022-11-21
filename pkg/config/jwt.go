@@ -2,7 +2,7 @@ package config
 
 import (
 	"crypto/rsa"
-	"io/ioutil"
+	"os"
 
 	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/pkg/errors"
@@ -22,7 +22,7 @@ func (j *JWT) GetPublicKey() (publicKey *rsa.PublicKey, err error) {
 		return nil, errors.New("path to the public key file is empty")
 	}
 
-	keyBytes, err := ioutil.ReadFile(j.PublicKeyPath)
+	keyBytes, err := os.ReadFile(j.PublicKeyPath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "can not read the public key file `%s`", j.PublicKeyPath)
 	}
@@ -36,7 +36,7 @@ func (j *JWT) GetPrivateKey() (privateKey *rsa.PrivateKey, err error) {
 		return nil, errors.New("path to the private key file is empty")
 	}
 
-	keyBytes, err := ioutil.ReadFile(j.PrivateKeyPath)
+	keyBytes, err := os.ReadFile(j.PrivateKeyPath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "can not read the private key file `%s`", j.PrivateKeyPath)
 	}

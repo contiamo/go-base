@@ -28,9 +28,9 @@ type MigrationConfig struct {
 //
 // You can inspect the migrations table of your app using
 //
-// 	select * from migrations;
-// 	select * from migrations WHERE applied_at > '<timestamp>';
-// 	select * from mgirations WHERE version = '<app version>';
+//	select * from migrations;
+//	select * from migrations WHERE applied_at > '<timestamp>';
+//	select * from mgirations WHERE version = '<app version>';
 //
 // The migration tracking will track _both_ the individual migrations (using a hash of the sql) _and_
 // the migrations in a specific version of the app. If the app version is found in the migration history
@@ -38,7 +38,7 @@ type MigrationConfig struct {
 //
 // To force a migration to rerun, you will need to delete the record from the tracking table
 //
-// 	delete from migrations where version = '<migration version>';
+//	delete from migrations where version = '<migration version>';
 func NewPrepareDatabase(config MigrationConfig, queueConfig *QueueDBConfig, appVersion string) func(context.Context, *sql.DB) error {
 	initDB := NewIniter(config.Assets, queueConfig)
 	migrateDB := NewMigrater(config.MigrationStatements, config.Assets)
@@ -226,7 +226,7 @@ func saveVersionHash(ctx context.Context, name string, assets http.FileSystem, t
 // GetJitter returns a duration within [0.05*interval, interval]
 func GetJitter(interval time.Duration) time.Duration {
 	var (
-		// nolint: gosec // this random value is not involved in any security related logic
+		//nolint: gosec // this random value is not involved in any security related logic
 		random    = rand.Float64()
 		minJitter = 0.05 * float64(interval)
 		maxJitter = float64(interval)

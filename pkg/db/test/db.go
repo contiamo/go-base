@@ -127,16 +127,17 @@ func cleanupDB(t *testing.T) {
 // to run the test in isolation. Docker will be called to start a db that is read  to be used with GetDatabase.
 // Example usage:
 //
-//   dberr, cleanup := dbtest.EnsureDBReady(ctx)
-//   require.NoError(t, dberr)
-//   defer cleanup()
+//	dberr, cleanup := dbtest.EnsureDBReady(ctx)
+//	require.NoError(t, dberr)
+//	defer cleanup()
 //
-//   _, db := dbtest.GetDatabase(t)
-//   defer db.Close()
+//	_, db := dbtest.GetDatabase(t)
+//	defer db.Close()
 //
 // While the code is somewhat robust to having existing dbs running, this is not intended to be left in the test code.
 // The goal is that you can run individual tests via your IDE integrations or using the CLI, e.g.
-//   go test -run ^TestRetentionHandler$`
+//
+//	go test -run ^TestRetentionHandler$`
 func EnsureDBReady(ctx context.Context) (func(*testing.T), error) {
 	check := exec.CommandContext(ctx, "docker", "container", "inspect", "go-base-postgres", "-f", "{{.ID}}").Run()
 	if check == nil {

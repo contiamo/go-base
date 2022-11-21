@@ -26,8 +26,10 @@ type IDResolver interface {
 
 // NewIDResolver creates a new name->id resolver for a table, for example
 // var (
-// 	CollectionIDResolver = NewIDResolver("collections", "collection_id", "name")
-// 	TableIDResolver = NewIDResolver("tables", "table_id", "name")
+//
+//	CollectionIDResolver = NewIDResolver("collections", "collection_id", "name")
+//	TableIDResolver = NewIDResolver("tables", "table_id", "name")
+//
 // )
 func NewIDResolver(table, idColumn, secondaryColumn string) IDResolver {
 	return &idResolver{

@@ -5,7 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 	"time"
@@ -26,7 +26,7 @@ import (
 func TestTaskWorkerMetrics(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -88,7 +88,7 @@ func TestTaskWorkerMetrics(t *testing.T) {
 func TestTaskWorkerWork(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

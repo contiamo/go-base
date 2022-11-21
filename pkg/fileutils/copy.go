@@ -2,7 +2,6 @@ package fileutils
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -47,7 +46,7 @@ func dcopy(src, dest string, srcStat os.FileInfo) error {
 		return err
 	}
 
-	infos, err := ioutil.ReadDir(src)
+	infos, err := os.ReadDir(src)
 	if err != nil {
 		return err
 	}

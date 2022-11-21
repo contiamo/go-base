@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 	"time"
@@ -24,7 +24,7 @@ func (h errHandler) Process(ctx context.Context, task queue.Task, heartbeats cha
 }
 
 func TestDispatcherProcess(t *testing.T) {
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -34,7 +34,7 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
 	type payload struct {
@@ -281,7 +281,7 @@ func TestBaseAPIClientDoRequest(t *testing.T) {
 				require.Equal(t, "application/json", r.Header.Get("Content-Type"))
 
 				// ignore all the payload errors, we just need to compare bytes
-				payload, _ := ioutil.ReadAll(r.Body)
+				payload, _ := io.ReadAll(r.Body)
 				payload = bytes.TrimSpace(payload)
 				if tc.payload != nil {
 					// ignore the serialization error, we compare bytes anyway
@@ -416,7 +416,7 @@ func TestClientRetry(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// logrus.SetOutput(ioutil.Discard)
+	// logrus.SetOutput(io.Discard)
 	// defer logrus.SetOutput(os.Stdout)
 
 	type payload struct {
@@ -670,7 +670,7 @@ func TestClientRetry(t *testing.T) {
 				totalAttempts++
 
 				// ignore all the payload errors, we just need to compare bytes
-				payload, _ := ioutil.ReadAll(r.Body)
+				payload, _ := io.ReadAll(r.Body)
 				payload = bytes.TrimSpace(payload)
 				if tc.payload != nil {
 					// ignore the serialization error, we compare bytes anyway

@@ -2,7 +2,7 @@ package postgres
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 	"time"
@@ -17,7 +17,7 @@ import (
 func TestEnqueue(t *testing.T) {
 	verifyLeak(t)
 
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 	defer logrus.SetOutput(os.Stdout)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

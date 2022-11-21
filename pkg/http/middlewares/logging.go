@@ -14,35 +14,34 @@ import (
 // You can control the log fields or if the log should be skipped by setting
 // the Fields and the Ignore function respectively.
 //
-//      log := middlewares.WithLogging(config.ApplicationName)
-//      log.Fields = func(r *http.Request) logrus.Fields {
-//        // custom logic here
-//      }
-//      log.Ignore = func(r *http.Request) bool {
-// 	      // custom logic here
-//      }
+//	     log := middlewares.WithLogging(config.ApplicationName)
+//	     log.Fields = func(r *http.Request) logrus.Fields {
+//	       // custom logic here
+//	     }
+//	     log.Ignore = func(r *http.Request) bool {
+//		      // custom logic here
+//	     }
 //
 // When `tracing.SpanHook` is enabled and the tracing middleware is enabled
 // before the logging middleware, the traceId and spanId are attaced the the logs.
 //
 // During application configuration use
 //
-// 		logrus.AddHook(&tracing.SpanHook{})
-//
+//	logrus.AddHook(&tracing.SpanHook{})
 //
 // During router configuration
 //
-// 		recover := middlewares.WithRecovery(os.Stderr, cfg.Debug)
-// 		trace := middlewares.WithTracing(config.ApplicationName, nil, middlewares.ChiRouteName)
-// 		log := middlewares.WithLogging(config.ApplicationName)
-// 		metrics := middlewares.WithMetrics(config.ApplicationName, nil)
+//	recover := middlewares.WithRecovery(os.Stderr, cfg.Debug)
+//	trace := middlewares.WithTracing(config.ApplicationName, nil, middlewares.ChiRouteName)
+//	log := middlewares.WithLogging(config.ApplicationName)
+//	metrics := middlewares.WithMetrics(config.ApplicationName, nil)
 //
-// 		api.Use(
-// 			recover.WrapHandler,
-// 			trace.WrapHandler,
-// 			log.WrapHandler,
-// 			metrics.WrapHandler,
-// 		)
+//	api.Use(
+//		recover.WrapHandler,
+//		trace.WrapHandler,
+//		log.WrapHandler,
+//		metrics.WrapHandler,
+//	)
 func WithLogging(app string) *LoggingOption {
 	return &LoggingOption{
 		app: app,

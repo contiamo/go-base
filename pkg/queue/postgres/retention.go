@@ -67,7 +67,7 @@ func AssertRetentionScheduleWithSpec(ctx context.Context, db *sql.DB, spec Reten
 	}
 
 	// randomly distribute the retention tasks throughout the hour
-	// nolint: gosec // this random value is not involved in any security related logic
+	//nolint: gosec // this random value is not involved in any security related logic
 	when := rand.Intn(60)
 	retentionSchedule := queue.TaskScheduleRequest{
 		TaskBase: queue.TaskBase{
@@ -129,7 +129,7 @@ func AssertRetentionScheduleWithSpec(ctx context.Context, db *sql.DB, spec Reten
 	return nil
 }
 
-//createRetentionSpec builds the task retention job spec. It is split out to simplify test setup
+// createRetentionSpec builds the task retention job spec. It is split out to simplify test setup
 func createRetentionSpec(queueName string, taskType queue.TaskType, status queue.TaskStatus, age time.Duration) RetentionTaskSpec {
 	spec := RetentionTaskSpec{
 		QueueName: queueName,

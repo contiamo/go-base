@@ -54,7 +54,7 @@ type mwOptions struct {
 	componentName string
 }
 
-//mwOption controls the behavior of the Middleware.
+// mwOption controls the behavior of the Middleware.
 type mwOption func(*mwOptions)
 
 // OperationNameFunc returns a mwOption that uses given function f
@@ -88,21 +88,23 @@ func mwComponentName(componentName string) mwOption {
 // This can be overridden with options.
 //
 // Example:
-//	 http.ListenAndServe("localhost:80", nethttp.Middleware(tracer, http.DefaultServeMux))
+//
+//	http.ListenAndServe("localhost:80", nethttp.Middleware(tracer, http.DefaultServeMux))
 //
 // The options allow fine tuning the behavior of the traceMiddleware.
 //
 // Example:
-//   mw := nethttp.Middleware(
-//      tracer,
-//      http.DefaultServeMux,
-//      netottp.OperationNameFunc(func(r *http.Request) string {
-//		return "HTTP " + r.Method + ":/api/customers"
-//      }),
-//      nethttp mwSpanObserver(func(sp opentracing.Span, r *http.Request) {
-//			sp.SetTag("http.uri", r.URL.EscapedPath())
-//		}),
-//   )
+//
+//	  mw := nethttp.Middleware(
+//	     tracer,
+//	     http.DefaultServeMux,
+//	     netottp.OperationNameFunc(func(r *http.Request) string {
+//			return "HTTP " + r.Method + ":/api/customers"
+//	     }),
+//	     nethttp mwSpanObserver(func(sp opentracing.Span, r *http.Request) {
+//				sp.SetTag("http.uri", r.URL.EscapedPath())
+//			}),
+//	  )
 func traceMiddleware(tr opentracing.Tracer, h http.Handler, options ...mwOption) http.Handler {
 	opts := mwOptions{
 		opNameFunc: func(r *http.Request) string {

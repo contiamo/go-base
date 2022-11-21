@@ -1,7 +1,6 @@
 package fileutils
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,7 +10,7 @@ import (
 )
 
 func tmpDir(t *testing.T) (path string, cleanup func()) {
-	path, err := ioutil.TempDir("/tmp", "go-base")
+	path, err := os.MkdirTemp("/tmp", "go-base")
 	require.NoError(t, err)
 	return path, func() {
 		err = os.RemoveAll(path)
@@ -29,8 +28,8 @@ func TestSimpleCopy(t *testing.T) {
 	err := Copy(src, dst)
 	assert.NoError(t, err)
 
-	srcBs, _ := ioutil.ReadFile(src)
-	destBs, _ := ioutil.ReadFile(dst)
+	srcBs, _ := os.ReadFile(src)
+	destBs, _ := os.ReadFile(dst)
 	assert.EqualValues(t, srcBs, destBs)
 }
 
@@ -42,14 +41,14 @@ func TestCopyFolderWithFolderRename(t *testing.T) {
 	defer cleanup2()
 
 	f1 := filepath.Join(src, "f1")
-	// nolint: gosec // it's a test, no security impact
-	err := ioutil.WriteFile(f1, []byte("foobar"), 0644)
+	//nolint:gosec  // writing test file is ok
+	err := os.WriteFile(f1, []byte("foobar"), 0644)
 	assert.NoError(t, err)
 
 	err = Copy(src, dst)
 	assert.NoError(t, err)
 
-	f1Bs, _ := ioutil.ReadFile(filepath.Join(dst, "f1"))
+	f1Bs, _ := os.ReadFile(filepath.Join(dst, "f1"))
 	assert.EqualValues(t, f1Bs, []byte("foobar"))
 }
 
@@ -69,7 +68,7 @@ func TestCopyNonReadableFile(t *testing.T) {
 	dst, cleanup2 := tmpDir(t)
 	defer cleanup2()
 
-	err := ioutil.WriteFile(filepath.Join(src, "f1"), []byte{}, 0)
+	err := os.WriteFile(filepath.Join(src, "f1"), []byte{}, 0)
 	assert.NoError(t, err)
 
 	err = Copy(src, dst)
