@@ -25,12 +25,12 @@ require (
 	github.com/stretchr/testify v1.8.1
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
 	github.com/urfave/negroni v1.0.0
-	go.opentelemetry.io/contrib/detectors/aws/eks v1.6.0
+	go.opentelemetry.io/contrib/detectors/aws/eks v1.12.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.31.0
 	go.opentelemetry.io/contrib/propagators/aws v1.6.0
 	go.opentelemetry.io/contrib/propagators/jaeger v1.6.0
-	go.opentelemetry.io/otel v1.11.1
+	go.opentelemetry.io/otel v1.11.2
 	go.opentelemetry.io/otel/exporters/jaeger v1.6.3
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.6.3
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.6.3
@@ -38,12 +38,12 @@ require (
 	go.opentelemetry.io/otel/exporters/prometheus v0.29.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.6.3
 	go.opentelemetry.io/otel/metric v0.33.0
-	go.opentelemetry.io/otel/sdk v1.6.3
+	go.opentelemetry.io/otel/sdk v1.11.2
 	go.opentelemetry.io/otel/sdk/metric v0.29.0
-	go.opentelemetry.io/otel/trace v1.11.1
+	go.opentelemetry.io/otel/trace v1.11.2
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/goleak v1.2.0
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
+	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd
 	golang.org/x/tools v0.3.0
 	google.golang.org/protobuf v1.28.1
 )
