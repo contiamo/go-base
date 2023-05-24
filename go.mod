@@ -45,7 +45,7 @@ require (
 	go.uber.org/goleak v1.2.1
 	golang.org/x/crypto v0.9.0
 	golang.org/x/tools v0.9.1
-	google.golang.org/protobuf v1.28.1
+	google.golang.org/protobuf v1.30.0
 )
 
 require (
