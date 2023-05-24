@@ -2,7 +2,7 @@ module github.com/contiamo/go-base/v4
 
 require (
 	github.com/HdrHistogram/hdrhistogram-go v1.0.1 // indirect
-	github.com/Masterminds/squirrel v1.5.3
+	github.com/Masterminds/squirrel v1.5.4
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef // indirect
 	github.com/bakins/net-http-recover v0.0.0-20141007104922-6cba69d01459
 	github.com/cenkalti/backoff/v4 v4.2.1
