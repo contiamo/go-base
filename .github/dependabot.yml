@@ -9,6 +9,11 @@ updates:
       timezone: "Europe/Berlin"
     commit-message:
       prefix: "chore"
+    ignore:
+      # ignore all opentelemetry dependencies
+      # we are not ready to bump and use this package yet
+      - dependency-name: go.opentelemetry.io/* 
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
