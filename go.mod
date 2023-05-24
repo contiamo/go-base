@@ -16,7 +16,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.14.0
+	github.com/prometheus/client_golang v1.15.1
 	github.com/robfig/cron v1.2.0
 	github.com/rs/cors v1.9.0
 	github.com/satori/go.uuid v1.2.0
@@ -45,7 +45,7 @@ require (
 	go.uber.org/goleak v1.2.1
 	golang.org/x/crypto v0.9.0
 	golang.org/x/tools v0.9.1
-	google.golang.org/protobuf v1.28.1
+	google.golang.org/protobuf v1.30.0
 )
 
 require (
