@@ -43,7 +43,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.11.1
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/goleak v1.2.1
-	golang.org/x/crypto v0.11.0
+	golang.org/x/crypto v0.12.0
 	golang.org/x/tools v0.11.0
 	google.golang.org/protobuf v1.31.0
 )
