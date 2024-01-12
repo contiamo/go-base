@@ -44,7 +44,7 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/goleak v1.2.1
 	golang.org/x/crypto v0.18.0
-	golang.org/x/tools v0.16.1
+	golang.org/x/tools v0.17.0
 	google.golang.org/protobuf v1.32.0
 )
 
