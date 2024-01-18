@@ -52,7 +52,7 @@ jobs:
           echo "module=$(go env GOMODCACHE)" >>"$GITHUB_OUTPUT"
         shell: bash
       - name: Setup Golang cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ${{ steps.golang-path.outputs.build }}
